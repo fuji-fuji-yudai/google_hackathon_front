@@ -13,7 +13,7 @@ steps:
     args:
       [
         "push",
-        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-image",
+        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage",
       ]
   # Deploy container image to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
