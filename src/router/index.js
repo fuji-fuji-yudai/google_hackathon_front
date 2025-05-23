@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import chatRoutes from './routes/chat'
 import loadRoutes from './routes/loadmap'
+import reflectionRoutes from './routes/reflection'
 
 const routes = [
   {
@@ -19,4 +20,12 @@ const routes = [
   },
   ...chatRoutes
   ...loadRoutes
+  ...reflectionRoutes
 ]
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL),
+  routes
+})
+
+export default router
