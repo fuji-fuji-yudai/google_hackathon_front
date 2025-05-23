@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import chatRoutes from './routes/chat'
+import loadRoutes from './routes/loadmap'
 
 const routes = [
   {
@@ -17,11 +18,5 @@ const routes = [
     component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
   },
   ...chatRoutes
+  ...loadRoutes
 ]
-
-const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes
-})
-
-export default router
