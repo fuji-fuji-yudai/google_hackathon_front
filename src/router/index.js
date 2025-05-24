@@ -28,6 +28,19 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
-})
+});
+
+
+// 🔐 ナビゲーションガード
+router.beforeEach((to, from, next) => {
+ const isAuthenticated = !!localStorage.getItem('token'); // トークンの有無で判定
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/'); // 未認証ならログインページへ
+  } else {
+  next(); // 通過
+  }
+});
+
 
 export default router
