@@ -1,15 +1,14 @@
 <template>
   <div id="app">
     <h1>ロードマップグラフ</h1>
-    <MonthlyGraph />
-  </div>
+    <MonthlyGraph /> </div>
 </template>
 
 <script>
-import MonthlyGraph from './components/Monthlydata.vue'; //コンポーネント名
+import MonthlyGraph from './components/Monthlydata.vue'; 
 
 export default {
-  name: 'App',
+  name: 'LoadmapView',
   components: {
     MonthlyGraph 
   }
