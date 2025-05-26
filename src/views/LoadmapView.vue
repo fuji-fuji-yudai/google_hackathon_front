@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import MonthlyGraph from './components/Monthlydata.vue'; 
+import MonthlyGraph from '../components/Monthlydata.vue';
 
 export default {
   name: 'LoadmapView',
