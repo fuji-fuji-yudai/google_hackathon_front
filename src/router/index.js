@@ -3,7 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import chatRoutes from './routes/chat'
 import reflectionRoutes from './routes/reflection'
 import Login from '../views/LoginView.vue'
-import loadmapRoutes from './routes/loadmap'
+import roadmapRoutes from './routes/roadmap'
 
 
 
@@ -25,7 +25,7 @@ const routes = [
   },
   ...chatRoutes,
   ...reflectionRoutes,
-  ...loadmapRoutes
+  ...roadmapRoutes
 ]
 
 const router = createRouter({
