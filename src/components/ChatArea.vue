@@ -21,7 +21,8 @@
         clearable
         class="chat-textbox"
       />
-      <el-button type="primary" @click="sendMessage">送信</el-button>
+      <el-button :disabled="!isConnected" type="primary" @click="sendMessage">送信</el-button>
+
     </div>
   </div>
 </template>

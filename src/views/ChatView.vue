@@ -30,30 +30,96 @@
 
 
 <script setup> //compositionAPIを使ったロジック
-import { ref } from 'vue' //refはVueのリアクティブな状態を作るための関数→この変数は画面に関係しているから、変わったら自動で再描画してねというやつ
+import { ref,onMounted,onBeforeUnmount } from 'vue' //refはVueのリアクティブな状態を作るための関数→この変数は画面に関係しているから、変わったら自動で再描画してねというやつ
 import SidebarLayout from '@/components/SidebarLayout.vue'
 import ChatArea from '@/components/ChatArea.vue' //コンポーネントをインポート
+import SockJS from 'sockjs-client'
+import { Client } from '@stomp/stompjs'
+
 
 const selectedMenu = ref(null) //現在選択されているメニュー項目（オブジェクトを保持）★なぜref null?：初期値nullつまり未選択なことを示す
 const chatHistories = ref({}) //各メニューごとのチャット履歴を保持するオブジェクト。キーはmenuItem.index ★上記と同様：初期値は空のオブジェクト、これからデータを追加していく。
+const stompClient = ref(null)
+const username = 'You' // 本来はログインユーザー名を使う
+const isConnected = ref(false)
+
+
+// WebSocket 接続
+
+
+const connectWebSocket = () => {
+  const socket = new SockJS('http://localhost:8080/ws')
+  stompClient.value = new Client({
+  webSocketFactory: () => socket,
+  reconnectDelay: 5000,
+  onConnect: () => {
+    isConnected.value = true
+      if (selectedMenu.value) {
+        subscribeToRoom(selectedMenu.value.index)
+      }
+  },
+  onDisconnect: () => {
+    isConnected.value = false
+  }
+})
+stompClient.value.activate()
+}
+
+
+// ルーム購読
+const subscribeToRoom = (roomId) => {
+  stompClient.value.subscribe(`/topic/chat/${roomId}`, (message) => {
+  const msg = JSON.parse(message.body)
+  if (!chatHistories.value[roomId]) {
+  chatHistories.value[roomId] = []
+  }
+  chatHistories.value[roomId].push(msg)
+  })
+}
 
 const handleMenuClick = (menuItem) => { //menuitemは、SidebarLayoutから渡される選択されたメニューの情報★どこでどうやって渡してる？：$emit('menu-click', menuItem)というのを子コンポーネントで定義しており、menu-clickメソッドが発火したときにmenuItemが渡される。
   selectedMenu.value = menuItem //selectedmenuにそのメニューをセット。
-  if (!chatHistories.value[menuItem.index]) { //チャット履歴がなければ初期メッセージを追加
-    chatHistories.value[menuItem.index] = [
+  const roomId = menuItem.index
+  if (!chatHistories.value[roomId]) { //チャット履歴がなければ初期メッセージを追加
+    chatHistories.value[roomId] = [
       { sender: 'Bot', text: `「${menuItem.title}」のチャットを開始します。` } //トークルームごとに送信者とテキストの配列が格納されてる
     ]
+  }
+  if (isConnected.value) {
+    subscribeToRoom(roomId)
   }
 }
 
 const handleSendMessage = (message) => { //ユーザーの入力メッセージ
-  if (selectedMenu.value) { 
-    chatHistories.value[selectedMenu.value.index].push({ //チャット履歴にメッセージを追加
-      sender: 'You',//ログインユーザー名を渡す
-      text: message//メッセージ内容
-    })
+  const roomId = selectedMenu.value.index
+  
+const msg = {
+    sender: username,
+    text: message,
+    roomId: roomId
   }
+chatHistories.value[roomId].push(msg)
+
+
+if (stompClient.value && stompClient.value.connected) {
+  stompClient.value.publish({
+  destination: `/app/chat/${roomId}`,
+  body: JSON.stringify(msg)
+  })
+} else {
+console.warn('STOMP 接続が確立されていません。メッセージは送信されませんでした。')
 }
+}
+
+  
+onMounted(() => {
+  connectWebSocket()
+  })
+
+onBeforeUnmount(() => {
+  if (stompClient.value) stompClient.value.deactivate()
+})
+
 </script>
 
 <style scoped> /* 対象はこのコンポーネントのみ */
