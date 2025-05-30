@@ -49,7 +49,7 @@ const isConnected = ref(false)
 
 
 const connectWebSocket = () => {
-  const socket = new SockJS('https://gbsjapan.slack.com/archives/C08RTPNNVRT/p1747547215418509/ws')
+  const socket = new SockJS('https://my-image-14467698004.asia-northeast1.run.app/ws')
   stompClient.value = new Client({
   webSocketFactory: () => socket,
   reconnectDelay: 5000,
