@@ -32,7 +32,8 @@ import { ref, nextTick } from 'vue'
 
 const props = defineProps({
   messages: Array,
-  currentuser: String
+  currentuser: String,
+  isConnected:Boolean
 })
 const emit = defineEmits(['send'])
 

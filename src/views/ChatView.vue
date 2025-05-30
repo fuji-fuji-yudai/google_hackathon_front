@@ -7,6 +7,7 @@
         :messages="chatHistories[selectedMenu.index] || []" 
         currentuser="You"
         @send="handleSendMessage"
+        :isConnected="isConnected"
       /> <!-- チャット画面を表示するコンポーネント。選択されたメニューに対応するチャット履歴を表示する。無ければ空の配列。
       現在のユーザーも渡す。メッセージが送信されたらhandleSendMessageメソッドが呼ばれる。 -->
     </div>
@@ -48,12 +49,13 @@ const isConnected = ref(false)
 
 
 const connectWebSocket = () => {
-  const socket = new SockJS('http://localhost:8080/ws')
+  const socket = new SockJS('https://gbsjapan.slack.com/archives/C08RTPNNVRT/p1747547215418509/ws')
   stompClient.value = new Client({
   webSocketFactory: () => socket,
   reconnectDelay: 5000,
   onConnect: () => {
     isConnected.value = true
+    console.log('接続成功！isConnected:', isConnected.value)
       if (selectedMenu.value) {
         subscribeToRoom(selectedMenu.value.index)
       }
