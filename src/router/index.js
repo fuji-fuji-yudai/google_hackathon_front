@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import chatRoutes from './routes/chat'
 import reflectionRoutes from './routes/reflection'
-import Login from '../views/LoginView.vue';
+import Login from '../views/LoginView.vue'
+import roadmapRoutes from './routes/roadmap'
 
 
 
@@ -23,7 +24,8 @@ const routes = [
     component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
   },
   ...chatRoutes,
-  ...reflectionRoutes
+  ...reflectionRoutes,
+  ...roadmapRoutes
 ]
 
 const router = createRouter({
