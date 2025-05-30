@@ -62,7 +62,15 @@ const connectWebSocket = () => {
   },
   onDisconnect: () => {
     isConnected.value = false
-  }
+  },
+  
+onStompError: (frame) => {
+ console.error('❌ STOMP エラー:', frame)
+ },
+ onWebSocketError: (event) => {
+ console.error('❌ WebSocket エラー:', event)
+ }
+
 })
 stompClient.value.activate()
 }
@@ -121,6 +129,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (stompClient.value) stompClient.value.deactivate()
 })
+
 
 </script>
 
