@@ -43,7 +43,7 @@ const getUsernameFromToken = (token) => {
   }
 };
 
-const token = localStorage.getItem('jwtToken')
+const token = localStorage.getItem('token')
 const currentUsername = ref(getUsernameFromToken(token))
 
 
