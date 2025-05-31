@@ -28,15 +28,20 @@ const chatHistories = ref({}) //各メニューごとのチャット履歴を保
 const stompClient = ref(null)
 const isConnected = ref(false)
 
-const getUsernameFromToken = (token) =>{
-try {
- const payload = JSON.parse(atob(token.split('.')[1]))
- return payload.sub || payload.username // JWTの構造に応じて
- } catch (e) {
- console.error('トークンの解析に失敗しました', e)
- return null
- }
-}
+const getUsernameFromToken = (token) => {
+  if (!token || typeof token !== 'string' || !token.includes('.')) {
+    console.error('トークンが無効です:', token);
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub || payload.username; // JWTの構造に応じて
+  } catch (e) {
+    console.error('トークンの解析に失敗しました', e);
+    return null;
+  }
+};
 
 const token = localStorage.getItem('jwtToken')
 const currentUsername = ref(getUsernameFromToken(token))
@@ -77,6 +82,8 @@ stompClient.value.activate()
 const subscribeToRoom = (roomId) => {
   stompClient.value.subscribe(`/topic/chat/${roomId}`, (message) => {
   const msg = JSON.parse(message.body)
+  console.log('受信メッセージ：',msg)
+  console.log('現在のユーザー：',currentUsername.value)
   if (msg.sender === currentUsername.value) return
   if (!chatHistories.value[roomId]) {
   chatHistories.value[roomId] = []
