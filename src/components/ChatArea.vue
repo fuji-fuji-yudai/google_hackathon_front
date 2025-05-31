@@ -6,6 +6,7 @@
       :key="index" 
       :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
       >
+        <div class="sender-name">{{ msg.sender }}</div> 
         <div class="bubble">
           {{ msg.text }}
         </div>
@@ -144,6 +145,13 @@ const sendMessage = () => {
   border-width: 10px 10px 10px 0;
   border-style: solid;
   border-color: transparent #fff transparent transparent;
+}
+
+.sender-name {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 2px;
+  padding: 0 10px;
 }
 
 </style>
