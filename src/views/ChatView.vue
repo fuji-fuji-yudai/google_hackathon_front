@@ -5,7 +5,7 @@
     <div v-if="selectedMenu" class="chat-area"> <!-- selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
       <ChatArea
         :messages="chatHistories[selectedMenu.index] || []" 
-        currentuser="You"
+        :currentuser="currentUsername"
         @send="handleSendMessage"
         :isConnected="isConnected"
       /> <!-- チャット画面を表示するコンポーネント。選択されたメニューに対応するチャット履歴を表示する。無ければ空の配列。
@@ -13,21 +13,6 @@
     </div>
   </div>
 </template>
-
-<style>
-.app-layout {
- display: flex; /* 子要素を横並びに配置する。 */
- height: 100vh; /* 画面の高さいっぱいに広げる。 */
- gap: 0; /*子要素間の隙間をゼロにする。*/
-}
-
-.chat-area {
- flex: 1; /* フレックスコンテナ内で残りのスペースをすべて使う。本ケースだとサイドバー以外をチャットエリアで埋める。 */
- overflow: hidden;/* チャットエリア内で、はみ出したコンテンツを非表示にする。 */
- margin-left: 0; /* 左側の余白はゼロ */
-}
-</style>
-
 
 
 <script setup> //compositionAPIを使ったロジック
@@ -41,13 +26,25 @@ import { Client } from '@stomp/stompjs'
 const selectedMenu = ref(null) //現在選択されているメニュー項目（オブジェクトを保持）★なぜref null?：初期値nullつまり未選択なことを示す
 const chatHistories = ref({}) //各メニューごとのチャット履歴を保持するオブジェクト。キーはmenuItem.index ★上記と同様：初期値は空のオブジェクト、これからデータを追加していく。
 const stompClient = ref(null)
-const username = 'You' // 本来はログインユーザー名を使う
 const isConnected = ref(false)
+
+const getUsernameFromToken = (token) =>{
+try {
+ const payload = JSON.parse(atob(token.split('.')[1]))
+ return payload.sub || payload.username // JWTの構造に応じて
+ } catch (e) {
+ console.error('トークンの解析に失敗しました', e)
+ return null
+ }
+}
+
+const token = localStorage.getItem('jwtToken')
+const currentUsername = ref(getUsernameFromToken(token))
+
+
 
 
 // WebSocket 接続
-
-
 const connectWebSocket = () => {
   const socket = new SockJS('https://my-image-14467698004.asia-northeast1.run.app/ws')
   stompClient.value = new Client({
@@ -80,6 +77,7 @@ stompClient.value.activate()
 const subscribeToRoom = (roomId) => {
   stompClient.value.subscribe(`/topic/chat/${roomId}`, (message) => {
   const msg = JSON.parse(message.body)
+  if (msg.sender === currentUsername.value) return
   if (!chatHistories.value[roomId]) {
   chatHistories.value[roomId] = []
   }
@@ -102,9 +100,8 @@ const handleMenuClick = (menuItem) => { //menuitemは、SidebarLayoutから渡�
 
 const handleSendMessage = (message) => { //ユーザーの入力メッセージ
   const roomId = selectedMenu.value.index
-  
+
 const msg = {
-    sender: username,
     text: message,
     roomId: roomId
   }
@@ -114,7 +111,10 @@ chatHistories.value[roomId].push(msg)
 if (stompClient.value && stompClient.value.connected) {
   stompClient.value.publish({
   destination: `/app/chat/${roomId}`,
-  body: JSON.stringify(msg)
+  body: JSON.stringify(msg),
+  headers:{
+    Authorization: `Bearer ${token}` //トークンをヘッダーに含める
+  }
   })
 } else {
 console.warn('STOMP 接続が確立されていません。メッセージは送信されませんでした。')
@@ -136,5 +136,19 @@ onBeforeUnmount(() => {
 <style scoped> /* 対象はこのコンポーネントのみ */
 ::v-deep(.el-container) { /* v-deepによって子コンポーネント内部にスタイルを適用可能 */
  flex: initial !important; /* flexプロパティを初期値に戻している。 */
+}
+</style>
+
+<style>
+.app-layout {
+ display: flex; /* 子要素を横並びに配置する。 */
+ height: 100vh; /* 画面の高さいっぱいに広げる。 */
+ gap: 0; /*子要素間の隙間をゼロにする。*/
+}
+
+.chat-area {
+ flex: 1; /* フレックスコンテナ内で残りのスペースをすべて使う。本ケースだとサイドバー以外をチャットエリアで埋める。 */
+ overflow: hidden;/* チャットエリア内で、はみ出したコンテンツを非表示にする。 */
+ margin-left: 0; /* 左側の余白はゼロ */
 }
 </style>
