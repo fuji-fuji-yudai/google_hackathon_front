@@ -5,7 +5,7 @@
     <div v-if="selectedMenu" class="chat-area"> <!-- selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
       <ChatArea
         :messages="chatHistories[selectedMenu.index] || []" 
-        :currentuser="currentUsername"
+        :currentuser="currentUsername.value"
         @send="handleSendMessage"
         :isConnected="isConnected"
       /> <!-- チャット画面を表示するコンポーネント。選択されたメニューに対応するチャット履歴を表示する。無ければ空の配列。
