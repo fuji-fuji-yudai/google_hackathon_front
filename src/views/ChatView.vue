@@ -52,8 +52,12 @@ const currentUsername = ref(getUsernameFromToken(token))
 // WebSocket 接続
 const connectWebSocket = () => {
   const socket = new SockJS('https://my-image-14467698004.asia-northeast1.run.app/ws')
+  const token = localStorage.getItem('token');
   stompClient.value = new Client({
   webSocketFactory: () => socket,
+  connectHeaders:{
+    Authorization: `Bearer ${token}`
+  },
   reconnectDelay: 5000,
   onConnect: () => {
     isConnected.value = true
