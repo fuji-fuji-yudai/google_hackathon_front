@@ -1,129 +1,153 @@
 <template>
-  <div class="roadmap-container">
-    <div class="roadmap-grid-container">
-      <div class="roadmap-quarter-header-row">
-        <div class="roadmap-quarter-corner-cell"></div> 
-        <div v-for="quarter in quarters" :key="quarter.id" :class="['roadmap-quarter-header-cell', `quarter-${quarter.id}`]" :style="getQuarterHeaderStyle(quarter)">
-          {{ quarter.name }}
-        </div>
-      </div>
+  <div class="main-layout-with-sidebar">
+    <div class="roadmap-content-area">
+      <div class="roadmap-container">
+        <div class="roadmap-grid-container">
+          <div class="roadmap-quarter-header-row">
+            <div class="roadmap-quarter-corner-cell"></div> 
+            <div v-for="quarter in quarters" :key="quarter.id" :class="['roadmap-quarter-header-cell', `quarter-${quarter.id}`]" :style="getQuarterHeaderStyle(quarter)">
+              {{ quarter.name }}
+            </div>
+          </div>
 
-      <div class="roadmap-header-row">
-        <div class="roadmap-corner-cell">カテゴリ/月</div> 
-        <div v-for="month in months" :key="month.id" :class="['roadmap-header-month', `quarter-${month.quarterId}`]">
-          {{ month.name }}
-        </div>
-      </div>
+          <div class="roadmap-header-row">
+            <div class="roadmap-corner-cell">カテゴリ/月</div> 
+            <div v-for="month in months" :key="month.id" :class="['roadmap-header-month', `quarter-${month.quarterId}`]">
+              {{ month.name }}
+            </div>
+          </div>
 
-      <div v-for="(row, rowIndex) in roadmapData" :key="rowIndex" class="roadmap-data-row" :style="getRoadmapRowStyle(row)">
-        <div 
-          class="roadmap-category-label" 
-          :style="{ backgroundColor: getCategoryLabelColor(row.category) }"
-          @dblclick="startCategoryEdit(rowIndex)"
-        >
-          <template v-if="editingCategoryIndex === rowIndex">
-            <input 
-              v-model="editedCategoryName" 
-              @blur="finishCategoryEdit(rowIndex)"
-              @keyup.enter="finishCategoryEdit(rowIndex)"
-              ref="categoryInput"
-              class="category-edit-input"
-            />
-          </template>
-          <template v-else>
-            {{ row.category }}
-          </template>
-        </div>
-        
-        <div 
-          v-for="month in months" 
-          :key="month.id" 
-          :class="['roadmap-month-background-cell', `quarter-${month.quarterId}`]"
-        ></div>
+          <div v-for="(row, rowIndex) in roadmapData" :key="rowIndex" class="roadmap-data-row" :style="getRoadmapRowStyle(row)">
+            <div 
+              class="roadmap-category-label" 
+              :style="{ backgroundColor: getCategoryLabelColor(row.category) }"
+              @dblclick="startCategoryEdit(rowIndex)"
+            >
+              <template v-if="editingCategoryIndex === rowIndex">
+                <input 
+                  v-model="editedCategoryName" 
+                  @blur="finishCategoryEdit(rowIndex)"
+                  @keyup.enter="finishCategoryEdit(rowIndex)"
+                  ref="categoryInput"
+                  class="category-edit-input"
+                />
+              </template>
+              <template v-else>
+                {{ row.category }}
+              </template>
+            </div>
+            
+            <div 
+              v-for="month in months" 
+              :key="month.id" 
+              :class="['roadmap-month-background-cell', `quarter-${month.quarterId}`]"
+            ></div>
 
-        <div
-          v-for="(task, taskIndex) in row.tasks"
-          :key="task.id"
-          :class="['task-block']"
-          :style="getTaskBlockStyle(task, taskIndex)"
-          @dblclick="startTaskEdit(task)"
-        >
-          {{ task.name }}
+            <div
+              v-for="(task, taskIndex) in row.tasks"
+              :key="task.id"
+              :class="['task-block']"
+              :style="getTaskBlockStyle(task, taskIndex)"
+              @dblclick="startTaskEdit(task)"
+            >
+              {{ task.name }}
+            </div>
+          </div>
+        </div>
+
+        <p class="roadmap-note">※ カテゴリ欄をダブルクリックで編集できます</p>
+
+        <div class="task-add-form">
+          <h3>新しいタスクを追加</h3>
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="selectCategory">カテゴリ選択:</label>
+              <select v-model="selectedCategory" @change="handleCategoryChange" id="selectCategory" class="small-input">
+                <option value="">新しいカテゴリを追加</option>
+                <option v-for="cat in allAvailableCategories" :key="cat" :value="cat">{{ cat }}</option>
+              </select>
+            </div>
+            <div class="form-row" v-if="selectedCategory === ''">
+              <label for="newCategoryInput">新しいカテゴリ名:</label>
+              <input v-model="newTask.category" id="newCategoryInput" type="text" placeholder="例: ソフトウェア開発" class="small-input">
+            </div>
+            <div class="form-row">
+              <label for="newName">タスク名:</label>
+              <input v-model="newTask.name" id="newName" type="text" placeholder="例: UIデザイン改善" class="small-input">
+            </div>
+            <div class="form-row">
+              <label for="startMonth">開始月:</label>
+              <select v-model="newTask.startMonthIndex" id="startMonth" class="small-input">
+                <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="endMonth">終了月:</label>
+              <select v-model="newTask.endMonthIndex" id="endMonth" class="small-input">
+                <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
+              </select>
+            </div>
+          </div>
+          <button @click="addTask" class="small-button">タスクを追加</button>
+        </div>
+
+        <div v-if="editingTask" class="modal-overlay" @click.self="cancelTaskEdit">
+          <div class="modal-content">
+            <h2>タスクを編集</h2>
+            <div class="form-grid">
+              <div class="form-row">
+                <label for="editTaskName">タスク名:</label>
+                <input v-model="editingTask.name" id="editTaskName" type="text" class="small-input">
+              </div>
+              <div class="form-row">
+                <label for="editStartMonth">開始月:</label>
+                <select v-model="editingTask.startIndex" id="editStartMonth" class="small-input">
+                  <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label for="editEndMonth">終了月:</label>
+                <select v-model="editingTask.endIndex" id="editEndMonth" class="small-input">
+                  <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button @click="saveTaskEdit" class="small-button">保存</button>
+              <button @click="cancelTaskEdit" class="small-button secondary">キャンセル</button>
+              <button @click="deleteTask" class="small-button delete">削除</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <p class="roadmap-note">※ カテゴリ欄をダブルクリックで編集できます</p>
+    <button class="toggle-sidebar-button" @click="toggleSidebar">
+      <span v-if="isSidebarOpen">チャットを閉じる</span>
+      <span v-else>AIにチャットで質問する</span>
+    </button>
 
-    <div class="task-add-form">
-      <h3>新しいタスクを追加</h3>
-      <div class="form-grid">
-        <div class="form-row">
-          <label for="selectCategory">カテゴリ選択:</label>
-          <select v-model="selectedCategory" @change="handleCategoryChange" id="selectCategory" class="small-input">
-            <option value="">新しいカテゴリを追加</option>
-            <option v-for="cat in allAvailableCategories" :key="cat" :value="cat">{{ cat }}</option>
-          </select>
-        </div>
-        <div class="form-row" v-if="selectedCategory === ''">
-          <label for="newCategoryInput">新しいカテゴリ名:</label>
-          <input v-model="newTask.category" id="newCategoryInput" type="text" placeholder="例: ソフトウェア開発" class="small-input">
-        </div>
-        <div class="form-row">
-          <label for="newName">タスク名:</label>
-          <input v-model="newTask.name" id="newName" type="text" placeholder="例: UIデザイン改善" class="small-input">
-        </div>
-        <div class="form-row">
-          <label for="startMonth">開始月:</label>
-          <select v-model="newTask.startMonthIndex" id="startMonth" class="small-input">
-            <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label for="endMonth">終了月:</label>
-          <select v-model="newTask.endMonthIndex" id="endMonth" class="small-input">
-            <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
-          </select>
-        </div>
-      </div>
-      <button @click="addTask" class="small-button">タスクを追加</button>
-    </div>
-
-    <div v-if="editingTask" class="modal-overlay" @click.self="cancelTaskEdit">
-      <div class="modal-content">
-        <h2>タスクを編集</h2>
-        <div class="form-grid">
-          <div class="form-row">
-            <label for="editTaskName">タスク名:</label>
-            <input v-model="editingTask.name" id="editTaskName" type="text" class="small-input">
-          </div>
-          <div class="form-row">
-            <label for="editStartMonth">開始月:</label>
-            <select v-model="editingTask.startIndex" id="editStartMonth" class="small-input">
-              <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label for="editEndMonth">終了月:</label>
-            <select v-model="editingTask.endIndex" id="editEndMonth" class="small-input">
-              <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button @click="saveTaskEdit" class="small-button">保存</button>
-          <button @click="cancelTaskEdit" class="small-button secondary">キャンセル</button>
-          <button @click="deleteTask" class="small-button delete">削除</button>
-        </div>
-      </div>
-    </div>
-
+    <aside :class="['chat-sidebar', { 'is-open': isSidebarOpen }]">
+      <ChatArea
+        :messages="chatMessages"
+        :currentuser="currentUser"
+        :is-connected="isConnected"
+        @send="handleSendMessage"
+      />
+    </aside>
   </div>
 </template>
 
 <script>
+// ChatArea コンポーネントをインポート
+import ChatArea from './ChatArea.vue'; 
+
 export default {
   name: 'RoadmapBase',
+  // ChatArea コンポーネントを使用できるように登録
+  components: {
+    ChatArea
+  },
   data() {
     const allMonths = [
       { id: 'm4_25', name: '4月', quarterId: 'q2_fy' },
@@ -191,6 +215,16 @@ export default {
         'hsl(10, 80%, 75%)',  // コーラル
         'hsl(270, 50%, 75%)', // ラベンダー
       ],
+      // ★チャット関連のデータ
+      chatMessages: [
+        { sender: 'ユーザーA', text: 'ロードマップについて質問があります。' },
+        { sender: 'ユーザーB', text: '何でしょうか？' },
+        { sender: 'ユーザーA', text: '〇〇機能の実装予定はありますか？' }
+      ],
+      currentUser: 'ユーザーA', // 現在のユーザー名
+      isConnected: true, // ソケット接続状態を仮定
+      // ★追加: サイドバーの表示状態
+      isSidebarOpen: false, // 初期状態は閉じる
     };
   },
   computed: {
@@ -214,7 +248,7 @@ export default {
         const endColumn = startColumn + numberOfMonthsInQuarter;
 
         return {
-            gridColumn: `${startColumn} / ${endColumn}`,
+          gridColumn: `${startColumn} / ${endColumn}`,
         };
     },
     // roadmap-data-row の高さを動的に計算
@@ -300,7 +334,7 @@ export default {
       const hue = Math.floor(Math.random() * (randomHueRange[1] - randomHueRange[0] + 1)) + randomHueRange[0];
       
       const saturation = 50 + Math.floor(Math.random() * 10); // 50-59% (さらに彩度を抑える)
-      const lightness = 60 + Math.floor(Math.random() * 10);  // 60-69% (明るさも落ち着いた範囲に)
+      const lightness = 60 + Math.floor(Math.random() * 10);   // 60-69% (明るさも落ち着いた範囲に)
       return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     },
     // 背景色に応じてコントラストが最も高い文字色（白または黒）を返す
@@ -483,6 +517,21 @@ export default {
         row.tasks = row.tasks.filter(task => task.id !== this.editingTask.id);
       });
       this.cancelTaskEdit(); // モーダルを閉じる
+    },
+    // ★追加: サイドバーの表示/非表示を切り替えるメソッド
+    toggleSidebar() {
+      this.isSidebarOpen = !this.isSidebarOpen;
+    },
+    // ★チャットからのメッセージ送信を受け取るメソッド
+    handleSendMessage(newMessageText) {
+      if (newMessageText.trim() === '') return;
+
+      // 新しいメッセージを配列に追加（実際のチャットではサーバーに送信します）
+      this.chatMessages.push({
+        sender: this.currentUser,
+        text: newMessageText,
+      });
+      console.log('送信されたメッセージ:', newMessageText);
     }
   },
   // 初期カテゴリのロード時に色を割り当てる
@@ -495,17 +544,86 @@ export default {
 </script>
 
 <style scoped>
-/* 全体のコンテナ */
+/* ★追加・変更されたスタイル */
+.main-layout-with-sidebar {
+  display: flex; /* ロードマップコンテンツとサイドバーを横に並べる */
+  height: 100vh; /* ビューポートの高さいっぱいを使う */
+  width: 100%;
+  overflow: hidden; /* 子要素がはみ出さないように */
+  position: relative; /* サイドバー切り替えボタンの基準のため追加 */
+}
+
+/* ロードマップコンテンツのエリア */
+.roadmap-content-area {
+  flex: 1; /* 残りのスペースを全て占める */
+  overflow-y: auto; /* ロードマップコンテンツが長い場合にスクロール */
+  padding: 20px; /* ロードマップエリア自体の内側の余白 */
+  /* サイドバーが開閉してもコンテンツの幅が変わらないように、max-width を指定 */
+  /* サイドバーが開いた時にロードマップが狭まるのを避けるため */
+  /* もしくは、flex-shrink: 0 を使用 */
+  flex-shrink: 0; 
+  min-width: 0; /* flexアイテムの最小幅 */
+}
+
+/* チャットサイドバーのエリア */
+.chat-sidebar {
+  width: 350px; /* サイドバーの幅を固定 */
+  background-color: #f5f5f5;
+  border-left: 1px solid #ddd;
+  display: flex; /* ChatAreaがflexboxの子なので、ここもflexboxに */
+  flex-direction: column; /* ChatAreaが縦方向に伸びるように */
+  padding: 15px; /* チャットエリア自体の内側の余白 */
+  box-shadow: -2px 0 5px rgba(0,0,0,0.05); /* サイドバーに影 */
+
+  /* ★ここから追加・変更 */
+  position: absolute; /* 親要素に対して絶対位置指定 */
+  top: 0;
+  right: 0; /* デフォルトで右端に配置 */
+  height: 100%; /* 親の高さに合わせる */
+  transform: translateX(100%); /* 初期状態は完全に右に隠す */
+  transition: transform 0.3s ease-out; /* スライドアニメーション */
+  z-index: 999; /* 他のコンテンツより手前に表示 */
+}
+
+.chat-sidebar.is-open {
+  transform: translateX(0); /* is-open クラスがあればスライドイン */
+}
+
+/* サイドバー表示切り替えボタンのスタイル */
+.toggle-sidebar-button {
+  position: absolute;
+  top: 50%;
+  right: 20px; /* サイドバーがない状態では右端に */
+  transform: translateY(-50%);
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 15px;
+  cursor: pointer;
+  z-index: 1000; /* サイドバーより前面 */
+  transition: right 0.3s ease-out; /* サイドバーの動きに合わせてボタンも動かす */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  white-space: nowrap; /* ボタン内のテキストが折り返されないように */
+}
+
+.chat-sidebar.is-open + .toggle-sidebar-button {
+  right: 370px; /* サイドバーが開いたら、サイドバーの幅 + 20px 分左に移動 */
+}
+
+/* 既存の .roadmap-container のスタイル調整 */
 .roadmap-container {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 20px;
-  max-width: 100%;
-  margin: 0 auto;
+  padding: 0; /* paddingを解除（.roadmap-content-areaで設定するため） */
+  max-width: none; /* max-width も解除（flex:1で制御するため） */
+  margin: 0; /* margin も解除 */
   background-color: #fcfcfc;
   border-radius: 0;
   box-shadow: none;
+  /* position: relative; は維持 */
 }
 
+/* ここから下の既存のスタイルは変更なし */
 /* ロードマップグリッドコンテナ */
 .roadmap-grid-container {
   display: grid;
