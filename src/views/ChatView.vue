@@ -46,6 +46,7 @@ const getUsernameFromToken = (token) => {
 const fetchChatHistory = async (roomId) => {
   try {
     const token = localStorage.getItem('token')
+    console.log('トークルーム保管APIリクエスト時のトークン',token)
     const response = await fetch(`https://my-image-14467698004.asia-northeast1.run.app/chat/history/${roomId}`, {
       headers: {
         Authorization: `Bearer ${token}`
