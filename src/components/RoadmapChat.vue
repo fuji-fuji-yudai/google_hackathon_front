@@ -1,6 +1,5 @@
 <template>
   <div class="roadmap-chat">
-    <h3>ロードマップチャット</h3>
     <div class="chat-messages">
       <div v-for="(message, index) in messages" :key="index" class="chat-message">
         <strong>{{ message.sender }}:</strong> {{ message.text }}
@@ -19,8 +18,8 @@ export default {
   data() {
     return {
       messages: [
-        { sender: 'システム', text: 'チャットが開始されました。' },
-        { sender: '太郎', text: '皆さん、おはようございます！' }
+        { sender: 'あなた', text: '' },
+        { sender: 'AI', text: 'ロードマップ作成において悩んでいる点を記載ください！' }
       ],
       newMessage: ''
     };
@@ -31,6 +30,7 @@ export default {
         this.messages.push({ sender: 'あなた', text: this.newMessage.trim() });
         this.newMessage = '';
         // TODO: ここでメッセージをバックエンドに送信する処理を追加
+        // 例: axios.post('/api/chat', { message: this.newMessage, sender: 'あなた' });
       }
     }
   }
@@ -39,34 +39,28 @@ export default {
 
 <style scoped>
 .roadmap-chat {
-  margin-top: 30px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 20px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-h3 {
-  color: #333;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  flex-grow: 1; /* サイドバー内で利用可能なスペースを全て使う */
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
 }
 
 .chat-messages {
-  height: 250px;
-  overflow-y: auto;
+  flex-grow: 1; /* メッセージリストが利用可能なスペースを全て使う */
+  overflow-y: auto; /* メッセージが多い場合はスクロール可能に */
   border: 1px solid #e0e0e0;
   border-radius: 5px;
   padding: 10px;
   margin-bottom: 15px;
-  background-color: #fcfcfc;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column-reverse; /* 新しいメッセージが下に来るように */
 }
 
 .chat-message {
   margin-bottom: 8px;
   line-height: 1.4;
+  word-wrap: break-word; /* 長い単語でも改行されるように */
 }
 
 .chat-message strong {
@@ -76,6 +70,8 @@ h3 {
 .chat-input {
   display: flex;
   gap: 10px;
+  padding-top: 10px; /* 入力欄とメッセージの間にスペース */
+  border-top: 1px solid #e0e0e0;
 }
 
 .chat-input input {
