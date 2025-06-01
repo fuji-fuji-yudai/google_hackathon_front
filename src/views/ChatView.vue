@@ -43,6 +43,25 @@ const getUsernameFromToken = (token) => {
   }
 };
 
+const fetchChatHistory = async (roomId) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`https://my-image-14467698004.asia-northeast1.run.app/chat/history/${roomId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!response.ok) throw new Error('履歴取得に失敗しました')
+    const history = await response.json()
+    chatHistories.value[roomId] = history
+  } catch (error) {
+    console.error('履歴取得エラー:', error)
+    chatHistories.value[roomId] = [
+      { sender: 'Bot', text: '履歴の取得に失敗しました。' }
+    ]
+  }
+}
+
 const token = localStorage.getItem('token')
 const currentUsername = ref(getUsernameFromToken(token))
 console.log('ログインユーザー',currentUsername)
@@ -94,18 +113,19 @@ const subscribeToRoom = (roomId) => {
   })
 }
 
-const handleMenuClick = (menuItem) => { //menuitemは、SidebarLayoutから渡される選択されたメニューの情報★どこでどうやって渡してる？：$emit('menu-click', menuItem)というのを子コンポーネントで定義しており、menu-clickメソッドが発火したときにmenuItemが渡される。
-  selectedMenu.value = menuItem //selectedmenuにそのメニューをセット。
+const handleMenuClick = async (menuItem) => {
+  selectedMenu.value = menuItem
   const roomId = menuItem.index
-  if (!chatHistories.value[roomId]) { //チャット履歴がなければ初期メッセージを追加
-    chatHistories.value[roomId] = [
-      { sender: 'Bot', text: `「${menuItem.title}」のチャットを開始します。` } //トークルームごとに送信者とテキストの配列が格納されてる
-    ]
-  }
+
+  // ✅ 履歴取得
+  await fetchChatHistory(roomId)
+
+  // ✅ WebSocket購読
   if (isConnected.value) {
     subscribeToRoom(roomId)
   }
 }
+
 
 const handleSendMessage = (message) => { //ユーザーの入力メッセージ
   const roomId = selectedMenu.value.index
