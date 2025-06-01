@@ -117,14 +117,20 @@ const handleMenuClick = async (menuItem) => {
   selectedMenu.value = menuItem
   const roomId = menuItem.index
 
-  // ✅ 履歴取得
-  await fetchChatHistory(roomId)
+  try {
+    await fetchChatHistory(roomId)
+  } catch (e) {
+    // 失敗しても空の履歴を初期化
+    chatHistories.value[roomId] = [
+      { sender: 'Bot', text: `「${menuItem.title}」のチャットを開始します。` }
+    ]
+  }
 
-  // ✅ WebSocket購読
   if (isConnected.value) {
     subscribeToRoom(roomId)
   }
 }
+
 
 
 const handleSendMessage = (message) => { //ユーザーの入力メッセージ
