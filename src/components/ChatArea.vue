@@ -38,7 +38,7 @@ const props = defineProps({
   isConnected:Boolean
 })
 const emit = defineEmits(['send'])
-
+console.log('ChatAreaで受け取ったcurrentuser:', props.currentuser)
 const newMessage = ref('')
 const chatLog = ref(null)
 
