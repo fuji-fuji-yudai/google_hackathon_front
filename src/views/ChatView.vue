@@ -66,7 +66,7 @@ const fetchChatHistory = async (roomId) => {
 }
 
 
-console.log('ログインユーザー',currentUsername)
+console.log('ログインユーザー',currentUsername.value)
 // WebSocket 接続
 const connectWebSocket = () => {
   const socket = new SockJS('https://my-image-14467698004.asia-northeast1.run.app/ws')
@@ -121,6 +121,7 @@ const handleMenuClick = async (menuItem) => {
 
   try {
     await fetchChatHistory(roomId)
+    console.log('取得した履歴', history)
   } catch (e) {
     // 失敗しても空の履歴を初期化
     chatHistories.value[roomId] = [
