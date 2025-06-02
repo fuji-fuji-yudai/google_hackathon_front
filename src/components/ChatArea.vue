@@ -9,6 +9,7 @@
         <div class="sender-name">{{ msg.sender }}</div> 
         <div class="bubble">
           {{ msg.text }}
+          {{ props.currentuser }}
         </div>
       </div>
     </div>

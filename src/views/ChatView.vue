@@ -28,6 +28,9 @@ const chatHistories = ref({}) //各メニューごとのチャット履歴を保
 const stompClient = ref(null)
 const isConnected = ref(false)
 
+const token = localStorage.getItem('token')
+const currentUsername = ref(getUsernameFromToken(token))
+
 const getUsernameFromToken = (token) => {
   if (!token || typeof token !== 'string' || !token.includes('.')) {
     console.error('トークンが無効です:', token);
@@ -63,8 +66,7 @@ const fetchChatHistory = async (roomId) => {
   }
 }
 
-const token = localStorage.getItem('token')
-const currentUsername = ref(getUsernameFromToken(token))
+
 console.log('ログインユーザー',currentUsername)
 // WebSocket 接続
 const connectWebSocket = () => {
