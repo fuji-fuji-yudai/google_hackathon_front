@@ -29,7 +29,6 @@ const stompClient = ref(null)
 const isConnected = ref(false)
 
 const token = localStorage.getItem('token')
-const currentUsername = ref(getUsernameFromToken(token))
 
 const getUsernameFromToken = (token) => {
   if (!token || typeof token !== 'string' || !token.includes('.')) {
@@ -45,7 +44,7 @@ const getUsernameFromToken = (token) => {
     return null;
   }
 };
-
+const currentUsername = ref(getUsernameFromToken(token))
 const fetchChatHistory = async (roomId) => {
   try {
     const token = localStorage.getItem('token')
