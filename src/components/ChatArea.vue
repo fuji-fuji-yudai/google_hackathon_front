@@ -6,10 +6,10 @@
       :key="index" 
       :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
       >
-        <div class="sender-name">{{ msg.sender }}</div> 
+        <div class="sender-name">{{ msg.sender }}（current: {{ props.currentuser }}）</div> 
         <div class="bubble">
-          <!-- {{ msg.text }} -->
-          {{ props.currentuser }}
+          {{ msg.text }}
+          <!-- {{ props.currentuser }} -->
         </div>
       </div>
     </div>
