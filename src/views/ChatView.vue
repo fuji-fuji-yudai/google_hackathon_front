@@ -27,15 +27,13 @@ const selectedMenu = ref(null) //現在選択されているメニュー項目�
 const chatHistories = ref({}) //各メニューごとのチャット履歴を保持するオブジェクト。キーはmenuItem.index ★上記と同様：初期値は空のオブジェクト、これからデータを追加していく。
 const stompClient = ref(null)
 const isConnected = ref(false)
-
+const currentUsername = ref(null)
 const token = localStorage.getItem('token')
-
 const getUsernameFromToken = (token) => {
   if (!token || typeof token !== 'string' || !token.includes('.')) {
     console.error('トークンが無効です:', token);
     return null;
   }
-
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub || payload.username; // JWTの構造に応じて
@@ -44,7 +42,14 @@ const getUsernameFromToken = (token) => {
     return null;
   }
 };
-const currentUsername = ref(null)
+
+onMounted(() => {
+ const token = localStorage.getItem('token')
+ currentUsername.value = getUsernameFromToken(token)
+ console.log('onMountedで設定したcurrentUsername:', currentUsername.value)
+ connectWebSocket()
+})
+
 const fetchChatHistory = async (roomId) => {
   try {
     const token = localStorage.getItem('token')
@@ -158,15 +163,6 @@ if (stompClient.value && stompClient.value.connected) {
 console.warn('STOMP 接続が確立されていません。メッセージは送信されませんでした。')
 }
 }
-
-  
-
-onMounted(() => {
- const token = localStorage.getItem('token')
- currentUsername.value = getUsernameFromToken(token)
- console.log('onMountedで設定したcurrentUsername:', currentUsername.value)
- connectWebSocket()
-})
 
 
 onBeforeUnmount(() => {
