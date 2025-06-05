@@ -44,7 +44,7 @@ const getUsernameFromToken = (token) => {
     return null;
   }
 };
-const currentUsername = ref(getUsernameFromToken(token))
+const currentUsername = ref(null)
 const fetchChatHistory = async (roomId) => {
   try {
     const token = localStorage.getItem('token')
@@ -160,9 +160,14 @@ console.warn('STOMP 接続が確立されていません。メッセージは送
 }
 
   
+
 onMounted(() => {
-  connectWebSocket()
-  })
+ const token = localStorage.getItem('token')
+ currentUsername.value = getUsernameFromToken(token)
+ console.log('onMountedで設定したcurrentUsername:', currentUsername.value)
+ connectWebSocket()
+})
+
 
 onBeforeUnmount(() => {
   if (stompClient.value) stompClient.value.deactivate()
