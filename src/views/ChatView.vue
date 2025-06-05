@@ -44,6 +44,7 @@ const getUsernameFromToken = (token) => {
 };
 
 onMounted(() => {
+  currentUsername.value = getUsernameFromToken(token)
  connectWebSocket()
 })
 
@@ -60,7 +61,7 @@ const fetchChatHistory = async (roomId) => {
     const history = await response.json()
     chatHistories.value[roomId] = history
     currentUsername.value = getUsernameFromToken(token)
-    console.log('onMountedで設定したcurrentUsername:', currentUsername.value)
+    console.log('メニュークリック時のcurrentUsername:', currentUsername.value)
   } catch (error) {
     console.error('履歴取得エラー:', error)
     chatHistories.value[roomId] = [
@@ -69,8 +70,6 @@ const fetchChatHistory = async (roomId) => {
   }
 }
 
-
-console.log('ログインユーザー',currentUsername.value)
 // WebSocket 接続
 const connectWebSocket = () => {
   const socket = new SockJS('https://my-image-14467698004.asia-northeast1.run.app/ws')
@@ -126,6 +125,7 @@ const handleMenuClick = async (menuItem) => {
   try {
     await fetchChatHistory(roomId)
     console.log('取得した履歴', history)
+    console.log('ログインユーザー',currentUsername.value)
   } catch (e) {
     // 失敗しても空の履歴を初期化
     chatHistories.value[roomId] = [
