@@ -44,9 +44,6 @@ const getUsernameFromToken = (token) => {
 };
 
 onMounted(() => {
- const token = localStorage.getItem('token')
- currentUsername.value = getUsernameFromToken(token)
- console.log('onMountedで設定したcurrentUsername:', currentUsername.value)
  connectWebSocket()
 })
 
@@ -62,6 +59,8 @@ const fetchChatHistory = async (roomId) => {
     if (!response.ok) throw new Error('履歴取得に失敗しました')
     const history = await response.json()
     chatHistories.value[roomId] = history
+    currentUsername.value = getUsernameFromToken(token)
+    console.log('onMountedで設定したcurrentUsername:', currentUsername.value)
   } catch (error) {
     console.error('履歴取得エラー:', error)
     chatHistories.value[roomId] = [
