@@ -124,7 +124,7 @@ const handleMenuClick = async (menuItem) => {
 
   try {
     await fetchChatHistory(roomId)
-    console.log('取得した履歴', history)
+    //console.log('取得した履歴', history)
     console.log('ログインユーザー',currentUsername.value)
   } catch (e) {
     // 失敗しても空の履歴を初期化
