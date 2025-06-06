@@ -27,7 +27,7 @@ const selectedMenu = ref(null) //現在選択されているメニュー項目�
 const chatHistories = ref({}) //各メニューごとのチャット履歴を保持するオブジェクト。キーはmenuItem.index ★上記と同様：初期値は空のオブジェクト、これからデータを追加していく。
 const stompClient = ref(null)
 const isConnected = ref(false)
-const currentUsername = ref(null)
+const currentUsername = ref(getUsernameFromToken(token))
 const token = localStorage.getItem('token')
 const getUsernameFromToken = (token) => {
   if (!token || typeof token !== 'string' || !token.includes('.')) {
