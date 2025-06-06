@@ -2,7 +2,7 @@
 <template>
   <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
     <SidebarLayout @menu-click="handleMenuClick" /> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
-    <div v-if="selectedMenu" class="chat-area"> <!-- selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
+    <div v-if="selectedMenu && currentUsername.value" class="chat-area"> <!-- selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
       <ChatArea
         :messages="chatHistories[selectedMenu.index] || []" 
         :currentuser="currentUsername.value"
