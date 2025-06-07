@@ -5,7 +5,7 @@ steps:
       [
         "build",
         "-t",
-        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage:latest",
+        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage:$COMMIT_SHA",
         ".",
       ]
   # Push the container image to Container Registry
