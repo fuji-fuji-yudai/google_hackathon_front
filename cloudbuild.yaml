@@ -13,7 +13,7 @@ steps:
     args:
       [
         "push",
-        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage",
+        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage:$COMMIT_SHA",
       ]
   # Deploy container image to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -24,7 +24,7 @@ steps:
         "deploy",
         "my-frontimage",
         "--image",
-        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage:latest",
+        "asia-northeast1-docker.pkg.dev/nomadic-bison-459812-a8/googlehack/my-frontimage:$COMMIT_SHA",
         "--platform",
         "managed",
         "--allow-unauthenticated",
