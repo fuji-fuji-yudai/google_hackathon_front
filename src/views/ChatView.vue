@@ -1,4 +1,4 @@
-<!-- チャットエリアにメッセージ配列とユーザーを渡す -->
+<!-- チャットエリアにメッセージ配列とユーザーを渡すaaaaa -->
 <template>
   <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
     <SidebarLayout @menu-click="handleMenuClick" /> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
