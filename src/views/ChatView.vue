@@ -3,7 +3,7 @@
   <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
     <SidebarLayout @menu-click="handleMenuClick" /> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
     <!-- <div v-if="selectedMenu && currentUsername.value" class="chat-area"> selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
-    <div v-if="selectedMenu" class="chat-area"></div> 
+    <div v-if="selectedMenu" class="chat-area">
       <ChatArea
         :messages="chatHistories[selectedMenu.index] || []" 
         :currentuser="currentUsername.value"
@@ -11,6 +11,7 @@
         :isConnected="isConnected"
       /> <!-- チャット画面を表示するコンポーネント。選択されたメニューに対応するチャット履歴を表示する。無ければ空の配列。
       現在のユーザーも渡す。メッセージが送信されたらhandleSendMessageメソッドが呼ばれる。 -->
+    </div>
     </div>
 </template>
 
