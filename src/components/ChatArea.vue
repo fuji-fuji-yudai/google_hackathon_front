@@ -31,6 +31,7 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
+import { watch } from 'vue'
 
 const props = defineProps({
   messages: Array,
@@ -50,6 +51,10 @@ const sendMessage = () => {
     chatLog.value.scrollTop = chatLog.value.scrollHeight
   })
 }
+
+watch(() => props.currentuser, (newVal) => {
+ console.log('currentuser が更新されました:', newVal)
+})
 </script>
 
 
