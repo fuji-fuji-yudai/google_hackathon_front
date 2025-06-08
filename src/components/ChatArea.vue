@@ -6,8 +6,10 @@
       :key="index" 
       :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
       >
+        <div class="sender-name">{{ msg.sender }}（current: {{ props.currentuser }}）</div> 
         <div class="bubble">
           {{ msg.text }}
+          <!-- {{ props.currentuser }} -->
         </div>
       </div>
     </div>
@@ -21,20 +23,23 @@
         clearable
         class="chat-textbox"
       />
-      <el-button type="primary" @click="sendMessage">送信</el-button>
+      <el-button :disabled="!isConnected" type="primary" @click="sendMessage">送信</el-button>
+
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, nextTick } from 'vue'
+import { watch } from 'vue'
 
 const props = defineProps({
   messages: Array,
-  currentuser: String
+  currentuser: String,
+  isConnected:Boolean
 })
 const emit = defineEmits(['send'])
-
+console.log('ChatAreaで受け取ったcurrentuser:', props.currentuser)
 const newMessage = ref('')
 const chatLog = ref(null)
 
@@ -46,6 +51,10 @@ const sendMessage = () => {
     chatLog.value.scrollTop = chatLog.value.scrollHeight
   })
 }
+
+watch(() => props.currentuser, (newVal) => {
+ console.log('currentuser が更新されました:', newVal)
+})
 </script>
 
 
@@ -142,6 +151,13 @@ const sendMessage = () => {
   border-width: 10px 10px 10px 0;
   border-style: solid;
   border-color: transparent #fff transparent transparent;
+}
+
+.sender-name {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 2px;
+  padding: 0 10px;
 }
 
 </style>
