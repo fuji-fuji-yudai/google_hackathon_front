@@ -34,10 +34,12 @@ export default {
       this.error = '';
 
       try {
+        const token = localStorage.getItem('token'); 
         const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/gemini/ask', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
             question: this.userQuestion,
