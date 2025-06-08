@@ -27,6 +27,7 @@
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.0",
     "@vue/cli-plugin-unit-jest": "~5.0.0",
     "@vue/cli-plugin-vuex": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
@@ -38,6 +39,7 @@
     "jest": "^27.0.5",
     "sass": "^1.27.0",
     "sass-loader": "^10.0.4",
+    "typescript": "^5.8.3",
     "vue-cli-plugin-element-plus": "~0.0.12",
     "vue-eslint-parser": "^10.1.3"
   },

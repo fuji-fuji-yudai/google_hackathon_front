@@ -1,12 +1,3 @@
-<!-- ユーザー操作（クリックなど）
-　↓
-ref の値が変わる
-　↓
-watch が検知する
-　↓
-必要な処理を実行（dateRangeの更新など）
-　↓
-template も自動で再描画 -->
 <template>
   <div class="timeline-container">
     <el-date-picker
@@ -30,11 +21,7 @@ template も自動で再描画 -->
     </div>
 
     <!-- 各タスク行 -->
-    <div
-      class="timeline-row"
-      v-for="task in tasks"
-      :key="task.id"
-    >
+    <div class="timeline-row" v-for="task in tasks" :key="task.id">
       <div class="label">
         <strong>{{ task.title }}</strong>
         {{ task.assignee }}
@@ -54,40 +41,26 @@ template も自動で再描画 -->
   </div>
 </template>
 
-<script setup lang="ts">
-// watchはVueにおいてウォッチャーを作成するVueのAPIです。これにより、指定したデータソースの変更を監視し、変更があった際にコールバック関数を実行します。
-// refはref()は、「ある値」をリアクティブに管理するためのVueの機能。値が変わったら自動的に画面（template）も再描画されます。
-// ref は「データの箱」 watch は「箱の中身が変わったときの反応装置」
-// refを使って定義した値（今回だと、selectedRangeとdateRange）はリアクティブ（画面操作に対して反応する）な値として定義される。
-// それにより、画面操作によってリアクティブな値が自動更新される。
-// watchでは、リアクティブな値を監視し、値に応じた処理を定義する。
+<script setup>
 import { ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import isBetween from 'dayjs/plugin/isBetween'
-import { Task } from '../types/task'
 
 dayjs.extend(isSameOrBefore)
 dayjs.extend(isBetween)
 
-const { tasks } = defineProps<{ tasks: Task[] }>()
+const props = defineProps(['tasks'])
 
+const selectedRange = ref(null)
+const dateRange = ref([])
+const internalRange = ref(null)
 
-// リアクティブ（画面操作に反応して値が代わる）な変数として定義
-const selectedRange = ref<[Date, Date] | null>(null)
-const dateRange = ref<string[]>([])
-const internalRange = ref<[string, string] | null>(null)
-
-// 日付範囲の変更を監視して dateRange を更新
 watch(selectedRange, (range) => {
-  if (range) {  // nullでなければ処理続行
-    // range = [Date型, Date型] を dayjs オブジェクトに変換
-    // dayjs() にすることで .add(), .isSameOrBefore() などが使える
+  if (range) {
     const [start, end] = range.map(d => dayjs(d))
     const result = []
     let current = start
-    // start から end までの 日付文字列配列を作るループ
-    // 毎日1日ずつ進めて、YYYY-MM-DD 形式の文字列にして result に追加
     while (current.isSameOrBefore(end)) {
       result.push(current.format('YYYY-MM-DD'))
       current = current.add(1, 'day')
@@ -106,7 +79,7 @@ function handleDateRangeChange() {
     selectedRange.value = null
   }
 }
-// 日付に応じたセルの色を決定
+
 function getDayColor(dateStr, task) {
   const date = dayjs(dateStr)
 
@@ -120,11 +93,10 @@ function getDayColor(dateStr, task) {
     task.planEnd &&
     date.isBetween(dayjs(task.planStart), dayjs(task.planEnd), null, '[]')
 
-  if (inActual) return '#67c23a' // 緑（実績）
-  if (inPlan) return '#dcdfe6' // グレー（予定）
+  if (inActual) return '#67c23a'
+  if (inPlan) return '#dcdfe6'
   return ''
 }
-
 </script>
 
 <style scoped>
