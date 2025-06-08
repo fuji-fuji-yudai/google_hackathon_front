@@ -29,36 +29,40 @@ export default {
   },
   methods: {
     async sendQuestion() {
-      this.loading = true;
-      this.answer = '';
-      this.error = '';
+  this.loading = true;
+  this.answer = '';
+  this.error = '';
 
-      try {
-        const token = localStorage.getItem('token'); 
-        const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/gemini/ask', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            question: this.userQuestion,
-            similarMessages: [], // 必要に応じて履歴を渡す
-          }),
-        });
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/gemini/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        question: this.userQuestion,
+        similarMessages: [],
+      }),
+    });
 
-        if (!response.ok) {
-          throw new Error('サーバーエラーが発生しました');
-        }
+    const data = await response.json();
 
-        const data = await response.json();
-        this.answer = data.answer;
-      } catch (err) {
-        this.error = err.message || '通信エラーが発生しました';
-      } finally {
-        this.loading = false;
-      }
-    },
+    if (!response.ok) {
+      // サーバーからのエラーメッセージを表示
+      this.error = data.error || 'サーバーエラーが発生しました';
+      return;
+    }
+
+    this.answer = data.answer;
+  } catch (err) {
+    this.error = err.message || '通信エラーが発生しました';
+  } finally {
+    this.loading = false;
+  }
+},
+
   },
 };
 </script>
