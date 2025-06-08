@@ -4,6 +4,7 @@ import chatRoutes from './routes/chat'
 import reflectionRoutes from './routes/reflection'
 import Login from '../views/LoginView.vue'
 import roadmapRoutes from './routes/roadmap'
+import taskManage from './routes/taskManage'
 
 
 
@@ -12,7 +13,7 @@ const routes = [
     path: '/home',
     name: 'home',
     component: HomeView,
-    meta: { requiresAuth: true } 
+    meta: { requiresAuth: true }
   },
   { path: '/', component: Login },
   {
@@ -23,9 +24,15 @@ const routes = [
     // which is lazy-loaded when the route is visited.
     component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
   },
+  {
+    path: '/taskManage',
+    name: 'taskManage',
+    component: () => import('../views/TaskManageView.vue')
+  },
   ...chatRoutes,
   ...reflectionRoutes,
-  ...roadmapRoutes
+  ...roadmapRoutes,
+  ...taskManage
 ]
 
 const router = createRouter({
@@ -36,12 +43,12 @@ const router = createRouter({
 
 // 🔐 ナビゲーションガード
 router.beforeEach((to, from, next) => {
- const isAuthenticated = !!localStorage.getItem('token'); // トークンの有無で判定
+  const isAuthenticated = !!localStorage.getItem('token'); // トークンの有無で判定
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/'); // 未認証ならログインページへ
   } else {
-  next(); // 通過
+    next(); // 通過
   }
 });
 

@@ -1,7 +1,7 @@
 export default [
   {
     path: '/taskManage',
-    name: 'taskManageHomeView',
-    component: () => import('@/views/taskManage/taskManageHomeView.vue')
+    name: 'taskManageView',
+    component: () => import('@/views/TaskManageView.vue')
   }
 ]
