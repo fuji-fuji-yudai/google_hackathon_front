@@ -8,7 +8,6 @@
           <el-button
             type="text"
             size="small"
-            @click.stop="$emit('open-chat', item)"
           >
             💬
           </el-button>
