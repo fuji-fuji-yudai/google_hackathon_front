@@ -4,21 +4,24 @@
     <el-sub-menu v-if="item.children" :index="item.index">
       <template #title>
         <div class="menu-title" @click.stop.prevent="$emit('select', item)">
-          <span>{{ item.title || item.label }}</span>
-          <el-button
-            type="text"
-            size="small"
-          >
-            💬
-          </el-button>
-
-          <el-button
-            type="text"
-            size="small"
-            @click.stop="addSubMenu(item)"
-          >
-            <el-icon><Plus /></el-icon>
-          </el-button>
+          <div class="left-group">
+            <span>{{ item.title || item.label }}</span>
+            <el-button
+              class="ai-button"
+              size="small"
+            >
+              AI
+            </el-button>
+          </div>
+          <div class="right-group">
+            <el-button
+              type="text"
+              size="small"
+              @click.stop="addSubMenu(item)"
+            >
+              <el-icon><Plus /></el-icon>
+            </el-button>
+          </div>
         </div>
       </template>
       <RecursiveMenu
@@ -31,14 +34,19 @@
     <!-- 単独メニュー（子なし） -->
     <el-menu-item v-else :index="item.index" @click="$emit('select', item)">
       <div class="menu-title">
-        <span>{{ item.title || item.label }}</span>
-        <el-button
-          type="text"
-          size="small"
-          @click.stop="addSubMenu(item)"
-        >
-          <el-icon><Plus /></el-icon>
-        </el-button>
+        <div class="left-group">
+          <span>{{ item.title || item.label }}</span>
+          <el-button class="ai-button" size="small">AI</el-button>
+        </div>
+        <div class="right-group">
+          <el-button
+            type="text"
+            size="small"
+            @click.stop="addSubMenu(item)"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-button>
+        </div>
       </div>
     </el-menu-item>
   </template>
@@ -60,4 +68,20 @@ defineProps({
   justify-content: space-between;
   width: 100%;
 }
+
+.ai-button {
+  padding: 0 6px;
+  min-width: auto;
+  width: auto;
+  line-height: 1;
+  font-size: 12px;
+}
+
+.left-group,
+.right-group {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+}
+
 </style>
