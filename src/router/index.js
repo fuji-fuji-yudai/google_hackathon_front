@@ -4,8 +4,8 @@ import chatRoutes from './routes/chat'
 import reflectionRoutes from './routes/reflection'
 import Login from '../views/LoginView.vue'
 import roadmapRoutes from './routes/roadmap'
-
-
+import taskManageRoutes from './routes/taskManage'
+import reminderRoutes from './routes/reminder'
 
 const routes = [
   {
@@ -25,7 +25,9 @@ const routes = [
   },
   ...chatRoutes,
   ...reflectionRoutes,
-  ...roadmapRoutes
+  ...roadmapRoutes,
+  ...taskManageRoutes,
+  ...reminderRoutes
 ]
 
 const router = createRouter({

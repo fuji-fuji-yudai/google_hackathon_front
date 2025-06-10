@@ -1,16 +1,16 @@
 <!-- このファイルへの記載内容は全vueファイルに反映される -->
 <template>
-  <!-- ナビバー -->
-  <nav>
-    <router-link to="/">Home</router-link>
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view/>
-  <el-button>el-button</el-button>
-  
-  
-  
+  <div id="app">
+    <!-- ナビバー -->
+    <nav>
+      <router-link to="/">Home</router-link>
+      <router-link to="/about">About</router-link>
+    </nav>
+    <router-view />
+    <el-button>el-button</el-button>
+  </div>
 </template>
+
 
 <style lang="scss">
 #app {

@@ -15,11 +15,13 @@
     "axios": "^1.9.0",
     "chart.js": "^3.9.1",
     "core-js": "^3.8.3",
+    "date-fns": "^4.1.0",
     "element-plus": "^2.9.10",
     "sockjs-client": "^1.6.1",
     "vue": "^3.2.13",
     "vue-chart-3": "^3.1.8",
     "vue-router": "^4.0.3",
+    "vuedraggable": "^4.1.0",
     "vuex": "^4.0.0"
   },
   "devDependencies": {
