@@ -2,8 +2,8 @@
 import { ref, onMounted } from 'vue';
 
 // Element Plusのコンポーネントを使う場合は、ここでインポートをコメントアウト解除してください
-import { ElMessage, ElButton, ElInput, ElDatePicker, ElTimePicker, ElSelect, ElOption } from 'element-plus';
-
+// import { ElMessage, ElButton, ElInput, ElDatePicker, ElTimePicker, ElSelect, ElOption } from 'element-plus';
+import { ElMessage } from 'element-plus';//藤枝修正箇所
 //重要: JWTトークンをlocalStorageから取得 Login.vueでlocalStorage.setItem('token', response.data.token) で保存されていることを前提とします。
 const jwtToken = ref(localStorage.getItem('token') || null);
 
