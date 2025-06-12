@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="visible" title="Gemini チャットボット" width="600px" @close="reset">
-    <div class="chat-window">
+    <div class="chat-window" ref="chatWindow">
       <div v-for="(msg, index) in messages" :key="index" :class="['chat-bubble', msg.sender === 'AI' ? 'ai' : 'user']">
         <p>{{ msg.text }}</p>
       </div>
@@ -81,10 +81,10 @@ const reset = () => {
   messages.value = [{ sender: 'AI', text: 'こんにちは！何をお手伝いしましょうか？' }]
 }
 
+const chatWindow=ref(null)
 const scrollToBottom = () => {
-  const container = document.querySelector('.chat-window')
-  if (container) {
-    container.scrollTop = container.scrollHeight
+  if (chatWindow.value) {
+    chatWindow.value.scrollTop = chatWindow.value.scrollHeight
   }
 }
 
