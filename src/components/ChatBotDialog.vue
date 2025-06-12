@@ -87,6 +87,12 @@ const scrollToBottom = () => {
     container.scrollTop = container.scrollHeight
   }
 }
+
+watch(messages, async () => {
+  await nextTick()
+  scrollToBottom()
+}, { deep: true })
+
 </script>
 
 <style scoped>
