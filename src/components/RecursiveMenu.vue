@@ -9,9 +9,11 @@
             <el-button
               class="ai-button"
               size="small"
+              @click.stop="openChatBot"
             >
               AI
             </el-button>
+            <ChatBotDialog v-model="showChat" />
           </div>
           <div class="right-group">
             <el-button
@@ -36,7 +38,8 @@
       <div class="menu-title">
         <div class="left-group">
           <span>{{ item.title || item.label }}</span>
-          <el-button class="ai-button" size="small">AI</el-button>
+          <el-button class="ai-button" size="small" @click.stop="openChatBot">AI</el-button>
+          <ChatBotDialog v-model="showChat" />
         </div>
         <div class="right-group">
           <el-button
@@ -54,6 +57,14 @@
 
 <script setup>
 import { Plus } from '@element-plus/icons-vue'
+import {ref} from 'vue'
+import ChatBotDialog from './ChatBotDialog.vue'
+
+const showChat = ref(false)
+
+const openChatBot = ()=> {
+  showChat.value = true
+}
 
 defineProps({
   items: Array,
@@ -62,6 +73,7 @@ defineProps({
 </script>
 
 <style scoped>
+
 .menu-title {
   display: flex;
   align-items: center;
