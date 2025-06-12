@@ -97,26 +97,34 @@ const scrollToBottom = () => {
   background: #f9f9f9;
   border-radius: 6px;
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
+
 .chat-bubble {
-  max-width: 80%;
-  padding: 0.6rem 1rem;
-  margin: 0.5rem 0;
-  border-radius: 12px;
-  word-wrap: break-word;
+ display: inline-block;
+ max-width: 80%;
+ padding: 0.6rem 1rem;
+ margin: 0.5rem 0;
+ border-radius: 12px;
+ word-wrap: break-word;
+ word-break: break-word;
+ white-space: pre-wrap;
+ line-height: 1.4;
 }
+
 
 .chat-bubble.user {
   background-color: #d1eaff;
   align-self: flex-end;
-  margin-left: auto;
+  /* margin-left: auto; */
 }
 
 .chat-bubble.ai {
   background-color: #e6e6e6;
   align-self: flex-start;
-  margin-right: auto;
+  /* margin-right: auto; */
 }
 
 .input-area {
