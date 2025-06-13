@@ -24,7 +24,8 @@
 import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
-  modelValue: Boolean
+  modelValue: Boolean,
+  roomId: String
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -56,6 +57,7 @@ const sendQuestion = async () => {
       },
       body: JSON.stringify({
         question,
+        roomId: props.roomId,
         similarMessages: [],
       }),
     })

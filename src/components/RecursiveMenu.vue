@@ -13,7 +13,7 @@
             >
               AI
             </el-button>
-            <ChatBotDialog v-model="showChat" />
+            <ChatBotDialog v-model="showChat" :roomId="item.index"/>
           </div>
           <div class="right-group">
             <el-button
@@ -39,7 +39,7 @@
         <div class="left-group">
           <span>{{ item.title || item.label }}</span>
           <el-button class="ai-button" size="small" @click.stop="openChatBot">AI</el-button>
-          <ChatBotDialog v-model="showChat" />
+          <ChatBotDialog v-model="showChat" :roomId="item.index"/>
         </div>
         <div class="right-group">
           <el-button
