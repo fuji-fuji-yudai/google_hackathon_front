@@ -182,12 +182,14 @@ onBeforeUnmount(() => {
 .app-layout {
  display: flex; /* 子要素を横並びに配置する。 */
  height: 100vh; /* 画面の高さいっぱいに広げる。 */
- gap: 0; /*子要素間の隙間をゼロにする。*/
+ overflow: hidden;
 }
 
 .chat-area {
  flex: 1; /* フレックスコンテナ内で残りのスペースをすべて使う。本ケースだとサイドバー以外をチャットエリアで埋める。 */
  overflow: hidden;/* チャットエリア内で、はみ出したコンテンツを非表示にする。 */
- margin-left: 0; /* 左側の余白はゼロ */
+ display: flex;
+ flex-direction: column;
+
 }
 </style>

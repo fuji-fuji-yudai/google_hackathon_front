@@ -76,12 +76,12 @@ watch(() => props.currentuser, (newVal) => {
 } */
 
 .chat-log {
-  flex: 0.9;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;   /* ← これがポイント！ */
-  overflow-y: auto;
-  padding: 10px;
   background: #f9f9f9;
   border-top: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
@@ -98,6 +98,7 @@ watch(() => props.currentuser, (newVal) => {
   padding: 10px;
   background: #fff;
   border-top: 1px solid #ddd;
+  flex-shrink: 0;
 }
 
 .chat-textbox {

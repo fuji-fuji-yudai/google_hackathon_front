@@ -7,7 +7,6 @@
       <router-link to="/about">About</router-link>
     </nav>
     <router-view />
-    <el-button>el-button</el-button>
   </div>
 </template>
 
@@ -19,6 +18,9 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 nav {
@@ -33,4 +35,11 @@ nav {
     }
   }
 }
+
+
+router-view {
+ flex: 1;
+ overflow: hidden;
+}
+
 </style>
