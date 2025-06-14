@@ -25,6 +25,7 @@
 
 nav {
   padding: 30px;
+  flex-shrink: 0;
 
   a {
     font-weight: bold;
@@ -39,7 +40,7 @@ nav {
 
 router-view {
  flex: 1;
- overflow: hidden;
+ overflow: auto;
 }
 
 </style>
