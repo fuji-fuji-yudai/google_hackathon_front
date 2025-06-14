@@ -9,11 +9,11 @@
             <el-button
               class="ai-button"
               size="small"
-              @click.stop="openChatBot"
+              @click.stop="openChatBot(item.index)"
             >
               AI
             </el-button>
-            <ChatBotDialog v-model="showChat" :roomId="item.index"/>
+            <ChatBotDialog v-model="showChat[item.index]" :roomId="item.index"/>
           </div>
           <div class="right-group">
             <el-button
@@ -38,8 +38,8 @@
       <div class="menu-title">
         <div class="left-group">
           <span>{{ item.title || item.label }}</span>
-          <el-button class="ai-button" size="small" @click.stop="openChatBot">AI</el-button>
-          <ChatBotDialog v-model="showChat" :roomId="item.index"/>
+          <el-button class="ai-button" size="small" @click.stop="openChatBot(item.index)">AI</el-button>
+          <ChatBotDialog v-model="showChatMap[item.index]" :roomId="item.index"/>
         </div>
         <div class="right-group">
           <el-button
@@ -60,10 +60,10 @@ import { Plus } from '@element-plus/icons-vue'
 import {ref} from 'vue'
 import ChatBotDialog from './ChatBotDialog.vue'
 
-const showChat = ref(false)
+const showChatMap = ref({})
 
-const openChatBot = ()=> {
-  showChat.value = true
+const openChatBot = (index)=> {
+  showChatMap.value[index] = true
 }
 
 defineProps({
