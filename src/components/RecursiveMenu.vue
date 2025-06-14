@@ -64,7 +64,8 @@ import ChatBotDialog from './ChatBotDialog.vue'
 const showChatMap = reactive({})
 
 const openChatBot = (index)=> {
-  showChatMap.value[index] = true
+  console.log('openChatBot called with index:', index)
+  showChatMap[index] = true
 }
 
 defineProps({
