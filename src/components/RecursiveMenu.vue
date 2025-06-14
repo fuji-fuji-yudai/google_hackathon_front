@@ -13,7 +13,7 @@
             >
               AI
             </el-button>
-            <ChatBotDialog v-model="showChat[item.index]" :roomId="item.index"/>
+            <ChatBotDialog v-model="showChatMap[item.index]" :roomId="item.index"/>
           </div>
           <div class="right-group">
             <el-button
@@ -57,10 +57,11 @@
 
 <script setup>
 import { Plus } from '@element-plus/icons-vue'
-import {ref} from 'vue'
+//import {ref} from 'vue'
+import {reactive} from 'vue'
 import ChatBotDialog from './ChatBotDialog.vue'
 
-const showChatMap = ref({})
+const showChatMap = reactive({})
 
 const openChatBot = (index)=> {
   showChatMap.value[index] = true
