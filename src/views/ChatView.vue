@@ -1,7 +1,7 @@
 <!-- チャットエリアにメッセージ配列とユーザーを渡す -->
 <template>
   <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
-    <SidebarLayout :menuData="menuData" @menu-click="handleMenuClick" @add-root="handleAddRoot"/> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
+    <SidebarLayout :menuData="menuData" @menu-click="handleMenuClick" @add-root="handleAddRoot" @add-sub="handleAddSub"/> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
     <!-- <div v-if="selectedMenu && currentUsername.value" class="chat-area"> selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
     <div v-if="selectedMenu" class="chat-area">
       <ChatArea
@@ -207,6 +207,33 @@ const handleAddRoot = async (title) => {
     console.error('ルーム追加エラー:', e)
   }
 }
+
+const handleAddSub = async ({ parent, title }) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: title,
+        parentIndex: parent.index
+      })
+    })
+
+    if (!response.ok) throw new Error('サブメニュー作成に失敗')
+
+    const newRoom = await response.json()
+
+    if (!parent.children) parent.children = []
+    parent.children.push(newRoom)
+  } catch (e) {
+    console.error('サブメニュー追加エラー:', e)
+  }
+}
+
 
 
 </script>

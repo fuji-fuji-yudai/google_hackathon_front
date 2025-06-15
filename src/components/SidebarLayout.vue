@@ -40,7 +40,7 @@ menuData: {
 })
 
 
-const emit = defineEmits(['menu-click','add-root']) //親コンポーネントにイベントを送るための関数を定義
+const emit = defineEmits(['menu-click','add-root','add-sub']) //親コンポーネントにイベントを送るための関数を定義
 
 // const menuData = ref([
 //   { index: '1', title: 'メニュー1' },
@@ -96,27 +96,22 @@ const handleMouseMove = (e) => { //マウス移動に応じてサイドバーの
   }
 }
 
-const generateIndex = (parent) => { //親メニューのインデックスを基に、新しいサブメニューのインデックスを生成
-  const count = parent.children?.length || 0
-  return `${parent.index}-${count + 1}`
-}
+// const generateIndex = (parent) => { 
+//   const count = parent.children?.length || 0
+//   return `${parent.index}-${count + 1}`
+// }
 
 
 const addSubMenu = async (item) => {
   try {
-    const title = await ElMessageBox.prompt('新しいトークルーム名を入力してください', 'トークルーム追加', {
+    const {value:title} = await ElMessageBox.prompt('新しいトークルーム名を入力してください', 'トークルーム追加', {
       confirmButtonText: '追加',
       cancelButtonText: 'キャンセル',
       inputPattern: /.+/,
       inputErrorMessage: '名前を入力してください'
     })
 
-    if (!item.children) item.children = []
-      const newIndex = generateIndex(item)
-      item.children.push({
-        index: newIndex,
-        title: title.value
-      })
+    emit('add-sub',{parent:item,title})
   } catch {
  // キャンセルされた場合は何もしない
     }
