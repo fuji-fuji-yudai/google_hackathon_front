@@ -45,6 +45,28 @@ const token = localStorage.getItem('token')
 const currentUsername = ref(getUsernameFromToken(token))
 const menuData = ref([])
 
+const buildTree = (flatList) => {
+  const map = {}
+  const roots = []
+
+  // すべてのノードをマップに登録（index をキーに）
+  flatList.forEach(item => {
+    map[item.index] = { ...item, children: [] }
+  })
+
+  // 親子関係を構築
+  flatList.forEach(item => {
+    if (item.parentIndex && map[item.parentIndex]) {
+      map[item.parentIndex].children.push(map[item.index])
+    } else if (!item.parentIndex) {
+      roots.push(map[item.index])
+    }
+  })
+
+  return roots
+}
+
+
 const fetchRooms = async () => {
   const token = localStorage.getItem('token')
   const res = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
@@ -54,7 +76,7 @@ const fetchRooms = async () => {
   })
   const data = await res.json()
   console.log('初期取得 menuData:', JSON.stringify(data, null, 2))
-  menuData.value = data
+  menuData.value = buildTree(data)
 }
 
 
