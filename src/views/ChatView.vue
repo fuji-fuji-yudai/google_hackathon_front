@@ -227,12 +227,28 @@ const handleAddSub = async ({ parent, title }) => {
 
     const newRoom = await response.json()
 
-    if (!parent.children) parent.children = []
-    parent.children.push(newRoom)
+    // 親を menuData から探して children に追加
+    const addChildToParent = (nodes) => {
+      for (const node of nodes) {
+        if (node.index === parent.index) {
+          if (!node.children) node.children = []
+          node.children.push(newRoom)
+          return true
+        }
+        if (node.children && addChildToParent(node.children)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    addChildToParent(menuData.value)
+
   } catch (e) {
     console.error('サブメニュー追加エラー:', e)
   }
 }
+
 
 
 
