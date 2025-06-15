@@ -2,6 +2,11 @@
   <el-container> <!-- display:flexで横並び、画面の高さ100% -->  
     <!-- サイドバー -->
     <div class="sidebar-wrapper" :style="{ width: asideWidth + 'px' }"> <!--asideWidthで幅を動的に変更可能-->
+      
+    <el-button type="primary" class="add-root-button" @click="addRootMenu">
+    ＋新規トークルーム
+    </el-button>
+
       <el-menu style="height: 100%;"> <!--element plusのコンポーネントで、ナビゲーションメニューを表示-->
         <RecursiveMenu :items="menuData" :addSubMenu="addSubMenu" @select="handleSelect" /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->
       </el-menu> <!--elmenu配下に、el-menu-itemやel-sub-menuを記載して使う。 -->
@@ -22,32 +27,58 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue' 
+import {ElMessageBox} from 'element-plus'
 //ref：リアクティブな変数を作成 onMounted：コンポーネントが画面に表示されたときに実行 onBeforeUnmounted：画面から消える直前に実行
 import RecursiveMenu from '@/components/RecursiveMenu.vue'
 
-const emit = defineEmits(['menu-click']) //親コンポーネントにイベントを送るための関数を定義
 
-const menuData = ref([
-  { index: '1', title: 'メニュー1' },
-  { 
-    index: '2',
-    title: '〇全プロジェクト', 
-    children: [
-        { 
-            index: '2-1', 
-            title: 'アプリ共通チーム' ,
-            children: [
-                { index: '2-1-1', title: 'アプリ共通' },
-                { index: '2-1-2', title: 'アーキチーム' }
-            ]
-        },
-        {index: '2-2', title: '輸出入チーム'}
-    ]
+defineProps({
+menuData: {
+  type: Array,
+  required: true
   }
-])//メニューの初期データ。childrenによってサブメニューを表現。★この構造ってどこで決まった？：どこかで明示的に定義する必要はない。関数でこの構造を前提に使われているだけ。
+})
+
+
+const emit = defineEmits(['menu-click','add-root']) //親コンポーネントにイベントを送るための関数を定義
+
+// const menuData = ref([
+//   { index: '1', title: 'メニュー1' },
+//   { 
+//     index: '2',
+//     title: '〇全プロジェクト', 
+//     children: [
+//         { 
+//             index: '2-1', 
+//             title: 'アプリ共通チーム' ,
+//             children: [
+//                 { index: '2-1-1', title: 'アプリ共通' },
+//                 { index: '2-1-2', title: 'アーキチーム' }
+//             ]
+//         },
+//         {index: '2-2', title: '輸出入チーム'}
+//     ]
+//   }
+// ])//メニューの初期データ。childrenによってサブメニューを表現。★この構造ってどこで決まった？：どこかで明示的に定義する必要はない。関数でこの構造を前提に使われているだけ。
 
 const asideWidth = ref(300) //サイドバーの幅（初期値）
 let isResizing = false //現在リサイズ中かのフラグ
+
+const addRootMenu = async () => {
+  try {
+    const { value: title } = await ElMessageBox.prompt('新しいトークルーム名を入力してください', 'ルートメニュー追加', {
+      confirmButtonText: '追加',
+      cancelButtonText: 'キャンセル',
+      inputPattern: /.+/,
+      inputErrorMessage: '名前を入力してください'
+    })
+
+    emit('add-root',title)
+  } catch {
+    // キャンセル時は何もしない
+  }
+}
+
 
 const startResize = () => { //リサイズ開始★
   isResizing = true //リサイズ中ですよというフラグを立てる。
@@ -70,14 +101,27 @@ const generateIndex = (parent) => { //親メニューのインデックスを基
   return `${parent.index}-${count + 1}`
 }
 
-const addSubMenu = (item) => { //指定されたメニュー項目にサブメニューを追加
-  if (!item.children) item.children = []
-  const newIndex = generateIndex(item)
-  item.children.push({
-    index: newIndex,
-    title: `新しい項目 ${newIndex}`
-  })
+
+const addSubMenu = async (item) => {
+  try {
+    const title = await ElMessageBox.prompt('新しいトークルーム名を入力してください', 'トークルーム追加', {
+      confirmButtonText: '追加',
+      cancelButtonText: 'キャンセル',
+      inputPattern: /.+/,
+      inputErrorMessage: '名前を入力してください'
+    })
+
+    if (!item.children) item.children = []
+      const newIndex = generateIndex(item)
+      item.children.push({
+        index: newIndex,
+        title: title.value
+      })
+  } catch {
+ // キャンセルされた場合は何もしない
+    }
 }
+
 
 const handleSelect = (item) => { //メニュー項目が選択された時、親コンポーネントへイベント送信
   emit('menu-click', item)
@@ -112,6 +156,12 @@ onBeforeUnmount(() => { //アンマウント時にイベントを解除
   cursor: ew-resize;
   background-color: transparent;
 }
+
+.add-root-button {
+  width: 100%;
+  margin: 10px 0;
+}
+
 
 
 </style>

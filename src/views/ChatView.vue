@@ -1,7 +1,7 @@
 <!-- チャットエリアにメッセージ配列とユーザーを渡す -->
 <template>
   <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
-    <SidebarLayout @menu-click="handleMenuClick" /> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
+    <SidebarLayout :menuData="menuData" @menu-click="handleMenuClick" @add-root="handleAddRoot"/> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
     <!-- <div v-if="selectedMenu && currentUsername.value" class="chat-area"> selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
     <div v-if="selectedMenu" class="chat-area">
       <ChatArea
@@ -43,10 +43,25 @@ const getUsernameFromToken = (token) => {
 };
 const token = localStorage.getItem('token')
 const currentUsername = ref(getUsernameFromToken(token))
+const menuData = ref([])
+
+const fetchRooms = async () => {
+  const token = localStorage.getItem('token')
+  const res = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+  })
+  const data = await res.json()
+  menuData.value = data
+}
+
+
 
 onMounted(() => {
   currentUsername.value = getUsernameFromToken(token)
   connectWebSocket()
+  fetchRooms()
 })
 
 const fetchChatHistory = async (roomId) => {
@@ -168,6 +183,30 @@ console.warn('STOMP 接続が確立されていません。メッセージは送
 onBeforeUnmount(() => {
   if (stompClient.value) stompClient.value.deactivate()
 })
+
+const handleAddRoot = async (title) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: title,
+        parentIndex: null // ルートメニューなので親なし
+      })
+    })
+
+    if (!response.ok) throw new Error('作成に失敗しました')
+
+    const newRoom = await response.json()
+    menuData.value.push(newRoom)
+  } catch (e) {
+    console.error('ルーム追加エラー:', e)
+  }
+}
 
 
 </script>
