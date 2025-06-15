@@ -1,7 +1,7 @@
 <template>
   <template v-for="item in items" :key="item.index">
     <!-- 親メニュー（子あり） -->
-    <el-sub-menu v-if="item.children" :index="item.index">
+    <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.index">
       <template #title>
         <div class="menu-title" @click.stop.prevent="$emit('select', item)">
           <div class="left-group">
