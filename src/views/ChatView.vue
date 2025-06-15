@@ -53,6 +53,7 @@ const fetchRooms = async () => {
   }
   })
   const data = await res.json()
+  console.log('初期取得 menuData:', JSON.stringify(data, null, 2))
   menuData.value = data
 }
 
