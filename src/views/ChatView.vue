@@ -225,7 +225,9 @@ const handleAddSub = async ({ parent, title }) => {
 
     if (!response.ok) throw new Error('サブメニュー作成に失敗')
 
-    const newRoom = await response.json()
+    const newRoom = await response.json()   
+    console.log('新しく追加されたルーム:', newRoom)
+
 
     // 親を menuData から探して children に追加
     const addChildToParent = (nodes) => {
@@ -243,6 +245,7 @@ const handleAddSub = async ({ parent, title }) => {
     }
 
     addChildToParent(menuData.value)
+    console.log('menuData after addSub:', JSON.stringify(menuData.value, null, 2))
 
   } catch (e) {
     console.error('サブメニュー追加エラー:', e)
