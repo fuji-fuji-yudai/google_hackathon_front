@@ -70,7 +70,7 @@ export default {
       }
 
       try {
-        const response = await fetch('/api/tasks', {
+        const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -100,7 +100,7 @@ export default {
       try {
         const payload = newTasks.map(toSnake)
 
-        const response = await fetch('/api/tasks', {
+        const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
