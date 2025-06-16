@@ -1,8 +1,7 @@
 <!-- チャットエリアにメッセージ配列とユーザーを渡す -->
 <template>
-  <div class="app-layout">
-    <!-- 画面全体のレイアウトを囲む -->
-    <SidebarLayout @menu-click="handleMenuClick" /> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
+  <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
+    <SidebarLayout :menuData="menuData" @menu-click="handleMenuClick" @add-root="handleAddRoot" @add-sub="handleAddSub"/> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
     <!-- <div v-if="selectedMenu && currentUsername.value" class="chat-area"> selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
     <div
       v-if="selectedMenu"
@@ -47,10 +46,48 @@ const getUsernameFromToken = (token) => {
 };
 const token = localStorage.getItem('token')
 const currentUsername = ref(getUsernameFromToken(token))
+const menuData = ref([])
+
+const buildTree = (flatList) => {
+  const map = {}
+  const roots = []
+
+  // すべてのノードをマップに登録（index をキーに）
+  flatList.forEach(item => {
+    map[item.index] = { ...item, children: [] }
+  })
+
+  // 親子関係を構築
+  flatList.forEach(item => {
+    if (item.parentIndex && map[item.parentIndex]) {
+      map[item.parentIndex].children.push(map[item.index])
+    } else if (!item.parentIndex) {
+      roots.push(map[item.index])
+    }
+  })
+
+  return roots
+}
+
+
+const fetchRooms = async () => {
+  const token = localStorage.getItem('token')
+  const res = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+  })
+  const data = await res.json()
+  console.log('初期取得 menuData:', JSON.stringify(data, null, 2))
+  menuData.value = buildTree(data)
+}
+
+
 
 onMounted(() => {
   currentUsername.value = getUsernameFromToken(token)
   connectWebSocket()
+  fetchRooms()
 })
 
 const fetchChatHistory = async (roomId) => {
@@ -173,6 +210,76 @@ onBeforeUnmount(() => {
   if (stompClient.value) stompClient.value.deactivate()
 })
 
+const handleAddRoot = async (title) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: title,
+        parentIndex: null // ルートメニューなので親なし
+      })
+    })
+
+    if (!response.ok) throw new Error('作成に失敗しました')
+
+    const newRoom = await response.json()
+    menuData.value.push(newRoom)
+  } catch (e) {
+    console.error('ルーム追加エラー:', e)
+  }
+}
+
+const handleAddSub = async ({ parent, title }) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/chat/rooms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: title,
+        parentIndex: parent.index
+      })
+    })
+
+    if (!response.ok) throw new Error('サブメニュー作成に失敗')
+
+    const newRoom = await response.json()   
+    console.log('新しく追加されたルーム:', newRoom)
+
+
+    // 親を menuData から探して children に追加
+    const addChildToParent = (nodes) => {
+      for (const node of nodes) {
+        if (node.index === parent.index) {
+          if (!node.children) node.children = []
+          node.children.push(newRoom)
+          return true
+        }
+        if (node.children && addChildToParent(node.children)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    addChildToParent(menuData.value)
+    console.log('menuData after addSub:', JSON.stringify(menuData.value, null, 2))
+
+  } catch (e) {
+    console.error('サブメニュー追加エラー:', e)
+  }
+}
+
+
+
 
 </script>
 
@@ -186,12 +293,14 @@ onBeforeUnmount(() => {
 .app-layout {
  display: flex; /* 子要素を横並びに配置する。 */
  height: 100vh; /* 画面の高さいっぱいに広げる。 */
- gap: 0; /*子要素間の隙間をゼロにする。*/
+ overflow: hidden;
 }
 
 .chat-area {
  flex: 1; /* フレックスコンテナ内で残りのスペースをすべて使う。本ケースだとサイドバー以外をチャットエリアで埋める。 */
  overflow: hidden;/* チャットエリア内で、はみ出したコンテンツを非表示にする。 */
- margin-left: 0; /* 左側の余白はゼロ */
+ display: flex;
+ flex-direction: column;
+
 }
 </style>

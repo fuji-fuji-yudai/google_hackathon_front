@@ -150,26 +150,11 @@ export default {
     handleAddTask() {
       // 新しいカテゴリを選択した場合の処理
       if (this.localNewTask.category === '__new__') {
-        // ここで、新しいカテゴリ名が入力されていることを確認し、
-        // 適切なカテゴリ名に設定する必要があります。
-        // 現状のRoadmapBaseのaddTaskロジックで対応されているはずですが、
-        // もし入力フィールドが空の場合のバリデーションをここで追加しても良いでしょう。
-        if (!this.localNewTask.name) { // nameフィールドをカテゴリ名として利用するなら
+        if (!this.localNewTask.name) {
             alert('新しいカテゴリ名を入力してください。');
             return;
         }
-        // ここでカテゴリ名をlocalNewTask.categoryに割り当てて、
-        // 適切なカテゴリ名に更新する必要があります。
-        // 例えば、新しいカテゴリ名入力用の別プロパティを用意するか、
-        // あるいはRoadmapBaseのaddTaskメソッドで新しいカテゴリ名が処理されるように調整します。
-        // 現状のRoadmapBaseのaddTaskはlocalNewTask.categoryを直接使用しているので、
-        // ここで`__new__`を実際のカテゴリ名に変換する必要があります。
-
-        // 例: 新しいカテゴリ名入力用のプロパティが`newCategoryInput`と仮定する場合
-        // this.localNewTask.category = this.newCategoryInput;
-
-        // 一旦、現在のロジックに合わせるため、ここでは何もせずRoadmapBaseのaddTaskに任せる
-        // RoadmapBase側で'__new__'が適切なカテゴリ名に解決されることを期待
+        
       } else if (this.localNewTask.category === '') {
          // 何も選択されていない場合、RoadmapBaseで必須チェックが行われる
          alert('カテゴリを選択または作成してください。');
