@@ -3,9 +3,13 @@
     <!-- サイドバー -->
     <div class="sidebar-wrapper" :style="{ width: asideWidth + 'px' }"> <!--asideWidthで幅を動的に変更可能-->
       
-    <el-button type="primary" class="add-root-button" @click="addRootMenu">
-    ＋新規トークルーム
-    </el-button>
+      <el-button 
+        type="primary" 
+        class="add-root-button" 
+        @click="addRootMenu"
+      >
+        ＋新規トークルーム
+      </el-button>
 
       <el-menu style="height: 100%;"> <!--element plusのコンポーネントで、ナビゲーションメニューを表示-->
         <RecursiveMenu :items="menuData" :addSubMenu="addSubMenu" @select="handleSelect" /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->

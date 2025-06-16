@@ -1,7 +1,12 @@
 <!-- チャットエリアにメッセージ配列とユーザーを渡す -->
 <template>
-  <div class="app-layout"> <!-- 画面全体のレイアウトを囲む -->
-    <SidebarLayout :menuData="menuData" @menu-click="handleMenuClick" @add-root="handleAddRoot" @add-sub="handleAddSub"/> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
+  <div class="app-layout"><!-- 画面全体のレイアウトを囲む -->
+    <SidebarLayout 
+      :menuData="menuData"
+      @menu-click="handleMenuClick" 
+      @add-root="handleAddRoot" 
+      @add-sub="handleAddSub"
+    /> <!-- サイドバーのコンポーネント。メニューをクリックしたら@menu-clickイベントが発火し、handlemenuClickが呼ばれる。 @menu-click自体はカスタム。 -->
     <!-- <div v-if="selectedMenu && currentUsername.value" class="chat-area"> selectedMenuつまりメニューが選択されたらチャット画面が表示される。 -->
     <div v-if="selectedMenu" class="chat-area">
       <ChatArea
@@ -101,6 +106,7 @@ const fetchChatHistory = async (roomId) => {
     chatHistories.value[roomId] = history
     currentUsername.value = getUsernameFromToken(token)
     console.log('メニュークリック時のcurrentUsername:', currentUsername.value)
+    console.log(history)
   } catch (error) {
     console.error('履歴取得エラー:', error)
     chatHistories.value[roomId] = [
