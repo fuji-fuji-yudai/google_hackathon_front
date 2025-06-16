@@ -11,8 +11,9 @@
         :class="['chat-message', msg.sender === currentUsername ? 'from-me' : 'from-others']"
       >
         <div class="sender-name">
-          {{ msg.sender }}（current: {{ currentUsername }}）
-          {{ JSON.stringify(msg) }}
+          {{ msg.sender }}
+          <!-- （current: {{ currentUsername }}） -->
+          <!-- {{ JSON.stringify(msg) }} -->
         </div> 
         <div class="bubble">
           {{ msg.text }}
