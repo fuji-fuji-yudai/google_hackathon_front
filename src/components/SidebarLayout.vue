@@ -1,20 +1,33 @@
 <template>
-  <el-container style="height: 100vh"> <!-- display:flexで横並び、画面の高さ100% -->  
+  <el-container style="height: 100vh">
+    <!-- display:flexで横並び、画面の高さ100% -->  
     <!-- サイドバー -->
-    <div class="sidebar-wrapper" :style="{ width: asideWidth + 'px' }"> <!--asideWidthで幅を動的に変更可能-->
-      <el-menu> <!--element plusのコンポーネントで、ナビゲーションメニューを表示-->
-        <RecursiveMenu :items="menuData" :addSubMenu="addSubMenu" @select="handleSelect" /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->
+    <div
+      class="sidebar-wrapper"
+      :style="{ width: asideWidth + 'px' }"
+    >
+      <!--asideWidthで幅を動的に変更可能-->
+      <el-menu>
+        <!--element plusのコンポーネントで、ナビゲーションメニューを表示-->
+        <RecursiveMenu
+          :items="menuData"
+          :add-sub-menu="addSubMenu"
+          @select="handleSelect"
+        /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->
       </el-menu> <!--elmenu配下に、el-menu-itemやel-sub-menuを記載して使う。 -->
     </div>
 
     <!-- リサイズバー -->
-    <div class="resizer" @mousedown="startResize"></div> <!--マウスダウン時に、リサイズ処理をする関数を呼び出し-->
+    <div
+      class="resizer"
+      @mousedown="startResize"
+    /> <!--マウスダウン時に、リサイズ処理をする関数を呼び出し-->
 
     <!-- メイン -->
     <!-- <el-container> -->
-      <!-- <el-main> -->
+    <!-- <el-main> -->
     <slot /> <!--親コンポーネントから渡された内容を表示する。★どう渡す？：本コンポーネントの入れ子の中に書いた内容が、この位置に挿入される。-->
-      <!-- </el-main> -->
+    <!-- </el-main> -->
     <!-- </el-container> -->
   </el-container>
 </template>

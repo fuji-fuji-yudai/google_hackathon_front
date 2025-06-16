@@ -1,16 +1,19 @@
 <template>
-  <div v-if="editingTask" class="modal-overlay">
+  <div
+    v-if="editingTask"
+    class="modal-overlay"
+  >
     <div class="modal-content">
       <h2>タスクを編集</h2>
       <div class="form-grid">
         <div class="form-row">
           <label for="edit-task-name">タスク名:</label>
           <input
-            type="text"
             id="edit-task-name"
             v-model="localEditingTask.name"
+            type="text"
             class="small-input"
-          />
+          >
         </div>
         <div class="form-row">
           <label for="edit-start-month">開始月:</label>
@@ -46,9 +49,24 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button @click="saveTask" class="small-button">保存</button>
-        <button @click="cancelEdit" class="small-button secondary">キャンセル</button>
-        <button @click="deleteTask" class="small-button delete">削除</button>
+        <button
+          class="small-button"
+          @click="saveTask"
+        >
+          保存
+        </button>
+        <button
+          class="small-button secondary"
+          @click="cancelEdit"
+        >
+          キャンセル
+        </button>
+        <button
+          class="small-button delete"
+          @click="deleteTask"
+        >
+          削除
+        </button>
       </div>
     </div>
   </div>

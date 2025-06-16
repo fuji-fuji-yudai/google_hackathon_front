@@ -1,29 +1,53 @@
 <template>
-    <div>
-        <div class="board">
-            <!-- statuses（ToDo, Doing, Done）をループして、各ステータスの列を表示 -->
-            <div v-for="status in statuses" :key="status" class="list">
-                <h3>{{ status }}</h3>
-                <!-- vuedraggable ライブラリを使って、ドラッグ＆ドロップ機能を実装 -->
-                <!-- 各列（ToDo, Doing, Done）の中のタスクは taskByStatus[status] で取得 -->
-                <draggable v-model="taskByStatus[status]" group="cards" @end="onDragEnd" class="card-list">
-                    <!-- 各タスクは Element Plus の el-card コンポーネントで表示（タイトルと予定日付） -->
-                    <template #item="{ element }">
-                        <el-card class="card">
-                            <div>{{ element.title }}</div>
-                            <small>予定：{{ element.planStart }} ~ {{ element.planEnd }}</small>
-                        </el-card>
-                    </template>
-                </draggable>
-            </div>
-        </div>
-        <div class="task-input">
-            <el-input v-model="newTitle" placeholder="タスク名を入力" class="input" />
-            <el-date-picker v-model="newDates" type="daterange" range-separator="〜" start-placeholder="開始日"
-                end-placeholder="終了日" class="input" />
-            <el-button type="primary" @click="addTask">追加</el-button>
-        </div>
+  <div>
+    <div class="board">
+      <!-- statuses（ToDo, Doing, Done）をループして、各ステータスの列を表示 -->
+      <div
+        v-for="status in statuses"
+        :key="status"
+        class="list"
+      >
+        <h3>{{ status }}</h3>
+        <!-- vuedraggable ライブラリを使って、ドラッグ＆ドロップ機能を実装 -->
+        <!-- 各列（ToDo, Doing, Done）の中のタスクは taskByStatus[status] で取得 -->
+        <draggable
+          v-model="taskByStatus[status]"
+          group="cards"
+          class="card-list"
+          @end="onDragEnd"
+        >
+          <!-- 各タスクは Element Plus の el-card コンポーネントで表示（タイトルと予定日付） -->
+          <template #item="{ element }">
+            <el-card class="card">
+              <div>{{ element.title }}</div>
+              <small>予定：{{ element.planStart }} ~ {{ element.planEnd }}</small>
+            </el-card>
+          </template>
+        </draggable>
+      </div>
     </div>
+    <div class="task-input">
+      <el-input
+        v-model="newTitle"
+        placeholder="タスク名を入力"
+        class="input"
+      />
+      <el-date-picker
+        v-model="newDates"
+        type="daterange"
+        range-separator="〜"
+        start-placeholder="開始日"
+        end-placeholder="終了日"
+        class="input"
+      />
+      <el-button
+        type="primary"
+        @click="addTask"
+      >
+        追加
+      </el-button>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -32,6 +56,9 @@ import draggable from 'vuedraggable'
 import { format } from 'date-fns'
 
 export default {
+    components: {
+        draggable
+    },
     // 親コンポーネントから tasks 配列（タスク一覧）を受け取る
     // update イベントを使って、タスクの更新情報を親に返す
     props: {
@@ -41,9 +68,6 @@ export default {
         }
     },
     emits: ['update'],
-    components: {
-        draggable
-    },
     setup(props, { emit }) {
         // タスクのステータスを定義
         const statuses = ['ToDo', 'Doing', 'Done']

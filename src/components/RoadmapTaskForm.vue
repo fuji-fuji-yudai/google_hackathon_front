@@ -4,33 +4,86 @@
     <div class="form-grid">
       <div class="form-row">
         <label for="selectCategory">カテゴリ選択:</label>
-        <select v-model="selectedCategory" @change="handleCategoryChange" id="selectCategory" class="small-input">
-          <option value="">新しいカテゴリを追加</option>
-          <option v-for="cat in allAvailableCategories" :key="cat" :value="cat">{{ cat }}</option>
+        <select
+          id="selectCategory"
+          v-model="selectedCategory"
+          class="small-input"
+          @change="handleCategoryChange"
+        >
+          <option value="">
+            新しいカテゴリを追加
+          </option>
+          <option
+            v-for="cat in allAvailableCategories"
+            :key="cat"
+            :value="cat"
+          >
+            {{ cat }}
+          </option>
         </select>
       </div>
-      <div class="form-row" v-if="selectedCategory === ''">
+      <div
+        v-if="selectedCategory === ''"
+        class="form-row"
+      >
         <label for="newCategoryInput">新しいカテゴリ名:</label>
-        <input v-model="newTaskCategory" id="newCategoryInput" type="text" placeholder="例: ソフトウェア開発" class="small-input">
+        <input
+          id="newCategoryInput"
+          v-model="newTaskCategory"
+          type="text"
+          placeholder="例: ソフトウェア開発"
+          class="small-input"
+        >
       </div>
       <div class="form-row">
         <label for="newName">タスク名:</label>
-        <input v-model="newTaskName" id="newName" type="text" placeholder="例: UIデザイン改善" class="small-input">
+        <input
+          id="newName"
+          v-model="newTaskName"
+          type="text"
+          placeholder="例: UIデザイン改善"
+          class="small-input"
+        >
       </div>
       <div class="form-row">
         <label for="startMonth">開始月:</label>
-        <select v-model="newTaskStartMonthIndex" id="startMonth" class="small-input">
-          <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
+        <select
+          id="startMonth"
+          v-model="newTaskStartMonthIndex"
+          class="small-input"
+        >
+          <option
+            v-for="(m, index) in months"
+            :key="m.id"
+            :value="index"
+          >
+            {{ m.name }}
+          </option>
         </select>
       </div>
       <div class="form-row">
         <label for="endMonth">終了月:</label>
-        <select v-model="newTaskEndMonthIndex" id="endMonth" class="small-input">
-          <option v-for="(m, index) in months" :key="m.id" :value="index">{{ m.name }}</option>
+        <select
+          id="endMonth"
+          v-model="newTaskEndMonthIndex"
+          class="small-input"
+        >
+          <option
+            v-for="(m, index) in months"
+            :key="m.id"
+            :value="index"
+          >
+            {{ m.name }}
+          </option>
         </select>
       </div>
     </div>
-    <button @click="emitAddTask" class="small-button">タスクを追加</button>
+    <button
+      class="small-button"
+      @click="emitAddTask"
+    >
+      タスクを追加
+    </button>
   </div>
 </template>
 

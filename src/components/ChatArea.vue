@@ -1,12 +1,18 @@
 <template>
   <div class="chat-wrapper">
     <!-- チャットログ -->
-    <div class="chat-log" ref="chatLog">
-      <div v-for="(msg, index) in props.messages" 
-      :key="index" 
-      :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
+    <div
+      ref="chatLog"
+      class="chat-log"
+    >
+      <div
+        v-for="(msg, index) in props.messages" 
+        :key="index" 
+        :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
       >
-        <div class="sender-name">{{ msg.sender }}（current: {{ props.currentuser }}）</div> 
+        <div class="sender-name">
+          {{ msg.sender }}（current: {{ props.currentuser }}）
+        </div> 
         <div class="bubble">
           {{ msg.text }}
           <!-- {{ props.currentuser }} -->
@@ -19,12 +25,17 @@
       <el-input
         v-model="newMessage"
         placeholder="メッセージを入力..."
-        @keyup.enter="sendMessage"
         clearable
         class="chat-textbox"
+        @keyup.enter="sendMessage"
       />
-      <el-button :disabled="!isConnected" type="primary" @click="sendMessage">送信</el-button>
-
+      <el-button
+        :disabled="!isConnected"
+        type="primary"
+        @click="sendMessage"
+      >
+        送信
+      </el-button>
     </div>
   </div>
 </template>

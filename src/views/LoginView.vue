@@ -1,11 +1,22 @@
 <template>
   <div class="login">
     <form @submit.prevent="login">
-      <input v-model="username" placeholder="Username" />
-      <input v-model="password" type="password" placeholder="Password" />
-      <button type="submit">Login</button>
+      <input
+        v-model="username"
+        placeholder="Username"
+      >
+      <input
+        v-model="password"
+        type="password"
+        placeholder="Password"
+      >
+      <button type="submit">
+        Login
+      </button>
     </form>
-    <p v-if="error">{{ error }}</p>
+    <p v-if="error">
+      {{ error }}
+    </p>
   </div>
 </template>
 

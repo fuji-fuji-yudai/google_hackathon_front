@@ -1,7 +1,7 @@
 <template>
   <div class="roadmap-grid-container">
     <div class="roadmap-quarter-header-row">
-      <div class="roadmap-quarter-corner-cell"></div>
+      <div class="roadmap-quarter-corner-cell" />
       <div
         v-for="quarter in quarters"
         :key="quarter.id"
@@ -13,7 +13,9 @@
     </div>
 
     <div class="roadmap-header-row">
-      <div class="roadmap-corner-cell">カテゴリ/月</div>
+      <div class="roadmap-corner-cell">
+        カテゴリ/月
+      </div>
       <div
         v-for="month in months"
         :key="month.id"
@@ -37,11 +39,11 @@
         <template v-if="editingCategoryIndex === rowIndex">
           <input
             :value="editedCategoryName"
+            class="category-edit-input"
             @input="$emit('update:editedCategoryName', $event.target.value)"
             @blur="$emit('finish-category-edit', rowIndex)"
             @keyup.enter="$emit('finish-category-edit', rowIndex)"
-            class="category-edit-input"
-          />
+          >
         </template>
         <template v-else>
           {{ row.category }}
@@ -52,7 +54,7 @@
         v-for="month in months"
         :key="month.id"
         :class="['roadmap-month-background-cell', `quarter-${month.quarterId}`]"
-      ></div>
+      />
 
       <div
         v-for="(task, taskIndex) in row.tasks"

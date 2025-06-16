@@ -10,36 +10,47 @@
           class="small-input"
           @change="emitUpdate"
         >
-          <option value="">既存カテゴリを選択</option>
-          <option v-for="category in allAvailableCategories" :key="category" :value="category">
+          <option value="">
+            既存カテゴリを選択
+          </option>
+          <option
+            v-for="category in allAvailableCategories"
+            :key="category"
+            :value="category"
+          >
             {{ category }}
           </option>
-          <option value="__new__">新しいカテゴリを作成</option>
+          <option value="__new__">
+            新しいカテゴリを作成
+          </option>
         </select>
       </div>
 
-      <div class="form-row" v-if="localNewTask.category === '__new__'">
+      <div
+        v-if="localNewTask.category === '__new__'"
+        class="form-row"
+      >
         <label for="new-category-name">新しいカテゴリ名:</label>
         <input
-          type="text"
           id="new-category-name"
           v-model="localNewTask.category"
+          type="text"
           class="small-input"
           placeholder="カテゴリ名を入力"
           @input="emitUpdate"
-        />
+        >
       </div>
 
       <div class="form-row">
         <label for="task-name">タスク名:</label>
         <input
-          type="text"
           id="task-name"
           v-model="localNewTask.name"
+          type="text"
           class="small-input"
           placeholder="タスク名を入力"
           @input="emitUpdate"
-        />
+        >
       </div>
 
       <div class="form-row">
@@ -78,7 +89,12 @@
         </select>
       </div>
     </div>
-    <button @click="handleAddTask" class="small-button">タスクを追加</button>
+    <button
+      class="small-button"
+      @click="handleAddTask"
+    >
+      タスクを追加
+    </button>
   </div>
 </template>
 

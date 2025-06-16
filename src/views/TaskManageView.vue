@@ -1,12 +1,27 @@
 <template>
   <div>
-    <el-radio-group v-model="viewMode" style="margin-bottom: 20px">
-      <el-radio-button label="card">カード</el-radio-button>
-      <el-radio-button label="timeline">タイムライン</el-radio-button>
+    <el-radio-group
+      v-model="viewMode"
+      style="margin-bottom: 20px"
+    >
+      <el-radio-button label="card">
+        カード
+      </el-radio-button>
+      <el-radio-button label="timeline">
+        タイムライン
+      </el-radio-button>
     </el-radio-group>
 
-    <CardBoardView v-if="viewMode === 'card'" :tasks="tasks" @update="handleUpdate" />
-    <TimelineBoard v-else :tasks="tasks" @update="handleUpdate" />
+    <CardBoardView
+      v-if="viewMode === 'card'"
+      :tasks="tasks"
+      @update="handleUpdate"
+    />
+    <TimelineBoard
+      v-else
+      :tasks="tasks"
+      @update="handleUpdate"
+    />
   </div>
 </template>
 

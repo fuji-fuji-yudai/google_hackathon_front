@@ -49,11 +49,20 @@
 </template> -->
 
 <template>
-  <template v-for="item in items" :key="item.index">
+  <template
+    v-for="item in items"
+    :key="item.index"
+  >
     <!-- 親メニュー（子あり） -->
-    <el-sub-menu v-if="item.children" :index="item.index">
+    <el-sub-menu
+      v-if="item.children"
+      :index="item.index"
+    >
       <template #title>
-        <div class="menu-title" @click.stop.prevent="$emit('select', item)">
+        <div
+          class="menu-title"
+          @click.stop.prevent="$emit('select', item)"
+        >
           <span>{{ item.title || item.label }}</span>
           <el-button
             type="text"
@@ -66,13 +75,17 @@
       </template>
       <RecursiveMenu
         :items="item.children"
-        :addSubMenu="addSubMenu"
+        :add-sub-menu="addSubMenu"
         @select="$emit('select', $event)"
       />
     </el-sub-menu>
 
     <!-- 単独メニュー（子なし） -->
-    <el-menu-item v-else :index="item.index" @click="$emit('select', item)">
+    <el-menu-item
+      v-else
+      :index="item.index"
+      @click="$emit('select', item)"
+    >
       <div class="menu-title">
         <span>{{ item.title || item.label }}</span>
         <el-button
