@@ -193,7 +193,8 @@ const handleSendMessage = (message) => { //ユーザーの入力メッセージ
 
 const msg = {
     text: message,
-    roomId: roomId
+    roomId: roomId,
+    sender: currentUsername.value
   }
 chatHistories.value[roomId].push(msg)
 
