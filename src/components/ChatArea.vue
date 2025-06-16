@@ -8,7 +8,7 @@
       <div
         v-for="(msg, index) in props.messages" 
         :key="index" 
-        :class="['chat-message', msg.sender === currentUsername ? 'from-me' : 'from-others']"
+        :class="['chat-message', msg.sender === currentUsername.value ? 'from-me' : 'from-others']"
       >
         <div class="sender-name">
           {{ msg.sender }}（current: {{ currentUsername }}）
