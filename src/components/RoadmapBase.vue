@@ -2,13 +2,13 @@
   <div class="roadmap-base-container">
     <div class="roadmap-container">
       <RoadmapGrid
-        :roadmapData="roadmapData"
+        :roadmap-data="roadmapData"
         :months="months"
         :quarters="quarters"
-        :editingCategoryIndex="editingCategoryIndex"
-        :editedCategoryName="editedCategoryName"
-        :assignedCategoryLabelColors="assignedCategoryLabelColors"
-        :taskColorPalette="taskColorPalette"
+        :editing-category-index="editingCategoryIndex"
+        :edited-category-name="editedCategoryName"
+        :assigned-category-label-colors="assignedCategoryLabelColors"
+        :task-color-palette="taskColorPalette"
         @start-category-edit="startCategoryEdit"
         @update:editedCategoryName="updateEditedCategoryName"
         @finish-category-edit="finishCategoryEdit"
@@ -16,12 +16,14 @@
         @assign-category-color="assignCategoryColor"
       />
 
-      <p class="roadmap-note">※ カテゴリ欄をダブルクリックで編集できます</p>
+      <p class="roadmap-note">
+        ※ カテゴリ欄をダブルクリックで編集できます
+      </p>
 
       <RoadmapTaskAddForm
-        :newTask="newTask"
-        :selectedCategory="selectedCategory"
-        :allAvailableCategories="allAvailableCategories"
+        :new-task="newTask"
+        :selected-category="selectedCategory"
+        :all-available-categories="allAvailableCategories"
         :months="months"
         @update:selectedCategory="selectedCategory = $event"
         @update:newTask="updateNewTask"
@@ -29,7 +31,7 @@
       />
 
       <RoadmapTaskEditModal
-        :editingTask="editingTask"
+        :editing-task="editingTask"
         :months="months"
         @update:editingTask="editingTask = $event"
         @save-task-edit="saveTaskEdit"
@@ -125,6 +127,11 @@ export default {
       const categories = new Set(this.roadmapData.map((row) => row.category));
       return Array.from(categories);
     },
+  },
+  created() {
+    this.roadmapData.forEach((row) => {
+      this.assignCategoryColor(row.category);
+    });
   },
   methods: {
     updateNewTask(updatedTask) {
@@ -301,11 +308,6 @@ export default {
       });
       this.cancelTaskEdit();
     },
-  },
-  created() {
-    this.roadmapData.forEach((row) => {
-      this.assignCategoryColor(row.category);
-    });
   },
 };
 </script>

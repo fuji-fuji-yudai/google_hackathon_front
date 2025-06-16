@@ -1,13 +1,24 @@
 <template>
   <div class="roadmap-chat">
     <div class="chat-messages">
-      <div v-for="(message, index) in messages" :key="index" class="chat-message">
+      <div
+        v-for="(message, index) in messages"
+        :key="index"
+        class="chat-message"
+      >
         <strong>{{ message.sender }}:</strong> {{ message.text }}
       </div>
     </div>
     <div class="chat-input">
-      <input type="text" v-model="newMessage" @keyup.enter="sendMessage" placeholder="メッセージを入力...">
-      <button @click="sendMessage">送信</button>
+      <input
+        v-model="newMessage"
+        type="text"
+        placeholder="メッセージを入力..."
+        @keyup.enter="sendMessage"
+      >
+      <button @click="sendMessage">
+        送信
+      </button>
     </div>
   </div>
 </template>

@@ -17,13 +17,16 @@
     </div>
 
     <!-- リサイズバー -->
-    <div class="resizer" @mousedown="startResize"></div> <!--マウスダウン時に、リサイズ処理をする関数を呼び出し-->
+    <div
+      class="resizer"
+      @mousedown="startResize"
+    /> <!--マウスダウン時に、リサイズ処理をする関数を呼び出し-->
 
     <!-- メイン -->
     <!-- <el-container> -->
-      <!-- <el-main> -->
+    <!-- <el-main> -->
     <slot /> <!--親コンポーネントから渡された内容を表示する。★どう渡す？：本コンポーネントの入れ子の中に書いた内容が、この位置に挿入される。-->
-      <!-- </el-main> -->
+    <!-- </el-main> -->
     <!-- </el-container> -->
   </el-container>
 </template>

@@ -1,17 +1,30 @@
 <template>
   <div class="chat-container">
     <h2>Gemini 質問フォーム</h2>
-    <textarea v-model="userQuestion" placeholder="質問を入力してください..." rows="4"></textarea>
-    <button @click="sendQuestion" :disabled="loading">
+    <textarea
+      v-model="userQuestion"
+      placeholder="質問を入力してください..."
+      rows="4"
+    />
+    <button
+      :disabled="loading"
+      @click="sendQuestion"
+    >
       {{ loading ? '送信中...' : '送信' }}
     </button>
 
-    <div v-if="answer" class="response">
+    <div
+      v-if="answer"
+      class="response"
+    >
       <h3>回答:</h3>
       <p>{{ answer }}</p>
     </div>
 
-    <div v-if="error" class="error">
+    <div
+      v-if="error"
+      class="error"
+    >
       <p>{{ error }}</p>
     </div>
   </div>

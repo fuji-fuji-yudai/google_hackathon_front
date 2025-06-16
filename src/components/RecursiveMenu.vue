@@ -1,5 +1,8 @@
 <template>
-  <template v-for="item in items" :key="item.index">
+  <template
+    v-for="item in items"
+    :key="item.index"
+  >
     <!-- 親メニュー（子あり） -->
     <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.index">
       <template #title>
@@ -28,13 +31,17 @@
       </template>
       <RecursiveMenu
         :items="item.children"
-        :addSubMenu="addSubMenu"
+        :add-sub-menu="addSubMenu"
         @select="$emit('select', $event)"
       />
     </el-sub-menu>
 
     <!-- 単独メニュー（子なし） -->
-    <el-menu-item v-else :index="item.index" @click="$emit('select', item)">
+    <el-menu-item
+      v-else
+      :index="item.index"
+      @click="$emit('select', item)"
+    >
       <div class="menu-title">
         <div class="left-group">
           <span>{{ item.title || item.label }}</span>

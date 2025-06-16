@@ -3,14 +3,17 @@
     <header class="page-header">
       <div class="header-content">
         <h1>ロードマップ</h1>
-        </div>
+      </div>
     </header>
 
     <main class="main-content-wrapper">
       <RoadmapBase />
     </main>
 
-    <button class="chat-toggle-button" @click="toggleChatSidebar">
+    <button
+      class="chat-toggle-button"
+      @click="toggleChatSidebar"
+    >
       <span v-if="isChatSidebarOpen">チャットを閉じる</span>
       <span v-else>AIにチャットで質問する</span>
     </button>
@@ -18,12 +21,21 @@
     <aside :class="['chat-sidebar', { 'is-open': isChatSidebarOpen }]">
       <div class="sidebar-header">
         <h2>ロードマップ作成相談</h2>
-        <button @click="toggleChatSidebar" class="close-sidebar-button">×</button>
+        <button
+          class="close-sidebar-button"
+          @click="toggleChatSidebar"
+        >
+          ×
+        </button>
       </div>
       <RoadmapChat />
     </aside>
 
-    <div v-if="isChatSidebarOpen" class="sidebar-overlay" @click="toggleChatSidebar"></div>
+    <div
+      v-if="isChatSidebarOpen"
+      class="sidebar-overlay"
+      @click="toggleChatSidebar"
+    />
   </div>
 </template>
 
