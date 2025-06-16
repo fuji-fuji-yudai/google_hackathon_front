@@ -52,30 +52,14 @@
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 
-const getuserIDFromToken = (token) => {
-  if (!token || typeof token !== 'string' || !token.includes('.')) {
-    console.error('トークンが無効です:', token);
-    return null;
-  }
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub || payload.userID; // JWTの構造に応じて
-  } catch (e) {
-    console.error('トークンの解析に失敗しました', e);
-    return null;
-  }
-};
-
 // ログインユーザーのトークンを取得
 const token = localStorage.getItem('token')
 
 export default {
   data() {
     const route = useRoute()
-    const userID = getuserIDFromToken(token)
     return {
       form: {
-        userID: userID,
         date: route.query.date || '', // クエリから初期日付を取得
         activity: '',
         achievement: '',
