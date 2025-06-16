@@ -71,6 +71,7 @@ async function saveTasks(newTasks) {
 // 子コンポーネントから更新されたら反映
 function handleUpdate(newTasks) {
   tasks.value = newTasks
+  saveTasks(newTasks)  // ← ここで保存処理を呼ぶ！
 }
 
 // 初期表示時にデータ取得

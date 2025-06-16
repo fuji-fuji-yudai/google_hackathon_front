@@ -52,7 +52,7 @@ import { ref, watch } from 'vue'
 import { format, parseISO, eachDayOfInterval } from 'date-fns'
 
 export default {
-  setup() {
+  setup(props, { emit }) {
     const newTitle = ref('')
     const newAssignee = ref('')
     const newDates = ref([])
@@ -86,6 +86,7 @@ export default {
       task.planStart = format(startDate, 'yyyy-MM-dd')
       task.planEnd = format(endDate, 'yyyy-MM-dd')
       taskDateMap.value[task.id] = [startDate, endDate]
+      emit('update', tasks.value)
     }
 
     watch(tasks, (newTasks) => {
@@ -112,6 +113,7 @@ export default {
         actualEnd: '',
         parentId: newParentId.value
       })
+      emit('update', tasks.value)
       newTitle.value = ''
       newAssignee.value = ''
       newDates.value = []
