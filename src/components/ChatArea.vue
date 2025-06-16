@@ -8,10 +8,10 @@
       <div
         v-for="(msg, index) in props.messages" 
         :key="index" 
-        :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
+        :class="['chat-message', msg.sender === currentUsername ? 'from-me' : 'from-others']"
       >
         <div class="sender-name">
-          {{ msg.sender }}（current: {{ props.currentuser }}）
+          {{ msg.sender }}（current: {{ currentUsername }}）
         </div> 
         <div class="bubble">
           {{ msg.text }}
@@ -53,6 +53,21 @@ const emit = defineEmits(['send'])
 console.log('ChatAreaで受け取ったcurrentuser:', props.currentuser)
 const newMessage = ref('')
 const chatLog = ref(null)
+const getUsernameFromToken = (token) => {
+  if (!token || typeof token !== 'string' || !token.includes('.')) {
+    console.error('トークンが無効です:', token);
+    return null;
+  }
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub || payload.username; // JWTの構造に応じて
+  } catch (e) {
+    console.error('トークンの解析に失敗しました', e);
+    return null;
+  }
+};
+const token = localStorage.getItem('token')
+const currentUsername = ref(getUsernameFromToken(token))
 
 const sendMessage = () => {
   if (newMessage.value.trim() === '') return
