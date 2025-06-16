@@ -69,7 +69,7 @@ const getUsernameFromToken = (token) => {
 const token = localStorage.getItem('token')
 
 const currentUsername = computed(() => {
- return props.currentuser || getUsernameFromToken(token)
+ return props.currentuser.value || getUsernameFromToken(token)
 })
 
 const sendMessage = () => {
