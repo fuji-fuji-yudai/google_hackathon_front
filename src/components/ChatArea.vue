@@ -12,6 +12,7 @@
       >
         <div class="sender-name">
           {{ msg.sender }}（current: {{ currentUsername }}）
+          {{ JSON.stringify(msg) }}
         </div> 
         <div class="bubble">
           {{ msg.text }}
@@ -49,6 +50,7 @@ const props = defineProps({
   currentuser: String,
   isConnected:Boolean
 })
+
 const emit = defineEmits(['send'])
 console.log('ChatAreaで受け取ったcurrentuser:', props.currentuser)
 const newMessage = ref('')
@@ -66,6 +68,7 @@ const getUsernameFromToken = (token) => {
     return null;
   }
 };
+
 const token = localStorage.getItem('token')
 
 const currentUsername = computed(() => {
