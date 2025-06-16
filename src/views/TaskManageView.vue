@@ -4,12 +4,8 @@
       v-model="viewMode"
       style="margin-bottom: 20px"
     >
-      <el-radio-button label="card">
-        カード
-      </el-radio-button>
-      <el-radio-button label="timeline">
-        タイムライン
-      </el-radio-button>
+      <el-radio-button label="card">カード</el-radio-button>
+      <el-radio-button label="timeline">タイムライン</el-radio-button>
     </el-radio-group>
 
     <CardBoardView
@@ -25,56 +21,117 @@
   </div>
 </template>
 
-<script setup>
+<script>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
 import CardBoardView from '@/components/CardBoardView.vue'
 import TimelineBoard from '@/components/TimelineBoard.vue'
 
-const viewMode = ref('card')
-const tasks = ref([]) // 初期値は空配列
+export default {
+  components: {
+    CardBoardView,
+    TimelineBoard
+  },
+  setup() {
+    const viewMode = ref('card')
+    const tasks = ref([])
 
-// // 共通のタスクデータ（ローカル用）
-// const tasks = ref([
-//   {
-//     id: 'task-1',
-//     title: '要件定義',
-//     assignee: '佐藤',
-//     planStart: '2025-06-01',
-//     planEnd: '2025-06-05',
-//     actualStart: '',
-//     actualEnd: '',
-//     status: 'ToDo'
-//   }
-// ])
+    // snake_case → camelCase に変換
+    const toCamel = (obj) => ({
+      id: obj.id,
+      title: obj.title,
+      assignee: obj.assignee,
+      planStart: obj.plan_start,
+      planEnd: obj.plan_end,
+      actualStart: obj.actual_start,
+      actualEnd: obj.actual_end,
+      status: obj.status,
+      parentId: obj.parent_id ?? null
+    })
 
-// タスク一覧取得
-async function fetchTasks() {
-  try {
-    const response = await axios.get('/api/tasks')
-    tasks.value = response.data
-  } catch (error) {
-    console.error('タスクの取得に失敗しました', error)
+    // camelCase → snake_case に変換
+    const toSnake = (obj) => ({
+      id: obj.id,
+      title: obj.title,
+      assignee: obj.assignee,
+      plan_start: obj.planStart,
+      plan_end: obj.planEnd,
+      actual_start: obj.actualStart,
+      actual_end: obj.actualEnd,
+      status: obj.status,
+      parent_id: obj.parentId ?? null
+    })
+
+    // タスク一覧取得
+    const fetchTasks = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('トークンが取得できませんでした')
+        return
+      }
+
+      try {
+        const response = await fetch('/api/tasks', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`取得失敗 status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('取得成功:', data)
+
+        tasks.value = Array.isArray(data) ? data.map(toCamel) : []
+      } catch (error) {
+        console.error('タスクの取得に失敗しました', error)
+      }
+    }
+
+    // タスク保存
+    const saveTasks = async (newTasks) => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('トークンが取得できませんでした')
+        return
+      }
+
+      try {
+        const payload = newTasks.map(toSnake)
+
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        })
+
+        if (!response.ok) {
+          throw new Error(`保存失敗 status: ${response.status}`)
+        }
+
+        console.log('保存成功')
+      } catch (error) {
+        console.error('タスクの保存に失敗しました', error)
+      }
+    }
+
+    // 子コンポーネントから更新通知を受けた時
+    const handleUpdate = (newTasks) => {
+      tasks.value = newTasks
+      saveTasks(newTasks)
+    }
+
+    onMounted(fetchTasks)
+
+    return {
+      viewMode,
+      tasks,
+      handleUpdate
+    }
   }
 }
-
-// タスク保存
-async function saveTasks(newTasks) {
-  try {
-    await axios.post('/api/tasks', newTasks)
-    console.log('保存成功')
-  } catch (error) {
-    console.error('保存失敗', error)
-  }
-}
-
-// 子コンポーネントから更新されたら反映
-function handleUpdate(newTasks) {
-  tasks.value = newTasks
-  saveTasks(newTasks)  // ← ここで保存処理を呼ぶ！
-}
-
-// 初期表示時にデータ取得
-onMounted(fetchTasks)
-
 </script>
