@@ -8,7 +8,7 @@
       <div
         v-for="(msg, index) in props.messages" 
         :key="index" 
-        :class="['chat-message', msg.sender === currentUsername ? 'from-me' : 'from-others']"
+        :class="['chat-message', msg.sender === props.currentuser ? 'from-me' : 'from-others']"
       >
         <div class="sender-name">
           {{ msg.sender }}（current: {{ currentUsername }}）
@@ -69,7 +69,7 @@ const getUsernameFromToken = (token) => {
 const token = localStorage.getItem('token')
 
 const currentUsername = computed(() => {
- return props.currentuser.value || getUsernameFromToken(token)
+ return props.currentuser || getUsernameFromToken(token)
 })
 
 const sendMessage = () => {
