@@ -8,7 +8,7 @@
       <div
         v-for="(msg, index) in props.messages" 
         :key="index" 
-        :class="['chat-message', msg.sender === currentUsername.value ? 'from-me' : 'from-others']"
+        :class="['chat-message', msg.sender === currentUsername ? 'from-me' : 'from-others']"
       >
         <div class="sender-name">
           {{ msg.sender }}（current: {{ currentUsername }}）
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick,computed} from 'vue'
 import { watch } from 'vue'
 
 const props = defineProps({
@@ -67,7 +67,10 @@ const getUsernameFromToken = (token) => {
   }
 };
 const token = localStorage.getItem('token')
-const currentUsername = ref(getUsernameFromToken(token))
+
+const currentUsername = computed(() => {
+ return props.currentuser || getUsernameFromToken(token)
+})
 
 const sendMessage = () => {
   if (newMessage.value.trim() === '') return
