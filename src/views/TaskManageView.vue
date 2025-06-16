@@ -64,6 +64,7 @@ export default {
     // タスク一覧取得
     const fetchTasks = async () => {
       const token = localStorage.getItem('token')
+      console.log('トークン:', token)
       if (!token) {
         console.error('トークンが取得できませんでした')
         return
