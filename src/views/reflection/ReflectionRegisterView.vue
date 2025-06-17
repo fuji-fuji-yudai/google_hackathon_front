@@ -49,11 +49,24 @@
 </template>
 
 <script>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 
 // ログインユーザーのトークンを取得
 const token = localStorage.getItem('token')
+
+// フラッシュメッセージの設定を/reflection/homeに渡す関数を定義
+const router = useRouter()
+const flashMessage = (message, title, type) => {
+  router.push({
+    name: 'reflectionHome',
+    query: { 
+      message: message,
+      title: title,
+      type: type
+    }
+  })
+}
 
 export default {
   data() {
@@ -88,20 +101,36 @@ export default {
             }
           }
         )
-        alert('登録成功！')
+        if(response.ok) {
+          flashMessage(
+            "登録に成功しました。",
+            "成功",
+            "success"
+          )
+        } else {
+          flashMessage(
+            "登録に失敗しました。",
+            "エラー",
+            "error"
+          )
+        }
         console.log('レスポンス:', response.data)
       } catch (error) {
         console.error('登録失敗:', error)
-        alert('登録に失敗しました。')
+        flashMessage(
+          "登録に失敗しました。",
+          "エラー",
+          "error"
+        )
       }
+    },
+    clear() {
+      // フォームをリセット
+      this.form.date = '';
+      this.form.activity = '';
+      this.form.achievement = '';
+      this.form.improvementPoints = '';
     }
-  },
-  clear() {
-    // フォームをリセット
-    this.form.date = '';
-    this.form.activity = '';
-    this.form.achievement = '';
-    this.form.improvementPoints = '';
   }
 }
 </script>
