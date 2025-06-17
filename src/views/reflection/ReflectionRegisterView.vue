@@ -70,6 +70,13 @@ export default {
   
   methods: {
     async create() {
+      console.log('JWT トークン:', token);
+      // トークンが存在しない場合のエラーハンドリング
+      if (!token) {
+        console.error('JWT トークンが存在しません');
+        alert('ログインが必要です');
+        return; // 処理を中断
+      }
       // 登録処理
       try {
         console.log(this.form)
@@ -77,8 +84,8 @@ export default {
           this.form,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Authorization ヘッダーにトークンを設定
-            },
+              Authorization: `Bearer ${token}` // Authorization ヘッダーにトークンを設定
+            }
           }
         )
         alert('登録成功！')
