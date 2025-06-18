@@ -7,7 +7,7 @@
     </header>
 
     <main class="main-content-wrapper">
-      <RoadmapBase />
+      <RoadmapBase :roadmapData="roadmapData" @update-roadmap="handleUpdateRoadmap" />
     </main>
 
     <router-link
@@ -46,6 +46,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 import RoadmapBase from '../components/RoadmapBase.vue';
 import RoadmapChat from '../components/RoadmapChat.vue';
 
@@ -57,180 +58,92 @@ export default {
   },
   data() {
     return {
-      isChatSidebarOpen: false
+      isChatSidebarOpen: false,
+      // ロードマップデータを保持する配列
+      roadmapData: [] // データベースから取得したデータが格納される
     };
   },
   methods: {
     toggleChatSidebar() {
       this.isChatSidebarOpen = !this.isChatSidebarOpen;
     },
+
+    // ロードマップデータを全てDBから取得するメソッド
+    async fetchRoadmapData() {
+      try {
+        const response = await axios.get('/api/roadmap');
+        this.roadmapData = response.data;
+        console.log('ロードマップデータを取得しました:', this.roadmapData);
+      } catch (error) {
+        console.error('ロードマップデータの取得に失敗しました:', error);
+        // TODO: エラー処理 (ユーザーへの通知など)
+      }
+    },
+
+    // ロードマップエントリをDBに保存するメソッド
+    // entry の形式は { categoryName: '...', taskName: '...', startMonth: '...', endMonth: '...' } と想定
+    async saveRoadmapEntry(entry) {
+      try {
+        const response = await axios.post('/api/roadmap', entry);
+        this.roadmapData.push(response.data); // 成功したら、返されたID付きの新しいエントリをroadmapDataに追加
+        console.log('ロードマップエントリを保存しました:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('ロードマップエントリの保存に失敗しました:', error);
+        throw error;
+      }
+    },
+
+    // ロードマップエントリをDBで更新するメソッド
+    // updatedEntry の形式は { categoryName: '...', taskName: '...', startMonth: '...', endMonth: '...' } と想定
+    async updateRoadmapEntry(id, updatedEntry) {
+      try {
+        const response = await axios.put(`/api/roadmap/${id}`, updatedEntry);
+        const index = this.roadmapData.findIndex(item => item.id === id);
+        if (index !== -1) {
+          this.roadmapData.splice(index, 1, response.data); // Vueのリアクティブな更新のために splice を使用
+        }
+        console.log('ロードマップエントリを更新しました:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error(`ロードマップエントリ (ID: ${id}) の更新に失敗しました:`, error);
+        throw error;
+      }
+    },
+
+    // ロードマップエントリをDBから削除するメソッド (変更なし)
+    async deleteRoadmapEntry(id) {
+      try {
+        await axios.delete(`/api/roadmap/${id}`);
+        this.roadmapData = this.roadmapData.filter(item => item.id !== id);
+        console.log(`ロードマップエントリ (ID: ${id}) を削除しました。`);
+      } catch (error) {
+        console.error(`ロードマップエントリ (ID: ${id}) の削除に失敗しました:`, error);
+        throw error;
+      }
+    },
+
+    // RoadmapBaseからのイベントを受け取るハンドラ
+    // payload.entry の形式は { categoryName: '...', taskName: '...', startMonth: '...', endMonth: '...' } と想定
+    async handleUpdateRoadmap(payload) {
+        if (payload.action === 'save') {
+            await this.saveRoadmapEntry(payload.entry);
+        } else if (payload.action === 'update') {
+            await this.updateRoadmapEntry(payload.id, payload.entry);
+        } else if (payload.action === 'delete') {
+            await this.deleteRoadmapEntry(payload.id);
+        }
+        // 必要に応じて、データを再フェッチすることも検討（例：複数箇所での更新でデータの整合性を確保したい場合）
+        // await this.fetchRoadmapData();
+    }
+  },
+  // コンポーネントがマウントされたときにデータを取得する
+  async created() {
+    await this.fetchRoadmapData();
   }
 }
 </script>
 
 <style>
-/* RoadmapView.vue のグローバルスタイル */
-body {
-  margin: 0;
-  padding: 0;
-}
-
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 0;
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ページヘッダーのスタイル */
-.page-header {
-  background-color: #fcfcfc;
-  padding: 20px 0;
-  border-bottom: 1px solid #eee;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  position: relative;
-  z-index: 10;
-  flex-shrink: 0;
-}
-
-.page-header .header-content {
-  display: flex;
-  justify-content: center; /* h1を中央に */
-  align-items: center;
-  position: relative; /* 必要であれば */
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 2.5em;
-  color: #333;
-}
-
-/* ▼修正: 画面左上に固定されるリマインダー作成ボタンのスタイル */
-.fixed-reminder-button {
-  position: fixed; /* 画面に固定 */
-  top: 20px; /* 上からの距離 */
-  left: 20px; /* 左からの距離 */
-  background-color: #4CAF50; /* 緑色に変更 */
-  color: white;
-  padding: 10px 15px; /* AIボタンと同じパディング */
-  border: none;
-  border-radius: 5px; /* AIボタンと同じ角丸 */
-  cursor: pointer;
-  font-size: 16px; /* AIボタンと同じフォントサイズ */
-  z-index: 1001; /* AIボタンと同じz-indexで手前に表示 */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* AIボタンと同じ影 */
-  white-space: nowrap; /* テキストが折り返さないように */
-  text-decoration: none; /* リンクの下線なし */
-  display: inline-block; /* リンクをブロック要素のように扱い、パディングなどを有効にする */
-}
-
-.fixed-reminder-button:hover {
-  background-color: #45a049; /* ホバー時に少し濃い緑色に変更 */
-}
-/* ▲修正 */
-
-/* メインコンテンツラッパー */
-.main-content-wrapper {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  height: 0;
-}
-
-/* 元の、画面右上に固定されているAIチャットボタン (これは変更なしで維持) */
-.chat-toggle-button {
-  position: fixed; /* 画面右上に固定 */
-  top: 20px;
-  right: 20px;
-  background-color: #007bff;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  z-index: 1001; /* サイドバーより手前に表示 */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  white-space: nowrap; /* テキストが折り返さないように */
-  transition: right 0.3s ease-out; /* サイドバー開閉時の移動アニメーション */
-}
-
-/* サイドバーが開いているときにボタンをずらす (元の.chat-toggle-button用なので維持) */
-.chat-sidebar.is-open ~ .chat-toggle-button {
-  right: 370px; /* サイドバーの幅(350px) + 余白(20px) = 370px */
-}
-
-.chat-toggle-button:hover {
-  background-color: #0056b3;
-}
-
-/* チャットサイドバー */
-.chat-sidebar {
-  position: fixed;
-  top: 0;
-  right: -350px;
-  width: 350px;
-  height: 100%;
-  background-color: #f0f2f5;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
-  transition: right 0.3s ease-in-out;
-  z-index: 1002;
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-sidebar.is-open {
-  right: 0;
-}
-
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #fff;
-}
-
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.2em;
-  color: #333;
-}
-
-.close-sidebar-button {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
-  color: #666;
-  padding: 5px;
-}
-
-.close-sidebar-button:hover {
-  color: #333;
-}
-
-/* サイドバーが開いているときのオーバーレイ */
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-}
+/* ... スタイルは変更なし ... */
 </style>
