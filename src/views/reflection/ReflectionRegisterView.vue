@@ -98,7 +98,7 @@ export default {
             }
           }
         )
-        if(response.ok) {
+        if(response.status === 200) {
           // フラッシュメッセージを設定してリダイレクト
           router.push({
             name: "reflectionHome",
