@@ -79,8 +79,8 @@ const fetchReflections = async () => {
   console.log('currentMonth' + currentMonth.value)
   const year = currentMonth.value.getFullYear()
   const month = currentMonth.value.getMonth() + 1
-  console.log('year' + year)
-  console.log('month' + month)
+  console.log('year：' + year)
+  console.log('month：' + month)
   try {
     const response = await axios.get('https://my-image-14467698004.asia-northeast1.run.app/api/reflection', {
       params: {
@@ -91,6 +91,7 @@ const fetchReflections = async () => {
         Authorization: `Bearer ${token}`
       }
     })
+    console.log('レスポンスデータ：' + response.data)
     completedDates.value = response.data.map(reflection => reflection.date)
   } catch (error) {
     console.error('データ取得に失敗:', error)
@@ -99,6 +100,7 @@ const fetchReflections = async () => {
 // 日付が完了済みかどうかをチェック
 const isDateCompleted = (date) => {
   const formattedDate = date.toISOString().split('T')[0] // YYYY-MM-DD形式に変換
+  console.log('formattedDate：' + formattedDate)
   return completedDates.value.includes(formattedDate)
 }
 // カレンダーの月が変更されたときにデータを再取得
