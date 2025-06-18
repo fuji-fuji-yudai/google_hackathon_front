@@ -28,10 +28,8 @@
             style="width: 100%; height: 100%; cursor: pointer; display: flex; justify-content: center;"
             @click="handleDateClick(data.date)"
           >
-            {{ data.date.getDate() }}
-            <span v-if="isDateCompleted(data.date)" style="font-size: 12px; color: green; position: absolute; bottom: 5px;">
-              完了
-            </span>
+            <span>{{ data.date.getDate() }}</span>
+            <span v-if="isDateCompleted(data.date)" class="completed-label">完了</span>
           </div>
         </template>
       </el-calendar>
@@ -112,15 +110,19 @@ onMounted(fetchReflections)
 </script>
 
 <style>
-  .el-alert {
-  margin: 20px 0 0;
-  }
-  .el-alert:first-child {
-    margin: 0;
-  }
-  .side-calendar {
-    aspect-ratio: 1/1 !important;
+  .date-cell {
     width: 100%;
-    border: 1px solid red;
+    height: 100%;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column; /* 縦方向に配置 */
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .completed-label {
+    font-size: 12px;
+    color: green;
+    margin-top: 5px; /* 日付の下に余白をつける */
   }
 </style>
