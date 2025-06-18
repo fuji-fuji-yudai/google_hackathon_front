@@ -13,7 +13,7 @@
       <el-calendar class="side-calendar">
         <template #date-cell="{ data }">
           <div
-            style="width: 100%; height: 100%; cursor: pointer; display: flex; justify-content: center;"
+            style="width: 100%; height: 100%; cursor: pointer;"
             @click="handleDateClick(data.date)"
           >
             {{ data.date.getDate() }}
@@ -25,11 +25,11 @@
       <el-calendar class="main-calendar">
         <template #date-cell="{ data }">
           <div
-            style="width: 100%; height: 100%; cursor: pointer; display: flex; justify-content: center;"
+            style="width: 100%; height: 100%; cursor: pointer; display: flex; flex-direction: column;"
             @click="handleDateClick(data.date)"
           >
             <span>{{ data.date.getDate() }}</span>
-            <span v-if="isDateCompleted(data.date)" class="completed-label">完了</span>
+            <el-tag v-if="isDateCompleted(data.date)" type="success">完了</el-tag>
           </div>
         </template>
       </el-calendar>
