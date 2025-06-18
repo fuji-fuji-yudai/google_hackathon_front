@@ -49,24 +49,11 @@
 </template>
 
 <script>
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 
 // ログインユーザーのトークンを取得
 const token = localStorage.getItem('token')
-
-// フラッシュメッセージの設定を/reflection/homeに渡す関数を定義
-const router = useRouter()
-const flashMessage = (message, title, type) => {
-  router.push({
-    name: 'reflectionHome',
-    query: { 
-      message: message,
-      title: title,
-      type: type
-    }
-  })
-}
 
 export default {
   data() {
@@ -83,6 +70,7 @@ export default {
   
   methods: {
     async create() {
+      const router = this.$router
       console.log('JWT トークン:', token);
       // トークンが存在しない場合のエラーハンドリング
       if (!token) {
@@ -102,26 +90,36 @@ export default {
           }
         )
         if(response.ok) {
-          flashMessage(
-            "登録に成功しました。",
-            "成功",
-            "success"
-          )
+          // フラッシュメッセージを設定してリダイレクト
+          router.push({
+            name: "reflectionHome",
+            query: {
+              message: "登録に成功しました。",
+              title: "成功",
+              type: "success",
+            },
+          });
         } else {
-          flashMessage(
-            "登録に失敗しました。",
-            "エラー",
-            "error"
-          )
+          router.push({
+            name: "reflectionHome",
+            query: {
+              message: "登録に失敗しました。",
+              title: "エラー",
+              type: "error",
+            },
+          });
         }
         console.log('レスポンス:', response.data)
       } catch (error) {
         console.error('登録失敗:', error)
-        flashMessage(
-          "登録に失敗しました。",
-          "エラー",
-          "error"
-        )
+        router.push({
+          name: "reflectionHome",
+          query: {
+            message: "登録に失敗しました。",
+            title: "エラー",
+            type: "error",
+          },
+        });
       }
     },
     clear() {
