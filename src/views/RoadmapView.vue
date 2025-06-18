@@ -10,6 +10,12 @@
       <RoadmapBase />
     </main>
 
+    <router-link
+      to="/reminders"
+      class="fixed-reminder-button"
+    >
+      リマインダー作成
+    </router-link>
     <button
       class="chat-toggle-button"
       @click="toggleChatSidebar"
@@ -41,13 +47,13 @@
 
 <script>
 import RoadmapBase from '../components/RoadmapBase.vue';
-import RoadmapChat from '../components/RoadmapChat.vue'; // RoadmapChatもインポート
+import RoadmapChat from '../components/RoadmapChat.vue';
 
 export default {
   name: 'RoadmapView',
   components: {
     RoadmapBase,
-    RoadmapChat // ここでも使用するので追加
+    RoadmapChat
   },
   data() {
     return {
@@ -67,8 +73,6 @@ export default {
 body {
   margin: 0;
   padding: 0;
-  /* ★ここを削除またはコメントアウト */
-  /* overflow: hidden; */ 
 }
 
 #app {
@@ -79,70 +83,73 @@ body {
   color: #2c3e50;
   margin-top: 0;
   position: relative;
-  min-height: 100vh; /* 少なくともビューポートの高さにする */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 /* ページヘッダーのスタイル */
 .page-header {
-  background-color: #fcfcfc; /* 白い背景 */
-  padding: 20px 0; /* 上下のパディングを調整 */
-  border-bottom: 1px solid #eee; /* 下線 */
+  background-color: #fcfcfc;
+  padding: 20px 0;
+  border-bottom: 1px solid #eee;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  position: relative; /* z-indexのために必要 */
-  z-index: 10; /* コンテンツより手前に表示 */
-  flex-shrink: 0; /* ヘッダーが縮まないように固定 */
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .page-header .header-content {
   display: flex;
-  justify-content: center; /* ロードマップh1を中央に */
+  justify-content: center; /* h1を中央に */
   align-items: center;
-  position: relative;
-  max-width: 1200px; /* 必要に応じてヘッダーコンテンツの最大幅を調整 */
-  margin: 0 auto; /* 中央寄せ */
+  position: relative; /* 必要であれば */
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .page-header h1 {
-  margin: 0; /* h1のデフォルトマージンをリセット */
+  margin: 0;
   font-size: 2.5em;
   color: #333;
 }
 
-.header-link {
-  position: absolute; /* ヘッダーコンテンツ内で絶対配置 */
-  left: 20px; /* 左端から20px */
-  top: 50%; /* 垂直方向中央 */
-  transform: translateY(-50%); /* 垂直方向中央寄せの調整 */
-  font-size: 1.1em;
-  color: #007bff;
-  text-decoration: none;
-  padding: 5px 10px;
-  border-radius: 5px;
-  transition: background-color 0.2s ease;
+/* ▼修正: 画面左上に固定されるリマインダー作成ボタンのスタイル */
+.fixed-reminder-button {
+  position: fixed; /* 画面に固定 */
+  top: 20px; /* 上からの距離 */
+  left: 20px; /* 左からの距離 */
+  background-color: #4CAF50; /* 緑色に変更 */
+  color: white;
+  padding: 10px 15px; /* AIボタンと同じパディング */
+  border: none;
+  border-radius: 5px; /* AIボタンと同じ角丸 */
+  cursor: pointer;
+  font-size: 16px; /* AIボタンと同じフォントサイズ */
+  z-index: 1001; /* AIボタンと同じz-indexで手前に表示 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* AIボタンと同じ影 */
   white-space: nowrap; /* テキストが折り返さないように */
+  text-decoration: none; /* リンクの下線なし */
+  display: inline-block; /* リンクをブロック要素のように扱い、パディングなどを有効にする */
 }
 
-.header-link:hover {
-  background-color: #e9f0f8;
-  text-decoration: underline;
+.fixed-reminder-button:hover {
+  background-color: #45a049; /* ホバー時に少し濃い緑色に変更 */
 }
-
+/* ▲修正 */
 
 /* メインコンテンツラッパー */
 .main-content-wrapper {
-  flex-grow: 1; /* 残りのスペースを埋める */
+  flex-grow: 1;
   display: flex;
-  justify-content: center; /* RoadmapBaseを中央寄せにするため */
-  padding: 20px; /* 上下左右に20pxパディング */
-  overflow-y: auto; /* コンテンツがはみ出したらスクロール */
-  box-sizing: border-box; /* paddingを含めて幅を計算 */
-  /* ★下記を追加: これが重要 */
-  height: 0; /* flex-grow: 1; と組み合わせて利用可能な残りの高さを占める */
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  height: 0;
 }
 
-/* チャット開閉ボタン */
+/* 元の、画面右上に固定されているAIチャットボタン (これは変更なしで維持) */
 .chat-toggle-button {
   position: fixed; /* 画面右上に固定 */
   top: 20px;
@@ -160,11 +167,10 @@ body {
   transition: right 0.3s ease-out; /* サイドバー開閉時の移動アニメーション */
 }
 
-/* サイドバーが開いているときにボタンをずらす */
+/* サイドバーが開いているときにボタンをずらす (元の.chat-toggle-button用なので維持) */
 .chat-sidebar.is-open ~ .chat-toggle-button {
   right: 370px; /* サイドバーの幅(350px) + 余白(20px) = 370px */
 }
-
 
 .chat-toggle-button:hover {
   background-color: #0056b3;
@@ -174,19 +180,19 @@ body {
 .chat-sidebar {
   position: fixed;
   top: 0;
-  right: -350px; /* デフォルトで画面外に隠す */
-  width: 350px; /* サイドバーの幅 */
+  right: -350px;
+  width: 350px;
   height: 100%;
-  background-color: #f0f2f5; /* サイドバーの背景色 */
+  background-color: #f0f2f5;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
-  transition: right 0.3s ease-in-out; /* スムーズなアニメーション */
-  z-index: 1002; /* モーダルなどより手前に表示 */
+  transition: right 0.3s ease-in-out;
+  z-index: 1002;
   display: flex;
   flex-direction: column;
 }
 
 .chat-sidebar.is-open {
-  right: 0; /* サイドバーが開いている状態 */
+  right: 0;
 }
 
 .sidebar-header {
@@ -224,7 +230,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.3); /* 半透明の黒 */
-  z-index: 1000; /* サイドバーより奥、コンテンツより手前 */
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
 </style>
