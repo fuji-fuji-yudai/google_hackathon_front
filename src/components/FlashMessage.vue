@@ -1,6 +1,6 @@
 <template>
   <div class="flash-message">
-    <el-alert v-if="visible" :title="title" :type="type" />
+    <el-alert v-if="visible" :title="title+'：'+message" :type="type" />
   </div>
 </template>
 

@@ -78,11 +78,20 @@ export default {
         alert('ログインが必要です');
         return; // 処理を中断
       }
+      // 日付をISO 8601形式（YYYY-MM-DD）に変換
+      const formattedDate = this.form.date
+        ? new Date(this.form.date).toISOString().split("T")[0] // フォーマット例: "2025-06-18"
+        : "";
+      // フォームデータを送信
+      const payload = {
+        ...this.form,
+        date: formattedDate, // 変換された日付を送信
+      };
       // 登録処理
       try {
-        console.log(this.form)
+        console.log(payload)
         const response = await axios.post('https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
-          this.form,
+          payload,
           {
             headers: {
               Authorization: `Bearer ${token}` // Authorization ヘッダーにトークンを設定
