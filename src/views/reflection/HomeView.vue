@@ -75,8 +75,12 @@ const handleDateClick = (date) => {
 
 // カレンダーを切り替えたときの処理
 const fetchReflections = async () => {
+  console.log('取得処理開始')
+  console.log('currentMonth' + currentMonth.value)
   const year = currentMonth.value.getFullYear()
   const month = currentMonth.value.getMonth() + 1
+  console.log('year' + year)
+  console.log('month' + month)
   try {
     const response = await axios.get('https://my-image-14467698004.asia-northeast1.run.app/api/reflection', {
       params: {
