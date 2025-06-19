@@ -1,16 +1,17 @@
 <template>
   <div class="roadmap-view">
-    <RoadmapManager />
-  </div>
+    <RoadmapManager /> </div>
 </template>
 
 <script>
-import RoadmapManager from '../components/RoadmapManager.vue'; // RoadmapManagerをインポート
+// import RoadmapBase from '../components/RoadmapBase.vue'; // この行を削除
+import RoadmapManager from '../components/RoadmapManager.vue'; // この行を追加
 
 export default {
   name: 'RoadmapView',
   components: {
-    RoadmapManager, // componentsにRoadmapManagerを追加
+    // RoadmapBase, // この行を削除
+    RoadmapManager, // この行を追加
   },
   // 他のロジック（もしあれば）
 };

@@ -36,17 +36,24 @@
         <button class="close-button" @click="closeAIChatModal">閉じる</button>
       </div>
     </div>
+
+    <div v-if="isReminderModalOpen" class="reminder-modal-overlay" @click.self="closeReminderModal">
+      <div class="reminder-modal-content">
+        <ReminderView /> <button class="close-button" @click="closeReminderModal">閉じる</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { useRouter } from 'vue-router'; 
-import RoadmapBase from './RoadmapBase.vue';
-import RoadmapChat from './RoadmapChat.vue'; // RoadmapChat をインポート
+// useRouter と useRoute は、router.push() を使わないため削除
 
-const router = useRouter();
+import RoadmapBase from './RoadmapBase.vue';
+import RoadmapChat from './RoadmapChat.vue';
+// src/views/ReminderView.vue が存在することを確認し、パスを修正
+import ReminderView from '../views/ReminderView.vue'; 
 
 const jwtToken = ref(localStorage.getItem('token') || null);
 const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries'; 
@@ -89,12 +96,11 @@ const generateRandomColor = () => {
   const hue = Math.floor(Math.random() * 360);
   const saturation = Math.floor(Math.random() * 30) + 70;
   const lightness = Math.floor(Math.random() * 15) + 75;
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // 'lighntness' を 'lightness' に修正
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
 watch(roadmapData, (newRoadmapData) => {
   newRoadmapData.forEach(row => {
-    // hasOwnProperty の呼び出し方を修正
     if (!Object.prototype.hasOwnProperty.call(categoryColors.value, row.category)) {
       categoryColors.value[row.category] = generateRandomColor();
     }
@@ -385,11 +391,16 @@ const closeAIChatModal = () => {
   isAIChatModalOpen.value = false;
 };
 
-// リマインダーフォームへの遷移
+// リマインダー作成モーダルの状態管理
+const isReminderModalOpen = ref(false);
+
 const goToReminderForm = () => {
-  router.push('/reminders'); // reminders画面へのパスを想定
+  isReminderModalOpen.value = true; // モーダルとして開く
 };
 
+const closeReminderModal = () => {
+  isReminderModalOpen.value = false;
+};
 </script>
 
 <style scoped>
@@ -504,7 +515,7 @@ h2 {
 }
 
 /* モーダルオーバーレイのスタイル */
-.ai-chat-modal-overlay {
+.ai-chat-modal-overlay, .reminder-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -517,21 +528,21 @@ h2 {
   z-index: 1000;
 }
 
-.ai-chat-modal-content {
+.ai-chat-modal-content, .reminder-modal-content {
   background-color: white;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   width: 90%;
-  max-width: 600px; /* チャットの幅を調整 */
-  height: 80%; /* チャットの高さを調整 */
-  max-height: 80vh; /* ビューポートの高さに対する最大値 */
+  max-width: 600px;
+  height: 80%;
+  max-height: 80vh;
   display: flex;
   flex-direction: column;
-  position: relative; /* 閉じるボタンの配置のため */
+  position: relative;
 }
 
-.ai-chat-modal-content h3 {
+.ai-chat-modal-content h3, .reminder-modal-content h3 {
   margin-top: 0;
   margin-bottom: 15px;
   color: #333;
