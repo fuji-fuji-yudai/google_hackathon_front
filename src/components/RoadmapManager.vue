@@ -2,9 +2,17 @@
   <div class="roadmap-manager-container">
     <h2>ロードマップ編集</h2>
 
-    <button class="save-roadmap-button" @click="saveRoadmapData" v-if="false">
-      データ保存 (自動保存有効中)
-    </button>
+    <div class="action-buttons">
+      <button class="action-button chat-button" @click="openAIChatModal">
+        AIにチャットで質問
+      </button>
+      <button class="action-button reminder-button" @click="goToReminderForm">
+        リマインダー作成
+      </button>
+      <button class="save-roadmap-button" @click="saveRoadmapData" v-if="false">
+        データ保存 (自動保存有効中)
+      </button>
+    </div>
 
     <p v-if="loading" class="loading-message">ロードマップデータを読み込み中...</p>
     <p v-if="apiError" class="error-message">エラー: {{ apiError }}</p>
@@ -21,14 +29,24 @@
       @save-task-edit-to-manager="handleSaveTaskEdit"
       @delete-task-to-manager="handleDeleteTask"
     />
+
+    <div v-if="isAIChatModalOpen" class="ai-chat-modal-overlay" @click.self="closeAIChatModal">
+      <div class="ai-chat-modal-content">
+        <RoadmapChat />
+        <button class="close-button" @click="closeAIChatModal">閉じる</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-// ... (スクリプト部分は変更なし)
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router'; 
 import RoadmapBase from './RoadmapBase.vue';
+import RoadmapChat from './RoadmapChat.vue'; // RoadmapChat をインポート
+
+const router = useRouter();
 
 const jwtToken = ref(localStorage.getItem('token') || null);
 const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries'; 
@@ -71,12 +89,13 @@ const generateRandomColor = () => {
   const hue = Math.floor(Math.random() * 360);
   const saturation = Math.floor(Math.random() * 30) + 70;
   const lightness = Math.floor(Math.random() * 15) + 75;
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // 'lighntness' を 'lightness' に修正
 };
 
 watch(roadmapData, (newRoadmapData) => {
   newRoadmapData.forEach(row => {
-    if (!categoryColors.value[row.category]) {
+    // hasOwnProperty の呼び出し方を修正
+    if (!Object.prototype.hasOwnProperty.call(categoryColors.value, row.category)) {
       categoryColors.value[row.category] = generateRandomColor();
     }
   });
@@ -86,7 +105,7 @@ const handleAddTask = (taskPayload) => {
   const newCategory = taskPayload.category;
   let existingCategoryRow = roadmapData.value.find(row => row.category === newCategory);
 
-  if (!categoryColors.value[newCategory]) {
+  if (!Object.prototype.hasOwnProperty.call(categoryColors.value, newCategory)) {
     categoryColors.value[newCategory] = generateRandomColor();
   }
 
@@ -128,7 +147,7 @@ const handleSaveTaskEdit = (updatedTask) => {
   if (updatedTask.category !== updatedTask.originalCategory) {
     roadmapData.value[categoryIndex].tasks.splice(taskIndex, 1);
 
-    if (!categoryColors.value[updatedTask.category]) {
+    if (!Object.prototype.hasOwnProperty.call(categoryColors.value, updatedTask.category)) {
       categoryColors.value[updatedTask.category] = generateRandomColor();
     }
 
@@ -244,7 +263,7 @@ const fetchRoadmapData = async () => {
             const startIndex = startMonthData ? allMonths.indexOf(startMonthData) : 0;
             const endIndex = endMonthData ? allMonths.indexOf(endMonthData) : 0;
 
-            if (!newCategoryColors[item.category]) {
+            if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.category)) {
                 newCategoryColors[item.category] = generateRandomColor();
             }
 
@@ -278,7 +297,7 @@ const fetchRoadmapData = async () => {
                 counter++;
             }
             
-            if (!newCategoryColors[uniqueCategoryName]) {
+            if (!Object.prototype.hasOwnProperty.call(newCategoryColors, uniqueCategoryName)) {
                 newCategoryColors[uniqueCategoryName] = generateRandomColor();
             }
             roadmapData.value.push({ category: uniqueCategoryName, tasks: [] });
@@ -354,15 +373,30 @@ const saveRoadmapData = async () => {
     ElMessage.error(apiError.value);
   }
 };
+
+// AIチャットモーダルの状態管理
+const isAIChatModalOpen = ref(false);
+
+const openAIChatModal = () => {
+  isAIChatModalOpen.value = true;
+};
+
+const closeAIChatModal = () => {
+  isAIChatModalOpen.value = false;
+};
+
+// リマインダーフォームへの遷移
+const goToReminderForm = () => {
+  router.push('/reminders'); // reminders画面へのパスを想定
+};
+
 </script>
 
 <style scoped>
 .roadmap-manager-container {
   padding: 20px;
-  /* max-width をさらに広げるか、削除して幅を柔軟にする */
-  max-width: 1500px; /* 例えば、1500pxに増やす */
-  /* または max-width を削除して width: 90%; などにする */
-  width: 95%; /* 親要素の幅の95%を使う */
+  max-width: 1500px; 
+  width: 95%; 
   margin: 20px auto;
   background-color: #f9f9f9;
   border-radius: 8px;
@@ -373,6 +407,49 @@ const saveRoadmapData = async () => {
 h2 {
   color: #333;
   margin-bottom: 25px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end; /* ボタンを右寄せに */
+  gap: 15px; /* ボタン間のスペース */
+  margin-bottom: 20px;
+  margin-top: -55px; /* h2 との重なりを調整 */
+  padding-right: 20px; /* 右側のパディング */
+}
+
+.action-button {
+  background-color: #6c757d; /* グレー系の色 */
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+}
+
+.chat-button {
+  background-color: #007bff; /* 青系 */
+  box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
+}
+.chat-button:hover {
+  background-color: #0056b3;
+}
+
+.reminder-button {
+  background-color: #28a745; /* 緑系 */
+  box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
+}
+.reminder-button:hover {
+  background-color: #218838;
 }
 
 .save-roadmap-button {
@@ -387,6 +464,8 @@ h2 {
   margin-bottom: 30px;
   transition: background-color 0.3s ease, transform 0.2s ease;
   box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
+  /* 非表示にしているため、位置調整は不要かもしれませんが、念のため */
+  display: none; /* v-if="false" と合わせて非表示 */
 }
 
 .save-roadmap-button:hover {
@@ -422,5 +501,57 @@ h2 {
   padding: 0;
   margin-top: 20px;
   font-weight: bold;
+}
+
+/* モーダルオーバーレイのスタイル */
+.ai-chat-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.ai-chat-modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px; /* チャットの幅を調整 */
+  height: 80%; /* チャットの高さを調整 */
+  max-height: 80vh; /* ビューポートの高さに対する最大値 */
+  display: flex;
+  flex-direction: column;
+  position: relative; /* 閉じるボタンの配置のため */
+}
+
+.ai-chat-modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  text-align: center;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: #666;
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #333;
 }
 </style>
