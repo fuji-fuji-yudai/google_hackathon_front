@@ -1,131 +1,191 @@
-// RoadmapBase.vue
 <template>
-  <div>
-    <button @click="addNewEntry">新しいタスクを追加</button>
+  <div class="roadmap-container">
+    <RoadmapGrid
+      :roadmap-data="props.roadmapData"
+      :all-months="allMonths"
+      :all-quarters="allQuarters"
+      :initial-category-colors="initialCategoryColors"
+      @start-task-edit="openEditModal"
+    />
 
-    <div v-for="entry in roadmapData" :key="entry.id">
-      <p>カテゴリ: {{ entry.categoryName }}</p>
-      <p>タスク: {{ entry.taskName }}</p>
-      <p>期間: {{ entry.startMonth }} - {{ entry.endMonth }}</p>
-      <button @click="editEntry(entry)">編集</button>
-      <button @click="deleteEntry(entry.id)">削除</button>
-    </div>
+    <RoadmapTaskAddForm
+      :new-task="newTask"
+      :selected-category="selectedCategory"
+      :all-available-categories="allAvailableCategories"
+      :months="allMonths"
+      @update:newTask="handleNewTaskUpdate"
+      @update:selectedCategory="handleSelectedCategoryUpdate"
+      @add-task="addTask"
+    />
 
-    <div v-if="editingEntry">
-      <h3>{{ editingEntry.id ? 'タスクを編集' : '新しいタスクを追加' }}</h3>
-      <label>カテゴリ名:</label>
-      <input v-model="editingEntry.categoryName" /><br>
-      <label>タスク名:</label>
-      <input v-model="editingEntry.taskName" /><br>
-      <label>開始月:</label>
-      <input v-model="editingEntry.startMonth" /><br>
-      <label>終了月:</label>
-      <input v-model="editingEntry.endMonth" /><br>
-      <button @click="saveEditedEntry">保存</button>
-      <button @click="cancelEdit">キャンセル</button>
-    </div>
+    <RoadmapTaskEditModal
+      :is-visible="isEditModalVisible"
+      :task-to-edit="taskToEdit"
+      :all-available-categories="allAvailableCategories"
+      :months="allMonths"
+      @update:isVisible="isEditModalVisible = $event"
+      @save-task-edit="saveTaskEdit"
+      @delete-task="deleteTask"
+    />
   </div>
 </template>
 
-<script>
-export default {
-  name: 'RoadmapBase',
-  props: {
-    roadmapData: {
-      type: Array,
-      default: () => []
-    }
-  },
-  data() {
-    return {
-      editingEntry: null // 編集中のエントリを保持
-    };
-  },
-  methods: {
-    addNewEntry() {
-      this.editingEntry = {
-        id: null, // 新規なのでIDはnull
-        categoryName: '',
-        taskName: '',
-        startMonth: '',
-        endMonth: ''
-      };
-    },
-    editEntry(entry) {
-      // 既存のエントリを編集するためにコピーを作成 (リアクティブな変更を避けるため)
-      this.editingEntry = { ...entry };
-    },
-    async saveEditedEntry() {
-      if (!this.editingEntry.categoryName || !this.editingEntry.taskName ||
-          !this.editingEntry.startMonth || !this.editingEntry.endMonth) {
-        alert('全ての必須項目を入力してください。');
-        return;
-      }
+<script setup>
+import { ref, computed, defineProps, defineEmits } from 'vue'; // 'watch' を削除
+import { ElMessage, ElMessageBox } from 'element-plus';
+import RoadmapGrid from './RoadmapGrid.vue';
+import RoadmapTaskAddForm from './RoadmapTaskAddForm.vue';
+import RoadmapTaskEditModal from './RoadmapTaskEditModal.vue';
 
-      try {
-        if (this.editingEntry.id) {
-          // 既存エントリの更新
-          await this.$emit('update-roadmap', {
-            action: 'update',
-            id: this.editingEntry.id,
-            entry: {
-              categoryName: this.editingEntry.categoryName,
-              taskName: this.editingEntry.taskName,
-              startMonth: this.editingEntry.startMonth,
-              endMonth: this.editingEntry.endMonth
-            }
-          });
-        } else {
-          // 新しいエントリの保存
-          await this.$emit('update-roadmap', {
-            action: 'save',
-            entry: {
-              categoryName: this.editingEntry.categoryName,
-              taskName: this.editingEntry.taskName,
-              startMonth: this.editingEntry.startMonth,
-              endMonth: this.editingEntry.endMonth
-            }
-          });
-        }
-        this.editingEntry = null; // フォームを閉じる
-      } catch (error) {
-        console.error('データの保存/更新に失敗しました。');
-        // TODO: エラーメッセージを表示
-      }
-    },
-    async deleteEntry(id) {
-      if (confirm('このタスクを削除しますか？')) {
-        try {
-          await this.$emit('update-roadmap', { action: 'delete', id: id });
-        } catch (error) {
-          console.error('データの削除に失敗しました。');
-          // TODO: エラーメッセージを表示
-        }
-      }
-    },
-    cancelEdit() {
-      this.editingEntry = null;
+const props = defineProps({
+  roadmapData: {
+    type: Array,
+    required: true,
+  },
+  allMonths: {
+    type: Array,
+    required: true,
+  },
+  allQuarters: {
+    type: Array,
+    required: true,
+  },
+  initialCategoryColors: {
+    type: Object,
+    default: () => ({}),
+  },
+});
+
+const emit = defineEmits([
+  'add-task-to-manager',
+  'save-task-edit-to-manager',
+  'delete-task-to-manager'
+]);
+
+const newTask = ref({
+  id: null,
+  name: '',
+  category: '',
+  startMonthIndex: null,
+  endMonthIndex: null,
+});
+const selectedCategory = ref('');
+
+const allAvailableCategories = computed(() => {
+  const categories = new Set();
+  props.roadmapData.forEach(row => {
+    if (row.category) {
+      categories.add(row.category);
     }
+  });
+  return Array.from(categories).sort();
+});
+
+const handleNewTaskUpdate = (updatedTask) => {
+  newTask.value = updatedTask;
+};
+const handleSelectedCategoryUpdate = (updatedCategory) => {
+  selectedCategory.value = updatedCategory;
+};
+
+const addTask = () => {
+  if (!newTask.value.name) {
+    ElMessage.error('タスク名を入力してください。');
+    return;
   }
-}
+  if (!newTask.value.category) {
+    ElMessage.error('カテゴリを選択または入力してください。');
+    return;
+  }
+  if (newTask.value.startMonthIndex === null || newTask.value.endMonthIndex === null) {
+    ElMessage.error('開始月と終了月を選択してください。');
+    return;
+  }
+  if (newTask.value.startMonthIndex > newTask.value.endMonthIndex) {
+    ElMessage.error('開始月は終了月よりも前に設定してください。');
+    return;
+  }
+
+  emit('add-task-to-manager', {
+    id: `task-${Date.now()}`,
+    name: newTask.value.name,
+    category: newTask.value.category,
+    startMonthIndex: newTask.value.startMonthIndex,
+    endMonthIndex: newTask.value.endMonthIndex,
+  });
+
+  ElMessage.success('タスク追加のリクエストを送信しました。');
+  resetAddTaskForm();
+};
+
+const resetAddTaskForm = () => {
+  newTask.value = {
+    id: null,
+    name: '',
+    category: '',
+    startMonthIndex: null,
+    endMonthIndex: null,
+  };
+  selectedCategory.value = '';
+};
+
+const isEditModalVisible = ref(false);
+const taskToEdit = ref(null);
+
+const openEditModal = (task) => {
+  taskToEdit.value = { ...task };
+  isEditModalVisible.value = true;
+};
+
+const saveTaskEdit = (updatedTask) => {
+  if (!updatedTask.name) {
+    ElMessage.error('タスク名を入力してください。');
+    return;
+  }
+  if (!updatedTask.category) {
+    ElMessage.error('カテゴリを選択してください。');
+    return;
+  }
+  if (updatedTask.startMonthIndex === null || updatedTask.endMonthIndex === null) {
+    ElMessage.error('開始月と終了月を選択してください。');
+    return;
+  }
+  if (updatedTask.startMonthIndex > updatedTask.endMonthIndex) {
+    ElMessage.error('開始月は終了月よりも前に設定してください。');
+    return;
+  }
+
+  emit('save-task-edit-to-manager', updatedTask);
+
+  ElMessage.success('タスク更新のリクエストを送信しました。');
+  isEditModalVisible.value = false;
+  taskToEdit.value = null;
+};
+
+const deleteTask = async (taskIdToDelete) => {
+  try {
+    await ElMessageBox.confirm('このタスクを本当に削除しますか？', 'タスク削除の確認', {
+      confirmButtonText: '削除',
+      cancelButtonText: 'キャンセル',
+      type: 'warning',
+    });
+
+    emit('delete-task-to-manager', taskIdToDelete);
+
+    ElMessage.success('タスク削除のリクエストを送信しました。');
+    isEditModalVisible.value = false;
+    taskToEdit.value = null;
+  } catch (error) {
+    ElMessage.info('タスクの削除がキャンセルされました。');
+  }
+};
+
 </script>
 
 <style scoped>
-/* RoadmapBase のUIに合わせたスタイル */
-div {
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-button {
-  margin-right: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-input {
-  margin: 5px 0;
-  padding: 5px;
-  width: 200px;
+.roadmap-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 </style>
