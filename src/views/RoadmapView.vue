@@ -6,7 +6,9 @@
       :loading="loading"
       :roadmap-data="roadmapDataForManager"
       :category-colors="categoryColorsForManager"
-      :all-months="allMonths"       :all-quarters="allQuarters"   @add-task-to-manager="handleAddTask"
+      :all-months="allMonths"
+      :all-quarters="allQuarters"
+      @add-task-to-manager="handleAddTask"
       @save-task-edit-to-manager="handleSaveTaskEdit"
       @delete-task-to-manager="handleDeleteTask"
       @request-logout="handleLogout"
@@ -18,6 +20,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import RoadmapManager from '../components/RoadmapManager.vue';
+import { useRouter } from 'vue-router'; // ⭐ ここを追加 ⭐
 
 export default {
   name: 'RoadmapView',
@@ -28,7 +31,9 @@ export default {
     const jwtToken = ref(localStorage.getItem('token') || null);
     const loading = ref(true);
     const apiError = ref(null);
+    const router = useRouter(); // ⭐ ここを追加 ⭐
 
+    // バックエンドのURLは画像から確認できるものを正確に指定
     const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries';
 
     const allMonths = [
@@ -82,8 +87,12 @@ export default {
 
       try {
         const headers = { 'Content-Type': 'application/json' };
+        
         if (jwtToken.value) {
           headers['Authorization'] = `Bearer ${jwtToken.value}`;
+          console.log('Sending Authorization Header:', headers['Authorization']); 
+        } else {
+          console.warn('JWT Token is not available in localStorage. Proceeding without authentication.');
         }
 
         const response = await fetch(backendUrl, {
@@ -347,7 +356,7 @@ export default {
         jwtToken.value = null;
         localStorage.removeItem('token');
         ElMessage.info('ログアウトしました。');
-        // router.push('/login'); // 必要であればログインページへリダイレクト
+        router.push('/login'); // ⭐ コメントを解除 (または追記) ⭐
     };
 
     onMounted(() => {
@@ -360,8 +369,8 @@ export default {
       apiError,
       roadmapDataForManager,
       categoryColorsForManager,
-      allMonths,       // テンプレートに渡すのでreturnに追加
-      allQuarters,     // テンプレートに渡すのでreturnに追加
+      allMonths,
+      allQuarters,
       handleAddTask,
       handleSaveTaskEdit,
       handleDeleteTask,

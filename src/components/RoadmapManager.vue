@@ -71,21 +71,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  allMonths: { // propsに追加
+  allMonths: { // propsとして追加
     type: Array,
     required: true,
   },
-  allQuarters: { // propsに追加
+  allQuarters: { // propsとして追加
     type: Array,
     required: true,
   },
 });
 
 const emit = defineEmits(['add-task-to-manager', 'save-task-edit-to-manager', 'delete-task-to-manager', 'request-logout']);
-
-// allMonths, allQuarters は props として受け取るので、ここでは定義しない
-// const allMonths = [...]
-// const allQuarters = [...]
 
 const handleAddTask = (taskPayload) => {
   emit('add-task-to-manager', taskPayload);
@@ -109,7 +105,6 @@ const closeReminderModal = () => { isReminderModalOpen.value = false; };
 </script>
 
 <style scoped>
-/* スタイルは変更なし */
 .roadmap-manager-container {
   padding: 20px;
   max-width: 1500px; 
