@@ -20,7 +20,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import RoadmapManager from '../components/RoadmapManager.vue';
-import { useRouter } from 'vue-router'; // ⭐ ここを追加 ⭐
+import { useRouter } from 'vue-router'; 
 
 export default {
   name: 'RoadmapView',
@@ -31,7 +31,7 @@ export default {
     const jwtToken = ref(localStorage.getItem('token') || null);
     const loading = ref(true);
     const apiError = ref(null);
-    const router = useRouter(); // ⭐ ここを追加 ⭐
+    const router = useRouter(); 
 
     // バックエンドのURLは画像から確認できるものを正確に指定
     const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries';
@@ -356,7 +356,7 @@ export default {
         jwtToken.value = null;
         localStorage.removeItem('token');
         ElMessage.info('ログアウトしました。');
-        router.push('/login'); // ⭐ コメントを解除 (または追記) ⭐
+        router.push('/login'); 
     };
 
     onMounted(() => {

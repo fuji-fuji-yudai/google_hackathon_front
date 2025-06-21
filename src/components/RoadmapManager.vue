@@ -12,7 +12,7 @@
       <button class="save-roadmap-button" @click="emit('save-roadmap-data')" v-if="false">
         データ保存 (自動保存有効中)
       </button>
-      </div>
+    </div>
 
     <p v-if="props.loading" class="loading-message">ロードマップデータを読み込み中...</p>
     <p v-if="props.apiError" class="error-message">エラー: {{ props.apiError }}</p>
@@ -22,7 +22,9 @@
 
     <RoadmapBase
       :roadmap-data="props.roadmapData"
-      :all-months="props.allMonths"       :all-quarters="props.allQuarters"   :initial-category-colors="props.categoryColors"
+      :all-months="props.allMonths"
+      :all-quarters="props.allQuarters"
+      :initial-category-colors="props.categoryColors"
       @add-task-to-manager="handleAddTask"
       @save-task-edit-to-manager="handleSaveTaskEdit"
       @delete-task-to-manager="handleDeleteTask"
@@ -37,7 +39,8 @@
 
     <div v-if="isReminderModalOpen" class="reminder-modal-overlay" @click.self="closeReminderModal">
       <div class="reminder-modal-content">
-        <ReminderView /> <button class="close-button" @click="closeReminderModal">閉じる</button>
+        <ReminderView />
+        <button class="close-button" @click="closeReminderModal">閉じる</button>
       </div>
     </div>
   </div>
@@ -71,40 +74,59 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  allMonths: { // propsとして追加
+  allMonths: {
     type: Array,
     required: true,
   },
-  allQuarters: { // propsとして追加
+  allQuarters: {
     type: Array,
     required: true,
   },
 });
 
-const emit = defineEmits(['add-task-to-manager', 'save-task-edit-to-manager', 'delete-task-to-manager', 'request-logout']);
+// 親コンポーネント (RoadmapView.vue) にイベントを伝えるための emit を定義
+const emit = defineEmits([
+  'add-task-to-manager',
+  'save-task-edit-to-manager',
+  'delete-task-to-manager',
+  'request-logout', // 親へのログアウト要求イベント
+  'save-roadmap-data' // 自動保存のインフォメーション表示のため、念のためエミットも定義
+]);
 
+// RoadmapBase から受け取ったタスク追加イベントを親にエミット
 const handleAddTask = (taskPayload) => {
+  // デバッグ用にペイロードの内容をログ出力すると良いでしょう
+  console.log('RoadmapManager: handleAddTask received payload:', taskPayload);
   emit('add-task-to-manager', taskPayload);
 };
 
+// RoadmapBase から受け取ったタスク編集イベントを親にエミット
 const handleSaveTaskEdit = (updatedTask) => {
+  // デバッグ用にペイロードの内容をログ出力すると良いでしょう
+  console.log('RoadmapManager: handleSaveTaskEdit received payload:', updatedTask);
   emit('save-task-edit-to-manager', updatedTask);
 };
 
+// RoadmapBase から受け取ったタスク削除イベントを親にエミット
 const handleDeleteTask = (taskIdToDelete) => {
+  // デバッグ用にIDをログ出力すると良いでしょう
+  console.log('RoadmapManager: handleDeleteTask received ID:', taskIdToDelete);
   emit('delete-task-to-manager', taskIdToDelete);
 };
 
+// AIチャットモーダルの表示状態
 const isAIChatModalOpen = ref(false);
 const openAIChatModal = () => { isAIChatModalOpen.value = true; };
 const closeAIChatModal = () => { isAIChatModalOpen.value = false; };
 
+// リマインダーモーダルの表示状態
 const isReminderModalOpen = ref(false);
 const goToReminderForm = () => { isReminderModalOpen.value = true; };
 const closeReminderModal = () => { isReminderModalOpen.value = false; };
 </script>
 
 <style scoped>
+/* スタイルは変更なし */
 .roadmap-manager-container {
   padding: 20px;
   max-width: 1500px; 
