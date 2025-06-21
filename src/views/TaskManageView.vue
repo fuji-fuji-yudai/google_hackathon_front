@@ -88,6 +88,7 @@ export default {
         tasks.value = Array.isArray(data) ? data.map(toCamel) : []
       } catch (error) {
         console.error('タスクの取得に失敗しました', error)
+        console.log(JSON.stringify(JSON.parse(atob(token.split('.')[1])), null, 2))
       }
     }
 
