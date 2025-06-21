@@ -40,10 +40,10 @@ export default {
       id: obj.id,
       title: obj.title,
       assignee: obj.assignee,
-      planStart: obj.plan_start,
-      planEnd: obj.plan_end,
-      actualStart: obj.actual_start,
-      actualEnd: obj.actual_end,
+      plan_start: obj.plan_start,
+      plan_end: obj.plan_end,
+      actual_start: obj.actual_start,
+      actual_end: obj.actual_end,
       status: obj.status,
       parentId: obj.parent_id ?? null
     })
@@ -53,10 +53,10 @@ export default {
       id: obj.id,
       title: obj.title,
       assignee: obj.assignee,
-      plan_start: obj.planStart,
-      plan_end: obj.planEnd,
-      actual_start: obj.actualStart,
-      actual_end: obj.actualEnd,
+      plan_start: obj.plan_start,
+      plan_end: obj.plan_end,
+      actual_start: obj.actual_start,
+      actual_end: obj.actual_end,
       status: obj.status,
       parent_id: obj.parentId ?? null
     })
