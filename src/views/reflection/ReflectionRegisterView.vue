@@ -70,31 +70,74 @@ export default {
   
   methods: {
     async create() {
+      const router = this.$router
+      console.log('JWT トークン:', token);
+      // トークンが存在しない場合のエラーハンドリング
+      if (!token) {
+        console.error('JWT トークンが存在しません');
+        alert('ログインが必要です');
+        return; // 処理を中断
+      }
+      // 日付をISO 8601形式（YYYY-MM-DD）に変換
+      const formattedDate = this.form.date
+        ? new Date(this.form.date).toISOString().split("T")[0] // フォーマット例: "2025-06-18"
+        : "";
+      // フォームデータを送信
+      const payload = {
+        ...this.form,
+        date: formattedDate, // 変換された日付を送信
+      };
       // 登録処理
       try {
-        console.log(this.form)
+        console.log(payload)
         const response = await axios.post('https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
-          this.form,
+          payload,
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Authorization ヘッダーにトークンを設定
-            },
+              Authorization: `Bearer ${token}` // Authorization ヘッダーにトークンを設定
+            }
           }
         )
-        alert('登録成功！')
+        if(response.status === 200) {
+          // フラッシュメッセージを設定してリダイレクト
+          router.push({
+            name: "reflectionHome",
+            query: {
+              message: "登録に成功しました。",
+              title: "成功",
+              type: "success",
+            },
+          });
+        } else {
+          router.push({
+            name: "reflectionHome",
+            query: {
+              message: "登録に失敗しました。",
+              title: "エラー",
+              type: "error",
+            },
+          });
+        }
         console.log('レスポンス:', response.data)
       } catch (error) {
         console.error('登録失敗:', error)
-        alert('登録に失敗しました。')
+        router.push({
+          name: "reflectionHome",
+          query: {
+            message: "登録に失敗しました。",
+            title: "エラー",
+            type: "error",
+          },
+        });
       }
+    },
+    clear() {
+      // フォームをリセット
+      this.form.date = '';
+      this.form.activity = '';
+      this.form.achievement = '';
+      this.form.improvementPoints = '';
     }
-  },
-  clear() {
-    // フォームをリセット
-    this.form.date = '';
-    this.form.activity = '';
-    this.form.achievement = '';
-    this.form.improvementPoints = '';
   }
 }
 </script>
