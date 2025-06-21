@@ -67,35 +67,44 @@ const token = localStorage.getItem('token')
 export default {
   data() {
     const route = useRoute()
-    const reflectionData = this.fetchReflections();
     return {
-      id: reflectionData.id || null, // 主キーID（更新時に使用）
-      date: route.query.date,
+      id: null,
       form: {
-        date: route.query.date || '', // クエリから初期日付を取得
-        activity: reflectionData ? reflectionData.activity : '',
-        achievement: reflectionData ? reflectionData.achievement : '',
-        improvementPoints: reflectionData ? reflectionData.improvementPoints : '',
+        date: route.query.date || '',
+        activity: '',
+        achievement: '',
+        improvementPoints: '',
       },
-      isFeedbackVisible: !!reflectionData, // reflectionデータが存在する場合にフィードバックボタンを表示
-      feedbackData: null, // 生成されたフィードバックを格納する
-      error: null, // エラーメッセージ
+      isFeedbackVisible: false,
+      feedbackData: null,
+      error: null,
     };
   },
 
   mounted() {
-    // Reflection IDが存在する場合のみ getFeedback を実行
-    if (this.id) {
-      this.getFeedback();
-    }
+    this.fetchReflections().then((data) => {
+      if (data) {
+        this.id = data.id;
+        this.form.activity = data.activity;
+        this.form.achievement = data.achievement;
+        this.form.improvementPoints = data.improvementPoints;
+        this.isFeedbackVisible = true;
+        this.reflectionData = data;
+        this.getFeedback();
+      }
+    }).catch((error) => {
+      console.error("Reflectionデータの取得に失敗:", error);
+    });
   },
   
   methods: {
     async fetchReflections() {
       console.log('取得処理開始')
       const route = useRoute()
+      const date = route.query.date;
+      console.log(date)
       try {
-        const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/${route.query.date}`, {
+        const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/${date}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -197,7 +206,6 @@ export default {
       this.form.improvementPoints = '';
     },
     async giveFeedback() {
-      console.log(this.reflectionData)
       try {
         const response = await axios.post(
           'https://my-image-14467698004.asia-northeast1.run.app/api/feedback/create',
