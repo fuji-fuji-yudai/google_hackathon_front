@@ -1,391 +1,383 @@
 <template>
-  <div class="roadmap-grid-container">
-    <div class="roadmap-quarter-header-row">
-      <div class="roadmap-quarter-corner-cell" />
-      <div
-        v-for="quarter in quarters"
-        :key="quarter.id"
-        :class="['roadmap-quarter-header-cell', `quarter-${quarter.id}`]"
-        :style="getQuarterHeaderStyle(quarter)"
-      >
+  <div class="roadmap-grid">
+    <div class="grid-header">
+      <div class="empty-cell"></div>
+      <div v-for="quarter in allQuarters" :key="quarter.id"
+           :class="['quarter-header', `quarter-${quarter.name.toLowerCase()}`]"
+           :style="{ gridColumn: `${quarter.startMonthIndex + 2} / span ${quarter.endMonthIndex - quarter.startMonthIndex + 1}` }">
         {{ quarter.name }}
       </div>
-    </div>
-
-    <div class="roadmap-header-row">
-      <div class="roadmap-corner-cell">
-        カテゴリ/月
-      </div>
-      <div
-        v-for="month in months"
-        :key="month.id"
-        :class="['roadmap-header-month', `quarter-${month.quarterId}`]"
-      >
-        {{ month.name }}
+      <div class="month-row">
+        <div class="empty-month-cell"></div>
+        <div v-for="month in allMonths" :key="month.id" class="month-header">
+          {{ month.name }}
+        </div>
       </div>
     </div>
 
-    <div
-      v-for="(row, rowIndex) in roadmapData"
-      :key="rowIndex"
-      class="roadmap-data-row"
-      :style="getRoadmapRowStyle(row)"
-    >
-      <div
-        class="roadmap-category-label"
-        :style="{ backgroundColor: getCategoryLabelColor(row.category) }"
-        @dblclick="$emit('start-category-edit', rowIndex)"
-      >
-        <template v-if="editingCategoryIndex === rowIndex">
-          <input
-            :value="editedCategoryName"
-            class="category-edit-input"
-            @input="$emit('update:editedCategoryName', $event.target.value)"
-            @blur="$emit('finish-category-edit', rowIndex)"
-            @keyup.enter="$emit('finish-category-edit', rowIndex)"
-          >
+    <div v-for="categoryRow in positionedRoadmapData" :key="categoryRow.category" class="category-row">
+      <div class="category-label" :style="{ backgroundColor: getCategoryColor(categoryRow.category) }">
+        <template v-if="editingCategory !== categoryRow.category">
+          <span @click="startCategoryEdit(categoryRow.category)">
+            {{ categoryRow.category }}
+          </span>
         </template>
         <template v-else>
-          {{ row.category }}
+          <select
+            v-model="editedCategoryName"
+            @change="saveCategoryEdit(categoryRow.category, $event.target.value)"
+            @blur="cancelCategoryEdit"
+            ref="categoryEditSelect"
+          >
+            <option v-for="cat in allExistingCategories" :key="cat" :value="cat">
+              {{ cat }}
+            </option>
+          </select>
         </template>
       </div>
-
-      <div
-        v-for="month in months"
-        :key="month.id"
-        :class="['roadmap-month-background-cell', `quarter-${month.quarterId}`]"
-      />
-
-      <div
-        v-for="(task, taskIndex) in row.tasks"
-        :key="task.id"
-        :class="['task-block']"
-        :style="getTaskBlockStyle(task, taskIndex)"
-        @dblclick="$emit('start-task-edit', task)"
-      >
-        {{ task.name }}
+      <div class="task-cells">
+        <div
+          v-for="monthIndex in allMonths.length"
+          :key="monthIndex"
+          :class="['month-cell', { 'quarter-start': isQuarterStart(monthIndex - 1) }]"
+        ></div>
+        <div
+          v-for="task in categoryRow.tasks"
+          :key="task.id"
+          class="task-item"
+          :style="getTaskStyle(task, categoryRow.category, task.verticalOffset)"
+          @click="handleTaskClick(task, categoryRow.category)"
+        >
+          {{ task.name }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'RoadmapGrid',
-  props: {
-    roadmapData: {
-      type: Array,
-      required: true,
-    },
-    months: {
-      type: Array,
-      required: true,
-    },
-    quarters: {
-      type: Array,
-      required: true,
-    },
-    editingCategoryIndex: {
-      type: Number,
-      default: null,
-    },
-    editedCategoryName: {
-      type: String,
-      default: '',
-    },
-    assignedCategoryLabelColors: {
-      type: Object,
-      required: true,
-    },
-    taskColorPalette: {
-      type: Array,
-      required: true,
-    },
+<script setup>
+import { defineProps, defineEmits, computed, ref, nextTick } from 'vue';
+
+const props = defineProps({
+  roadmapData: {
+    type: Array,
+    required: true,
   },
-  emits: [
-    'start-category-edit',
-    'update:editedCategoryName',
-    'finish-category-edit',
-    'start-task-edit',
-    'assign-category-color', // 新しいカテゴリに色を割り当てるイベント
-  ],
-  methods: {
-    getQuarterHeaderStyle(quarter) {
-      const numberOfMonthsInQuarter = quarter.endMonthIndex - quarter.startMonthIndex + 1;
-      const startColumn = quarter.startMonthIndex + 2;
-      const endColumn = startColumn + numberOfMonthsInQuarter;
+  allMonths: {
+    type: Array,
+    required: true,
+  },
+  allQuarters: {
+    type: Array,
+    required: true,
+  },
+  initialCategoryColors: {
+    type: Object,
+    default: () => ({}),
+  },
+});
 
-      return {
-        gridColumn: `${startColumn} / ${endColumn}`,
-      };
-    },
-    getRoadmapRowStyle(row) {
-      const taskHeightWithMargin = 40;
-      const calculatedHeight = row.tasks.length > 0
-        ? (row.tasks.length * taskHeightWithMargin) + 5
-        : 80;
+// 親に発火するイベントに 'update-category-name' を追加
+const emit = defineEmits(['start-task-edit', 'delete-task', 'update-category-name']);
 
-      return {
-        height: `${calculatedHeight}px`,
-      };
-    },
-    getTaskBlockStyle(task, taskIndex) {
-      const gridColumnStart = task.startIndex + 2;
-      const gridColumnEnd = task.endIndex + 2 + 1;
+// カテゴリ名編集用の状態
+const editingCategory = ref(null); // 編集中のカテゴリ名（元々の名前）
+const editedCategoryName = ref(''); // 選択された新しいカテゴリ名
+const categoryEditSelect = ref(null); // select要素への参照
 
-      const bgColor = task.color;
-      const textColor = this.getContrastColor(bgColor);
+// 全ての既存カテゴリ名を重複なく取得
+const allExistingCategories = computed(() => {
+  const categories = new Set();
+  props.roadmapData.forEach(row => {
+    categories.add(row.category);
+  });
+  return Array.from(categories).sort();
+});
 
-      const topOffset = taskIndex * 40 + 5;
+// カテゴリ編集モード開始
+const startCategoryEdit = (category) => {
+  editingCategory.value = category; // 編集中のカテゴリ（元の名前）を設定
+  editedCategoryName.value = category; // ドロップダウンの初期値を現在のカテゴリ名に設定
 
-      return {
-        backgroundColor: bgColor,
-        color: textColor,
-        gridColumn: `${gridColumnStart} / ${gridColumnEnd}`,
-        gridRow: '1',
-        position: 'absolute',
-        top: `${topOffset}px`,
-        left: '5px',
-        right: '5px',
-        height: '35px',
-        fontSize: '0.85em',
-        textAlign: 'left',
-        padding: '0 10px',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        borderRadius: '5px',
-        zIndex: 1,
-      };
-    },
-    getCategoryLabelColor(categoryName) {
-      // 親コンポーネントで色を管理するため、既に割り当てられている色を返すか、親に割り当てを依頼する
-      if (this.assignedCategoryLabelColors[categoryName]) {
-        return this.assignedCategoryLabelColors[categoryName];
+  nextTick(() => {
+    if (categoryEditSelect.value) {
+      categoryEditSelect.value.focus(); // select要素にフォーカス
+    }
+  });
+};
+
+// カテゴリ編集保存
+const saveCategoryEdit = (oldCategoryName, newCategoryName) => {
+  if (oldCategoryName !== newCategoryName) {
+    emit('update-category-name', { oldCategory: oldCategoryName, newCategory: newCategoryName });
+  }
+  editingCategory.value = null; // 編集モード終了
+};
+
+// カテゴリ編集キャンセル
+const cancelCategoryEdit = () => {
+  editingCategory.value = null; // 編集モード終了
+};
+
+// タスクIDごとの色をキャッシュするためのMap
+const taskColorsCache = new Map();
+
+const getCategoryColor = (category) => {
+  if (props.initialCategoryColors && Object.prototype.hasOwnProperty.call(props.initialCategoryColors, category)) {
+    return props.initialCategoryColors[category];
+  }
+  return '#ccc';
+};
+
+const darkenColor = (hslColor, amount) => {
+  const parts = hslColor.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+  if (parts) {
+    const h = parseInt(parts[1] || '0');
+    const s = parseInt(parts[2] || '0');
+    const l = Math.max(0, parseInt(parts[3] || '0') - amount);
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+  return hslColor;
+};
+
+const getTaskRandomColor = (taskId) => {
+  if (taskColorsCache.has(taskId)) {
+    return taskColorsCache.get(taskId);
+  }
+
+  const h = Math.floor(Math.random() * 360);
+  const s = Math.floor(Math.random() * 20) + 70;
+  const l = Math.floor(Math.random() * 15) + 70;
+
+  const newColor = `hsl(${h}, ${s}%, ${l}%)`;
+  taskColorsCache.set(taskId, newColor);
+  return newColor;
+};
+
+const TASK_HEIGHT = 28;
+const TASK_VERTICAL_GAP = 6;
+const TASK_VERTICAL_MARGIN_TOP = 14;
+
+const positionedRoadmapData = computed(() => {
+  return props.roadmapData.map(categoryRow => {
+    const tasksWithPositions = [];
+    const occupiedSlots = {};
+
+    const sortedTasks = [...categoryRow.tasks].sort((a, b) => {
+      if (a.startIndex !== b.startIndex) return a.startIndex - b.startIndex;
+      if (a.endIndex !== b.endIndex) return a.endIndex - b.endIndex;
+      return a.id.localeCompare(b.id);
+    });
+
+    sortedTasks.forEach(task => {
+      const startMonth = task.startIndex;
+      const endMonth = task.endIndex;
+
+      let verticalSlot = -1;
+      let foundSlot = false;
+
+      for (let slot = 0; slot < 3; slot++) {
+        let isSlotOccupied = false;
+        for (let month = startMonth; month <= endMonth; month++) {
+          const key = `${month}-${slot}`;
+          if (occupiedSlots[key]) {
+            isSlotOccupied = true;
+            break;
+          }
+        }
+        if (!isSlotOccupied) {
+          verticalSlot = slot;
+          foundSlot = true;
+          break;
+        }
+      }
+
+      if (foundSlot) {
+        for (let month = startMonth; month <= endMonth; month++) {
+          occupiedSlots[`${month}-${verticalSlot}`] = true;
+        }
+        
+        tasksWithPositions.push({
+          ...task,
+          verticalOffset: TASK_VERTICAL_MARGIN_TOP + (verticalSlot * (TASK_HEIGHT + TASK_VERTICAL_GAP))
+        });
       } else {
-        // 新しいカテゴリの場合、親に色の割り当てを依頼
-        this.$emit('assign-category-color', categoryName);
-        // ここでは仮の色を返すか、割り当てられるまで待つ
-        return '#888888'; // デフォルト色
+        console.warn(`Warning: Max 3 tasks in the same slot exceeded for category "${categoryRow.category}" period "${startMonth}-${endMonth}". Task: ${task.name}. Displaying at default offset.`);
+        tasksWithPositions.push({
+          ...task,
+          verticalOffset: TASK_VERTICAL_MARGIN_TOP
+        });
       }
-    },
-    getContrastColor(bgColor) {
-      const hsl = bgColor.match(/\d+/g);
-      const h = hsl[0];
-      const s = hsl[1] / 100;
-      const l = hsl[2] / 100;
-      let r, g, b;
+    });
 
-      const c = (1 - Math.abs(2 * l - 1)) * s;
-      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-      const m = l - c / 2;
+    return {
+      ...categoryRow,
+      tasks: tasksWithPositions
+    };
+  });
+});
 
-      if (0 <= h && h < 60) {
-        r = c; g = x; b = 0;
-      } else if (60 <= h && h < 120) {
-        r = x; g = c; b = 0;
-      } else if (120 <= h && h < 180) {
-        r = 0; g = c; b = x;
-      } else if (180 <= h && h < 240) {
-        r = 0; g = x; b = c;
-      } else if (240 <= h && h < 300) {
-        r = x; g = 0; b = c;
-      } else if (300 <= h && h < 360) {
-        r = c; g = 0; b = x;
-      }
-      r = Math.round((r + m) * 255);
-      g = Math.round((g + m) * 255);
-      b = Math.round((b + m) * 255);
+const getTaskStyle = (task, category, verticalOffset) => {
+  const startColumn = task.startIndex + 1; 
+  const endColumn = task.endIndex + 2; 
 
-      const luminance = (0.2126 * (r / 255)) + (0.7152 * (g / 255)) + (0.0722 * (b / 255));
+  const taskBgColor = getTaskRandomColor(task.id); 
+  const taskBorderColor = darkenColor(taskBgColor, 10);
 
-      return luminance > 0.179 ? '#333333' : '#ffffff';
-    },
-  },
+  return {
+    gridColumn: `${startColumn} / ${endColumn}`,
+    backgroundColor: taskBgColor,
+    borderColor: taskBorderColor,
+    top: `${verticalOffset}px`, 
+  };
+};
+
+const isQuarterStart = (monthIndex) => {
+  return props.allQuarters.some(q => q.startMonthIndex === monthIndex);
+};
+
+const handleTaskClick = (task, category) => {
+  emit('start-task-edit', { ...task, originalCategory: category });
 };
 </script>
 
 <style scoped>
-/* ロードマップグリッドコンテナ */
-.roadmap-grid-container {
+/* ... （スタイルは変更なし） ... */
+
+.roadmap-grid {
   display: grid;
-  grid-template-columns: 200px repeat(12, minmax(70px, 1fr));
+  grid-template-columns: 220px repeat(12, minmax(90px, 1fr));
+  gap: 1px;
   border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: white;
-  min-height: 600px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
-  position: relative;
+  background-color: #e0e0e0;
+  font-family: 'Arial', sans-serif;
+  color: #333;
+  margin-top: 20px;
+  width: 100%;
 }
 
-/* 四半期ヘッダー行 */
-.roadmap-quarter-header-row {
+.grid-header {
   display: contents;
 }
 
-.roadmap-quarter-corner-cell {
-  background-color: #f7f7f7;
+.empty-cell {
   grid-column: 1;
-  grid-row: 1;
-  border-right: 1px solid #e0e0e0;
+  grid-row: 1 / span 2;
+  background-color: #f0f0f0;
   border-bottom: 1px solid #e0e0e0;
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  min-height: 60px;
 }
 
-.roadmap-quarter-header-cell {
-  background-color: #e6e6e6;
-  font-weight: 700;
-  color: #333;
-  padding: 10px 0;
+.quarter-header {
+  grid-row: 1;
+  background-color: #e9ecef;
+  text-align: center;
+  padding: 12px 0;
+  font-weight: bold;
+  font-size: 1em;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.month-row {
+  display: contents;
+}
+
+.empty-month-cell {
+  grid-column: 1;
+  grid-row: 2;
+  background-color: #f0f0f0;
+}
+
+.month-header {
+  grid-row: 2;
+  background-color: #f8f9fa;
+  text-align: center;
+  padding: 12px 0;
+  font-size: 0.95em;
+  border-right: 1px solid #e0e0e0;
+}
+.month-header:last-child {
+  border-right: none;
+}
+
+.category-row {
+  display: contents;
+}
+
+.category-label {
+  grid-column: 1;
+  padding: 20px;
+  font-weight: bold;
   font-size: 1.1em;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  min-height: 130px;
+  box-sizing: border-box;
   border-right: 1px solid #e0e0e0;
-  border-bottom: 1px solid #e0e0e0;
-  grid-row: 1;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  cursor: pointer; /* クリック可能であることを示す */
 }
-.roadmap-quarter-header-cell:last-child {
-  border-right: none;
-}
-
-/* 月とカテゴリのヘッダー行 */
-.roadmap-header-row {
-  display: contents;
+/* 編集モードのselect要素のスタイル */
+.category-label select {
+  width: 90%; /* 親要素の幅に合わせて調整 */
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 0.9em;
 }
 
-.roadmap-corner-cell {
-  background-color: #f7f7f7;
-  font-weight: 600;
-  color: #555;
-  padding: 15px 20px;
-  font-size: 1em;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  grid-column: 1;
-  grid-row: 2;
-  border-right: 1px solid #e0e0e0;
-  border-bottom: 1px solid #e0e0e0;
-  position: sticky;
-  top: 0;
-  z-index: 2;
+.task-cells {
+  grid-column: 2 / span 12;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(90px, 1fr));
+  gap: 1px;
+  background-color: #e0e0e0;
+  position: relative;
+  min-height: 130px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.roadmap-header-month {
-  background-color: #f7f7f7;
-  font-weight: 600;
-  color: #555;
-  padding: 15px 0;
-  font-size: 0.95em;
+.month-cell {
+  background-color: #fff;
+  border-right: 1px solid #f0f0f0;
+  box-sizing: border-box;
+}
+
+.month-cell.quarter-start {
+  border-left: 2px solid #a0a0a0;
+}
+
+.task-item {
+  position: absolute;
+  height: 28px;
+  border: 1px solid;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #e0e0e0;
-  border-bottom: 1px solid #e0e0e0;
-  grid-row: 2;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.roadmap-header-month:last-child {
-  border-right: none;
-}
-
-/* 四半期ごとの背景色をヘッダーに適用（会計年度の四半期） */
-.roadmap-header-month.quarter-q1_fy { background-color: #f2f7ff; }
-.roadmap-header-month.quarter-q2_fy { background-color: #e0f2ff; }
-.roadmap-header-month.quarter-q3_fy { background-color: #f2f7ff; }
-.roadmap-header-month.quarter-q4_fy { background-color: #e0f2ff; }
-
-
-/* データ行 - ここが大きく変わります */
-.roadmap-data-row {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 1 / -1;
-  position: relative;
-  border-bottom: 1px solid #e0e0e0;
-}
-.roadmap-data-row:last-child {
-  border-bottom: none;
-}
-
-.roadmap-category-label {
-  grid-column: 1;
-  grid-row: 1 / -1;
-  padding: 15px 20px;
-  font-weight: 600;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  border-right: 1px solid #e0e0e0;
-  box-sizing: border-box;
-  cursor: pointer;
-  z-index: 2;
-}
-
-.roadmap-category-label:hover {
-  filter: brightness(1.1);
-}
-
-.category-edit-input {
-  width: 100%;
-  height: 100%;
-  padding: 0 5px;
-  border: none;
-  background-color: rgba(255, 255, 255, 0.8);
+  font-size: 1.05em;
   color: #333;
-  font-size: 1em;
-  font-weight: 600;
-  box-sizing: border-box;
-  border-radius: 5px;
-}
+  text-shadow: none;
+  
+  width: 100%;           
+  margin-left: -1px;     
+  margin-right: -1px;    
+  padding: 0;
+  box-sizing: border-box; 
 
-.category-edit-input:focus {
-  outline: 2px solid #007bff;
-}
-
-
-/* 月の背景セル - タスクではなく、背景と境界線を提供します */
-.roadmap-month-background-cell {
-  border-right: 1px solid #e0e0e0;
-  box-sizing: border-box;
-}
-
-.roadmap-month-background-cell:last-child {
-  border-right: none;
-}
-
-/* 四半期ごとの背景色をデータセルにも適用（会計年度の四半期） */
-.roadmap-month-background-cell.quarter-q1_fy { background-color: #f7faff; }
-.roadmap-month-background-cell.quarter-q2_fy { background-color: #edf5ff; }
-.roadmap-month-background-cell.quarter-q3_fy { background-color: #f7faff; }
-.roadmap-month-background-cell.quarter-q4_fy { background-color: #edf5ff; }
-
-
-/* タスクブロックの変更 - roadmap-data-row の子として配置 */
-.task-block {
-  position: absolute;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   cursor: pointer;
-  z-index: 1;
-  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 10;
 }
-.task-block:hover {
-  filter: brightness(1.1);
+
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 </style>

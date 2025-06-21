@@ -1,104 +1,73 @@
 <template>
   <div class="task-add-form">
-    <h3>新規タスクを追加</h3>
-    <div class="form-grid">
-      <div class="form-row">
-        <label for="task-category">カテゴリ:</label>
-        <select
-          id="task-category"
-          v-model="localNewTask.category"
-          class="small-input"
-          @change="emitUpdate"
-        >
-          <option value="">
-            既存カテゴリを選択
-          </option>
-          <option
-            v-for="category in allAvailableCategories"
-            :key="category"
-            :value="category"
-          >
+    <h3>新規タスクを追加 / カテゴリを編集</h3>
+    
+    <div class="form-row">
+      <div class="form-group flex-grow">
+        <label for="category-select">カテゴリ:</label>
+        <select id="category-select" v-model="internalSelectedCategory" @change="handleCategoryChange" class="input-field">
+          <option value="">-- カテゴリを選択 --</option>
+          <option v-for="category in allAvailableCategories" :key="category" :value="category">
             {{ category }}
           </option>
-          <option value="__new__">
-            新しいカテゴリを作成
-          </option>
-        </select>
+          </select>
       </div>
 
-      <div
-        v-if="localNewTask.category === '__new__'"
-        class="form-row"
-      >
-        <label for="new-category-name">新しいカテゴリ名:</label>
+      <div class="form-group flex-grow" v-if="showCategoryNameInput">
+        <label for="category-name-input">{{ categoryNameInputLabel }}:</label>
         <input
-          id="new-category-name"
-          v-model="localNewTask.category"
+          id="category-name-input"
           type="text"
-          class="small-input"
-          placeholder="カテゴリ名を入力"
-          @input="emitUpdate"
-        >
+          v-model="internalNewTask.category"
+          :placeholder="categoryNameInputPlaceholder"
+          class="input-field"
+          @input="emitUpdatedNewTaskAndCategory"
+          @blur="handleCategoryNameInputBlur"
+          :disabled="internalSelectedCategory === '__new__' && allAvailableCategories.length >= 4"
+        />
       </div>
+    </div>
 
-      <div class="form-row">
-        <label for="task-name">タスク名:</label>
-        <input
-          id="task-name"
-          v-model="localNewTask.name"
-          type="text"
-          class="small-input"
-          placeholder="タスク名を入力"
-          @input="emitUpdate"
-        >
-      </div>
+    <div class="form-group">
+      <label for="task-name">タスク名:</label>
+      <input
+        id="task-name"
+        type="text"
+        v-model="internalNewTask.name"
+        placeholder="タスク名を入力してください"
+        class="input-field"
+        @input="emitUpdatedNewTask"
+      />
+    </div>
 
-      <div class="form-row">
+    <div class="form-group month-selection">
+      <div class="month-select-item">
         <label for="start-month">開始月:</label>
-        <select
-          id="start-month"
-          v-model="localNewTask.startMonthIndex"
-          class="small-input"
-          @change="emitUpdate"
-        >
-          <option
-            v-for="(month, index) in months"
-            :key="month.id"
-            :value="index"
-          >
-            {{ month.name }}
+        <select id="start-month" v-model.number="internalNewTask.startMonthIndex" class="input-field" @change="emitUpdatedNewTask">
+          <option value="" disabled>-- 選択 --</option>
+          <option v-for="(month, index) in months" :key="month.id" :value="index">
+            {{ month.name }} ({{ month.year }})
           </option>
         </select>
       </div>
-
-      <div class="form-row">
+      <div class="month-select-item">
         <label for="end-month">終了月:</label>
-        <select
-          id="end-month"
-          v-model="localNewTask.endMonthIndex"
-          class="small-input"
-          @change="emitUpdate"
-        >
-          <option
-            v-for="(month, index) in months"
-            :key="month.id"
-            :value="index"
-          >
-            {{ month.name }}
+        <select id="end-month" v-model.number="internalNewTask.endMonthIndex" class="input-field" @change="emitUpdatedNewTask">
+          <option value="" disabled>-- 選択 --</option>
+          <option v-for="(month, index) in months" :key="month.id" :value="index">
+            {{ month.name }} ({{ month.year }})
           </option>
         </select>
       </div>
     </div>
-    <button
-      class="small-button"
-      @click="handleAddTask"
-    >
-      タスクを追加
-    </button>
+
+    <button @click="addTask" class="add-task-button">タスクを追加</button>
   </div>
 </template>
 
 <script>
+import { ref, watch, computed } from 'vue';
+
 export default {
   name: 'RoadmapTaskAddForm',
   props: {
@@ -108,139 +77,250 @@ export default {
     },
     selectedCategory: {
       type: String,
-      default: '',
-    },
-    allAvailableCategories: {
-      type: Array,
       required: true,
+    },
+    allAvailableCategories: { // これが既存カテゴリのリスト
+      type: Array,
+      default: () => [],
     },
     months: {
       type: Array,
       required: true,
     },
   },
-  data() {
-    return {
-      localNewTask: { ...this.newTask }, // propsを直接変更しないためのローカルコピー
-      localSelectedCategory: this.selectedCategory,
-    };
-  },
-  watch: {
-    newTask: {
-      handler(newVal) {
-        this.localNewTask = { ...newVal };
-      },
-      deep: true,
-    },
-    selectedCategory(newVal) {
-      this.localSelectedCategory = newVal;
-    },
-    // localNewTask.categoryが変更されたらselectedCategoryも更新
-    'localNewTask.category'(newVal) {
-      if (newVal !== '__new__') {
-        this.$emit('update:selectedCategory', newVal);
+  emits: ['update:newTask', 'update:selectedCategory', 'add-task', 'update-category-name'],
+
+  setup(props, { emit }) {
+    const internalNewTask = ref({ ...props.newTask });
+    const internalSelectedCategory = ref(props.selectedCategory);
+    const originalCategoryName = ref(''); // 既存カテゴリ編集のために元の名前を保持
+
+    // props.newTask の変更を internalNewTask に同期
+    watch(() => props.newTask, (newVal) => {
+      internalNewTask.value = { ...newVal };
+    }, { deep: true });
+
+    // props.selectedCategory の変更を internalSelectedCategory に同期
+    watch(() => props.selectedCategory, (newVal) => {
+      internalSelectedCategory.value = newVal;
+      // カテゴリが外部から変更された場合も、元のカテゴリ名をリセット
+      originalCategoryName.value = newVal !== '__new__' ? newVal : '';
+      // 新規作成オプションがなくなったため、__new__ が選択された場合の処理は不要になりますが、
+      // 念のため、意図しない値が入った場合はリセットするロジックは残しておくと安全です。
+      // ただし、このフォーム上ではもう __new__ が選択されることはないはずです。
+    });
+
+    // コンポーネントがマウントされたとき、またはカテゴリが初期化されたときに元のカテゴリ名をセット
+    watch(() => internalSelectedCategory.value, (newVal) => {
+      if (newVal !== '__new__' && newVal !== '') { // '__new__'のチェックは実質不要になりますが、念のため残しておきます
+        originalCategoryName.value = newVal;
+      } else {
+        originalCategoryName.value = '';
       }
-    },
-  },
-  methods: {
-    emitUpdate() {
-      // 親コンポーネントにnewTaskの変更を通知
-      this.$emit('update:newTask', this.localNewTask);
-    },
-    handleAddTask() {
-      // 新しいカテゴリを選択した場合の処理
-      if (this.localNewTask.category === '__new__') {
-        if (!this.localNewTask.name) {
-            alert('新しいカテゴリ名を入力してください。');
-            return;
+    }, { immediate: true });
+
+
+    const showCategoryNameInput = computed(() => {
+      // 「-- カテゴリを選択 --」以外が選択されたらカテゴリ名入力フィールドを表示するロジックは維持
+      return internalSelectedCategory.value !== ''; 
+    });
+
+    const categoryNameInputLabel = computed(() => {
+      // 新しいカテゴリ作成のオプションがなくなるため、ラベルは常に「カテゴリ名」になります
+      return 'カテゴリ名';
+    });
+
+    const categoryNameInputPlaceholder = computed(() => {
+      // 新しいカテゴリ作成のオプションがなくなるため、プレースホルダーも常に「カテゴリ名を編集してください」になります
+      return 'カテゴリ名を編集してください';
+    });
+
+
+    const handleCategoryChange = () => {
+      const newCategoryValue = internalSelectedCategory.value;
+
+      // 新規作成のオプションがなくなるため、__new__ が選択された場合の制限ロジックは不要
+      // if (newCategoryValue === '__new__' && props.allAvailableCategories.length >= 4) {
+      //   alert('カテゴリは4つまでしか登録できません。既存のカテゴリを使用するか、不要なカテゴリを削除してください。');
+      //   internalSelectedCategory.value = ''; 
+      //   internalNewTask.value.category = ''; 
+      //   emit('update:selectedCategory', internalSelectedCategory.value); 
+      //   emitUpdatedNewTask();
+      //   return; 
+      // }
+
+      // ここでは、既存カテゴリが選択された場合と「-- カテゴリを選択 --」が選択された場合のみを処理します
+      if (newCategoryValue !== '') {
+        internalNewTask.value.category = newCategoryValue; // 既存カテゴリ選択の場合、カテゴリ名を設定
+      } else {
+        // 「-- カテゴリを選択 --」が選択された場合
+        internalNewTask.value.category = ''; // カテゴリ名をクリア
+        originalCategoryName.value = ''; // 元のカテゴリ名もクリア
+      }
+      emit('update:selectedCategory', newCategoryValue);
+      emitUpdatedNewTask();
+    };
+
+    // カテゴリ名入力フィールドの更新とイベント発火
+    const emitUpdatedNewTaskAndCategory = () => {
+        emitUpdatedNewTask(); // newTaskの更新イベント
+    };
+
+    // カテゴリ名入力フィールドからフォーカスが外れたときにカテゴリ変更イベントを発火
+    const handleCategoryNameInputBlur = () => {
+        const currentCategoryValue = internalNewTask.value.category;
+        // 新しいカテゴリ作成のオプションがなくなるため、__new__ のチェックは不要になります
+        if (originalCategoryName.value && originalCategoryName.value !== currentCategoryValue) {
+            console.log(`Emitting update-category-name: old=${originalCategoryName.value}, new=${currentCategoryValue}`);
+            emit('update-category-name', { oldCategory: originalCategoryName.value, newCategory: currentCategoryValue });
+            originalCategoryName.value = currentCategoryValue; // 更新後、元のカテゴリ名も新しいものに設定
         }
-        
-      } else if (this.localNewTask.category === '') {
-         // 何も選択されていない場合、RoadmapBaseで必須チェックが行われる
-         alert('カテゴリを選択または作成してください。');
-         return;
+    };
+
+
+    const emitUpdatedNewTask = () => {
+      emit('update:newTask', internalNewTask.value);
+      console.log('RoadmapTaskAddForm: Emitting update:newTask with:', internalNewTask.value);
+    };
+
+    const addTask = () => {
+      // カテゴリ名が未入力の場合のバリデーションを追加
+      if (!internalNewTask.value.category || internalNewTask.value.category.trim() === '') {
+        alert('カテゴリ名を入力してください。');
+        return;
+      }
+      // タスク名が未入力の場合のバリデーションを追加
+      if (!internalNewTask.value.name || internalNewTask.value.name.trim() === '') {
+        alert('タスク名を入力してください。');
+        return;
+      }
+      // 開始月と終了月が選択されているか確認
+      if (internalNewTask.value.startMonthIndex === '' || internalNewTask.value.endMonthIndex === '') {
+        alert('開始月と終了月を選択してください。');
+        return;
+      }
+      // 開始月が終了月より後でないか確認
+      if (internalNewTask.value.startMonthIndex > internalNewTask.value.endMonthIndex) {
+        alert('開始月は終了月より前の月を選択してください。');
+        return;
       }
 
-      this.$emit('add-task');
-    },
+      // 新しいカテゴリを作成しようとしているかのチェックは不要になります
+      // if (internalSelectedCategory.value === '__new__' && props.allAvailableCategories.length >= 4) {
+      //   alert('カテゴリは4つまでしか登録できません。');
+      //   return;
+      // }
+
+      emit('add-task');
+      console.log('RoadmapTaskAddForm: Emitting add-task event.');
+    };
+
+    return {
+      internalNewTask,
+      internalSelectedCategory,
+      handleCategoryChange,
+      addTask,
+      emitUpdatedNewTask,
+      showCategoryNameInput,
+      categoryNameInputLabel,
+      categoryNameInputPlaceholder,
+      emitUpdatedNewTaskAndCategory,
+      handleCategoryNameInputBlur,
+    };
   },
 };
 </script>
 
 <style scoped>
+/* スタイルは変更なし */
 .task-add-form {
-  background-color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 25px;
-  margin-top: 40px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  background-color: #f8f8f8;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-top: 30px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.task-add-form h3 {
-  margin-top: 0;
+h3 {
   color: #333;
-  font-size: 1.8em;
-  margin-bottom: 25px;
+  margin-bottom: 8px;
   text-align: center;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px 30px;
-  max-width: 700px;
-  margin: 0 auto 25px auto;
+  font-size: 1.15em;
+  font-weight: 600;
 }
 
 .form-row {
   display: flex;
-  align-items: center;
+  gap: 15px;
+  width: 100%;
 }
 
-.form-row label {
-  width: 120px;
-  text-align: right;
-  margin-right: 15px;
-  font-weight: bold;
+.form-group {
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.form-group.flex-grow {
+    flex-grow: 1;
+    min-width: 130px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
   color: #555;
-  font-size: 0.95em;
-}
-
-.small-input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  font-weight: bold;
   font-size: 0.9em;
-  box-sizing: border-box;
-  background-color: #fdfdfd;
-  color: #333;
 }
 
-.small-input:focus {
+.input-field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95em;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
   border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
   outline: none;
 }
 
-.small-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  display: block;
-  margin: 25px auto 0;
-  font-weight: bold;
-  letter-spacing: 0.5px;
+.month-selection {
+  display: flex;
+  gap: 10px;
 }
 
-.small-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
+.month-select-item {
+  flex: 1;
+}
+
+.add-task-button {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  margin-top: 20px;
+  width: 100%;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.25);
+}
+
+.add-task-button:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
 }
 </style>

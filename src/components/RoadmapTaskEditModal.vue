@@ -1,197 +1,180 @@
 <template>
-  <div
-    v-if="editingTask"
-    class="modal-overlay"
+  <el-dialog
+    v-model="internalIsVisible"
+    title="タスクを編集"
+    width="500px"
+    :before-close="handleClose"
   >
-    <div class="modal-content">
-      <h2>タスクを編集</h2>
-      <div class="form-grid">
-        <div class="form-row">
-          <label for="edit-task-name">タスク名:</label>
-          <input
-            id="edit-task-name"
-            v-model="localEditingTask.name"
-            type="text"
-            class="small-input"
-          >
-        </div>
-        <div class="form-row">
-          <label for="edit-start-month">開始月:</label>
-          <select
-            id="edit-start-month"
-            v-model="localEditingTask.startIndex"
-            class="small-input"
-          >
-            <option
-              v-for="(month, index) in months"
-              :key="month.id"
-              :value="index"
-            >
-              {{ month.name }}
-            </option>
+    <div class="edit-form-content">
+      <div class="form-group">
+        <label for="edit-category-select">カテゴリ:</label>
+        <select id="edit-category-select" v-model="internalTask.category" class="input-field">
+          <option v-for="category in allAvailableCategories" :key="category" :value="category">
+            {{ category }}
+          </option>
           </select>
-        </div>
-        <div class="form-row">
-          <label for="edit-end-month">終了月:</label>
-          <select
-            id="edit-end-month"
-            v-model="localEditingTask.endIndex"
-            class="small-input"
-          >
-            <option
-              v-for="(month, index) in months"
-              :key="month.id"
-              :value="index"
-            >
-              {{ month.name }}
-            </option>
-          </select>
-        </div>
       </div>
-      <div class="modal-actions">
-        <button
-          class="small-button"
-          @click="saveTask"
-        >
-          保存
-        </button>
-        <button
-          class="small-button secondary"
-          @click="cancelEdit"
-        >
-          キャンセル
-        </button>
-        <button
-          class="small-button delete"
-          @click="deleteTask"
-        >
-          削除
-        </button>
+
+      <div class="form-group">
+        <label for="edit-task-name">タスク名:</label>
+        <input
+          id="edit-task-name"
+          type="text"
+          v-model="internalTask.name"
+          placeholder="タスク名を入力してください"
+          class="input-field"
+        />
+      </div>
+
+      <div class="form-group month-selection">
+        <div class="month-select-item">
+          <label for="edit-start-month">開始月:</label>
+          <select id="edit-start-month" v-model.number="internalTask.startMonthIndex" class="input-field">
+            <option value="" disabled>-- 選択 --</option>
+            <option v-for="(month, index) in months" :key="month.id" :value="index">
+              {{ month.name }} ({{ month.year }})
+            </option>
+          </select>
+        </div>
+        <div class="month-select-item">
+          <label for="edit-end-month">終了月:</label>
+          <select id="edit-end-month" v-model.number="internalTask.endMonthIndex" class="input-field">
+            <option value="" disabled>-- 選択 --</option>
+            <option v-for="(month, index) in months" :key="month.id" :value="index">
+              {{ month.name }} ({{ month.year }})
+            </option>
+          </select>
+        </div>
       </div>
     </div>
-  </div>
+
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="handleDelete">削除</el-button>
+        <el-button @click="handleClose">キャンセル</el-button>
+        <el-button type="primary" @click="handleSave">保存</el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
-<script>
-export default {
-  name: 'RoadmapTaskEditModal',
-  props: {
-    editingTask: {
-      type: Object,
-      default: null,
-    },
-    months: {
-      type: Array,
-      required: true,
-    },
+<script setup>
+import { ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+
+const props = defineProps({
+  isVisible: {
+    type: Boolean,
+    default: false,
   },
-  data() {
-    return {
-      localEditingTask: this.editingTask ? { ...this.editingTask } : null,
-    };
+  taskToEdit: {
+    type: Object,
+    default: null,
   },
-  watch: {
-    editingTask(newVal) {
-      // propsが更新されたときにローカルデータを同期
-      this.localEditingTask = newVal ? { ...newVal } : null;
-    },
+  allAvailableCategories: {
+    type: Array,
+    default: () => [],
   },
-  methods: {
-    saveTask() {
-      // 親に変更を通知
-      this.$emit('update:editingTask', this.localEditingTask); // 親のeditingTaskを更新
-      this.$emit('save-task-edit'); // 保存処理をトリガー
-    },
-    cancelEdit() {
-      this.$emit('cancel-task-edit');
-    },
-    deleteTask() {
-      this.$emit('delete-task');
-    },
+  months: {
+    type: Array,
+    required: true,
   },
+});
+
+const emit = defineEmits(['update:isVisible', 'save-task-edit', 'delete-task']);
+
+const internalIsVisible = ref(props.isVisible);
+const internalTask = ref({});
+const originalCategory = ref(''); // カテゴリ変更を検出するために元のカテゴリを保存
+
+watch(() => props.isVisible, (newVal) => {
+  internalIsVisible.value = newVal;
+});
+
+watch(() => props.taskToEdit, (newVal) => {
+  if (newVal) {
+    internalTask.value = { ...newVal };
+    originalCategory.value = newVal.category; // 元のカテゴリを保存
+  }
+}, { deep: true, immediate: true });
+
+const handleSave = () => {
+  if (!internalTask.value.name) {
+    ElMessage.error('タスク名を入力してください。');
+    return;
+  }
+  if (!internalTask.value.category) {
+    ElMessage.error('カテゴリを選択してください。');
+    return;
+  }
+  if (internalTask.value.startMonthIndex === null || internalTask.value.endMonthIndex === null) {
+    ElMessage.error('開始月と終了月を選択してください。');
+    return;
+  }
+  if (internalTask.value.startMonthIndex > internalTask.value.endMonthIndex) {
+    ElMessage.error('開始月は終了月よりも前に設定してください。');
+    return;
+  }
+
+  // 編集されたタスクデータと元のカテゴリを親にemit
+  emit('save-task-edit', { ...internalTask.value, originalCategory: originalCategory.value });
+  internalIsVisible.value = false;
+};
+
+const handleDelete = () => {
+  if (internalTask.value && internalTask.value.id) {
+    emit('delete-task', internalTask.value.id);
+  }
+};
+
+const handleClose = () => {
+  emit('update:isVisible', false);
 };
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+.edit-form-content {
+  padding: 10px 0; /* パディングを少し減らす */
 }
 
-.modal-content {
-  background-color: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
-  width: 90%;
-  text-align: center;
+.form-group {
+  margin-bottom: 15px; /* グループ間のマージン */
 }
 
-.modal-content h2 {
-  margin-top: 0;
-  margin-bottom: 25px;
-  color: #333;
-  font-size: 1.6em;
-}
-
-.modal-content .form-grid {
-  grid-template-columns: 1fr;
-  max-width: 100%;
-  margin-bottom: 25px;
-}
-
-.modal-content .form-row label {
-  text-align: left;
-  width: 100px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 20px;
-}
-
-.small-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+.form-group label {
   display: block;
-  margin: 0 10px 0 0; /* 右側にマージンを追加 */
+  margin-bottom: 5px;
   font-weight: bold;
-  letter-spacing: 0.5px;
-}
-.small-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
+  color: #555;
 }
 
-.small-button.secondary {
-  background-color: #6c757d;
-  margin-left: 10px; /* 左側にマージンを追加 */
-}
-.small-button.secondary:hover {
-  background-color: #5a6268;
+.input-field {
+  width: 100%;
+  padding: 8px 10px; /* パディングを調整 */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 0.95em;
 }
 
-.small-button.delete {
-  background-color: #dc3545;
-  margin-left: auto; /* 右端に寄せる */
+.input-field:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  outline: none;
 }
-.small-button.delete:hover {
-  background-color: #c82333;
+
+.month-selection {
+  display: flex;
+  gap: 10px; /* 月選択のアイテム間のギャップ */
+}
+
+.month-select-item {
+  flex: 1; /* 均等な幅 */
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end; /* ボタンを右寄せ */
+  gap: 10px; /* ボタン間のスペース */
 }
 </style>
