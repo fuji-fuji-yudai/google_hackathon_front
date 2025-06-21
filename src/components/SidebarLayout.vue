@@ -12,7 +12,11 @@
       </el-button>
 
       <el-menu style="height: 100%;"> <!--element plusのコンポーネントで、ナビゲーションメニューを表示-->
-        <RecursiveMenu :items="menuData" :addSubMenu="addSubMenu" @select="handleSelect" /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->
+        <RecursiveMenu 
+          :items="menuData" 
+          :addSubMenu="addSubMenu"
+          @select="handleSelect" 
+        /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->
       </el-menu> <!--elmenu配下に、el-menu-itemやel-sub-menuを記載して使う。 -->
     </div>
 
