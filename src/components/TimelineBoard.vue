@@ -89,15 +89,42 @@ export default {
       emit('update', localTasks.value)
     }
 
+    // 修正：taskDateMapの初期化
     watch(localTasks, (newTasks) => {
       const newMap = {}
       newTasks.forEach(task => {
-        newMap[task.id] = [
-          task.plan_start ? parseISO(task.plan_start) : null,
-          task.plan_end ? parseISO(task.plan_end) : null
-        ]
+        // デバッグログ追加
+        console.log(`Task ${task.id}:`, {
+          plan_start: task.plan_start,
+          plan_end: task.plan_end
+        })
+        
+        // plan_startとplan_endが存在し、有効な日付文字列の場合のみparseISO
+        if (task.plan_start && task.plan_end && 
+            task.plan_start !== '' && task.plan_end !== '') {
+          try {
+            const startDate = parseISO(task.plan_start)
+            const endDate = parseISO(task.plan_end)
+            
+            // 有効な日付オブジェクトかチェック
+            if (!isNaN(startDate) && !isNaN(endDate)) {
+              newMap[task.id] = [startDate, endDate]
+              console.log(`Task ${task.id} 日付設定成功:`, [startDate, endDate])
+            } else {
+              newMap[task.id] = []
+              console.log(`Task ${task.id} 無効な日付:`, task.plan_start, task.plan_end)
+            }
+          } catch (error) {
+            console.error(`Task ${task.id} 日付パースエラー:`, error)
+            newMap[task.id] = []
+          }
+        } else {
+          newMap[task.id] = []
+          console.log(`Task ${task.id} 日付なし`)
+        }
       })
       taskDateMap.value = newMap
+      console.log('Updated taskDateMap:', taskDateMap.value)
     }, { immediate: true, deep: true })
 
     const addTask = () => {
@@ -122,12 +149,12 @@ export default {
 
     const getDayColor = (date, task) => {
       const d = new Date(date)
-      const planStart = task.plan_start ? parseISO(task.plan_start) : null
-      const planEnd = task.plan_end ? parseISO(task.plan_end) : null
-      const actualStart = task.actual_start ? parseISO(task.actual_start) : null
-      const actualEnd = task.actual_end ? parseISO(task.actual_end) : null
-      if (actualStart && actualEnd && d >= actualStart && d <= actualEnd) return '#a8e6cf'
-      if (planStart && planEnd && d >= planStart && d <= planEnd) return '#d0e8ff'
+      const plan_start = task.plan_start ? parseISO(task.plan_start) : null
+      const plan_end = task.plan_end ? parseISO(task.plan_end) : null
+      const actual_start = task.actual_start ? parseISO(task.actual_start) : null
+      const actual_end = task.actual_end ? parseISO(task.actual_end) : null
+      if (actual_start && actual_end && d >= actual_start && d <= actual_end) return '#a8e6cf'
+      if (plan_start && plan_end && d >= plan_start && d <= plan_end) return '#d0e8ff'
       return 'transparent'
     }
 
@@ -168,7 +195,6 @@ export default {
 </script>
 
 <style scoped>
-/* 省略せずに必要なスタイルを保ったまま */
 .timeline-container {
   padding: 16px;
   overflow-x: auto;
