@@ -72,7 +72,7 @@ export default {
   font-size: 2rem;
   font-weight: 700;
   text-align: center;
-  margin: 2rem 0 1rem;
+  margin: 0rem 0 1rem;
   letter-spacing: 1px;
   font-family: 'Poppins', 'Helvetica Neue', sans-serif;
   background: linear-gradient(90deg, #1e3c72, #2a5298);
