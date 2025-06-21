@@ -31,29 +31,17 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits } from 'vue'; // 'watch' を削除
+import { ref, computed, defineProps, defineEmits } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import RoadmapGrid from './RoadmapGrid.vue';
 import RoadmapTaskAddForm from './RoadmapTaskAddForm.vue';
-import RoadmapTaskEditModal from './RoadmapTaskEditModal.vue';
+import RoadmapTaskEditModal from './RoadmapTaskEditModal.vue'; // ★重要: 拡張子が .Lvu の場合は .vue に修正してください
 
 const props = defineProps({
-  roadmapData: {
-    type: Array,
-    required: true,
-  },
-  allMonths: {
-    type: Array,
-    required: true,
-  },
-  allQuarters: {
-    type: Array,
-    required: true,
-  },
-  initialCategoryColors: {
-    type: Object,
-    default: () => ({}),
-  },
+  roadmapData: { type: Array, required: true },
+  allMonths: { type: Array, required: true },
+  allQuarters: { type: Array, required: true },
+  initialCategoryColors: { type: Object, default: () => ({}) },
 });
 
 const emit = defineEmits([
@@ -62,47 +50,52 @@ const emit = defineEmits([
   'delete-task-to-manager'
 ]);
 
-const newTask = ref({
-  id: null,
-  name: '',
-  category: '',
-  startMonthIndex: null,
-  endMonthIndex: null,
-});
+const newTask = ref({ id: null, name: '', category: '', startMonthIndex: null, endMonthIndex: null });
 const selectedCategory = ref('');
 
 const allAvailableCategories = computed(() => {
   const categories = new Set();
   props.roadmapData.forEach(row => {
-    if (row.category) {
-      categories.add(row.category);
-    }
+    if (row.category) categories.add(row.category);
   });
   return Array.from(categories).sort();
 });
 
 const handleNewTaskUpdate = (updatedTask) => {
   newTask.value = updatedTask;
+  // console.log('RoadmapBase: newTask updated by form:', newTask.value); // デバッグログ
 };
 const handleSelectedCategoryUpdate = (updatedCategory) => {
   selectedCategory.value = updatedCategory;
+  // console.log('RoadmapBase: selectedCategory updated by form:', selectedCategory.value); // デバッグログ
 };
 
+// --- 同一期間・カテゴリのタスク数チェック ---
+const checkDuplicateTasks = (category, startMonthIndex, endMonthIndex, currentTaskId = null) => {
+  const categoryRow = props.roadmapData.find(row => row.category === category);
+  if (!categoryRow || !categoryRow.tasks) return false;
+
+  let count = 0;
+  for (const task of categoryRow.tasks) {
+    if (currentTaskId && task.id === currentTaskId) continue; // 編集中のタスクは除外
+    if (task.startIndex === startMonthIndex && task.endIndex === endMonthIndex) {
+      count++;
+    }
+  }
+  return count >= 3; // 3つ以上なら true (重複)
+};
+
+// --- タスク追加 ---
 const addTask = () => {
-  if (!newTask.value.name) {
-    ElMessage.error('タスク名を入力してください。');
-    return;
-  }
-  if (!newTask.value.category) {
-    ElMessage.error('カテゴリを選択または入力してください。');
-    return;
-  }
-  if (newTask.value.startMonthIndex === null || newTask.value.endMonthIndex === null) {
-    ElMessage.error('開始月と終了月を選択してください。');
-    return;
-  }
-  if (newTask.value.startMonthIndex > newTask.value.endMonthIndex) {
-    ElMessage.error('開始月は終了月よりも前に設定してください。');
+  // console.log('RoadmapBase: addTask called with newTask:', newTask.value); // デバッグログ
+
+  if (!newTask.value.name?.trim()) { ElMessage.error('タスク名を入力してください。'); return; }
+  if (!newTask.value.category?.trim()) { ElMessage.error('カテゴリを選択または入力してください。'); return; }
+  if (newTask.value.startMonthIndex === null || newTask.value.endMonthIndex === null) { ElMessage.error('開始月と終了月を選択してください。'); return; }
+  if (newTask.value.startMonthIndex > newTask.value.endMonthIndex) { ElMessage.error('開始月は終了月よりも前に設定してください。'); return; }
+
+  if (checkDuplicateTasks(newTask.value.category, newTask.value.startMonthIndex, newTask.value.endMonthIndex)) {
+    ElMessage.error('このカテゴリでは、指定された期間にすでに3つのタスクが存在します。');
     return;
   }
 
@@ -119,39 +112,31 @@ const addTask = () => {
 };
 
 const resetAddTaskForm = () => {
-  newTask.value = {
-    id: null,
-    name: '',
-    category: '',
-    startMonthIndex: null,
-    endMonthIndex: null,
-  };
+  newTask.value = { id: null, name: '', category: '', startMonthIndex: null, endMonthIndex: null };
   selectedCategory.value = '';
 };
 
 const isEditModalVisible = ref(false);
 const taskToEdit = ref(null);
 
+// --- 編集モーダルを開く ---
 const openEditModal = (task) => {
-  taskToEdit.value = { ...task };
+  taskToEdit.value = { ...task }; 
   isEditModalVisible.value = true;
+  // console.log('RoadmapBase: openEditModal with task:', taskToEdit.value); // デバッグログ
 };
 
+// --- タスク編集保存 ---
 const saveTaskEdit = (updatedTask) => {
-  if (!updatedTask.name) {
-    ElMessage.error('タスク名を入力してください。');
-    return;
-  }
-  if (!updatedTask.category) {
-    ElMessage.error('カテゴリを選択してください。');
-    return;
-  }
-  if (updatedTask.startMonthIndex === null || updatedTask.endMonthIndex === null) {
-    ElMessage.error('開始月と終了月を選択してください。');
-    return;
-  }
-  if (updatedTask.startMonthIndex > updatedTask.endMonthIndex) {
-    ElMessage.error('開始月は終了月よりも前に設定してください。');
+  // console.log('RoadmapBase: saveTaskEdit called with updatedTask:', updatedTask); // デバッグログ
+
+  if (!updatedTask.name?.trim()) { ElMessage.error('タスク名を入力してください。'); return; }
+  if (!updatedTask.category?.trim()) { ElMessage.error('カテゴリを選択してください。'); return; }
+  if (updatedTask.startMonthIndex === null || updatedTask.endMonthIndex === null) { ElMessage.error('開始月と終了月を選択してください。'); return; }
+  if (updatedTask.startMonthIndex > updatedTask.endMonthIndex) { ElMessage.error('開始月は終了月よりも前に設定してください。'); return; }
+
+  if (checkDuplicateTasks(updatedTask.category, updatedTask.startMonthIndex, updatedTask.endMonthIndex, updatedTask.id)) {
+    ElMessage.error('このカテゴリでは、指定された期間にすでに3つのタスクが存在します。');
     return;
   }
 
@@ -162,6 +147,7 @@ const saveTaskEdit = (updatedTask) => {
   taskToEdit.value = null;
 };
 
+// --- タスク削除 ---
 const deleteTask = async (taskIdToDelete) => {
   try {
     await ElMessageBox.confirm('このタスクを本当に削除しますか？', 'タスク削除の確認', {
@@ -176,10 +162,14 @@ const deleteTask = async (taskIdToDelete) => {
     isEditModalVisible.value = false;
     taskToEdit.value = null;
   } catch (error) {
-    ElMessage.info('タスクの削除がキャンセルされました。');
+    if (error !== 'cancel') {
+      ElMessage.error('タスクの削除中にエラーが発生しました。');
+      // console.error('Task deletion error:', error); // デバッグログ
+    } else {
+      ElMessage.info('タスクの削除がキャンセルされました。');
+    }
   }
 };
-
 </script>
 
 <style scoped>
