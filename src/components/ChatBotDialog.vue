@@ -16,6 +16,7 @@
         placeholder="質問を入力してください..."
         @keyup.enter="sendQuestion"
         :disabled="loading"
+        class="input-flex"
       />
       <el-button @click="sendQuestion" :disabled="loading || !userQuestion">
         {{ loading ? '送信中...' : '送信' }}
@@ -44,7 +45,8 @@
     </el-form>
     <template #footer>
       <el-button @click="taskDialogVisible = false">キャンセル</el-button>
-      <el-button type="primary" @click="submitTask">追加</el-button>
+      <!-- <el-button type="primary" @click="submitTask">追加</el-button> -->
+      <el-button type="primary">追加</el-button>
     </template>
   </el-dialog>
 </template>
@@ -137,21 +139,43 @@ const addTask = () => {
   taskDialogVisible.value = true
 }
 
-const submitTask = () => {
-  const { name, assignee, startDate, endDate } = newTask.value
-  if (!name || !assignee || !startDate || !endDate) {
-    messages.value.push({ sender: 'AI', text: 'すべての項目を入力してください。' })
-    return
-  }
+// const submitTask = async () => {
+//   const { name, assignee, startDate, endDate } = newTask.value
+//   if (!name || !assignee || !startDate || !endDate) {
+//     ElMessage.error('すべての項目を入力してください。')
+//     return
+//   }
 
-  messages.value.push({
-    sender: 'AI',
-    text: `タスク「${name}」が ${assignee} さんに割り当てられました（${startDate} ～ ${endDate}）。`
-  })
+//   try {
+//     const token = localStorage.getItem('token')
+//     const response = await fetch('/api/tasks/create', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Authorization': `Bearer ${token}`,
+//       },
+//       body: JSON.stringify({
+//         name,
+//         assignee,
+//         startDate,
+//         endDate
+//       })
+//     })
 
-  taskDialogVisible.value = false
-  newTask.value = { name: '', assignee: '', startDate: '', endDate: '' }
-}
+//     const result = await response.json()
+
+//     if (!response.ok) {
+//       ElMessage.error(result.error || 'タスクの作成に失敗しました')
+//     } else {
+//       ElMessage.success('タスクが正常に追加されました')
+//       taskDialogVisible.value = false
+//       newTask.value = { name: '', assignee: '', startDate: '', endDate: '' }
+//     }
+//   } catch (err) {
+//     ElMessage.error(err.message || '通信エラーが発生しました')
+//   }
+// }
+
 </script>
 
 <style scoped>
@@ -194,4 +218,15 @@ const submitTask = () => {
   align-items: center;
   flex-wrap: wrap;
 }
+
+.input-area {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input-flex {
+  flex: 1;
+}
+
 </style>
