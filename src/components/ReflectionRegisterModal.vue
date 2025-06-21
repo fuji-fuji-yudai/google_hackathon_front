@@ -1,60 +1,62 @@
 <template>
-  <div class="form-wrapper">
-    <el-main>
-      <h2>振り返り</h2>
-      <el-form label-width="80px">
-        <el-form-item label="日付">
-          <el-date-picker
-            v-model="form.date"
-            type="date"
-            placeholder="日付を入力してください。"
-            :size="size"
-          />
-        </el-form-item>
-        <el-form-item label="活動内容">
-          <el-input 
-            v-model="form.activity" 
-            type="textarea" 
-            :rows="5"
-            placeholder="活動内容"
-          />
-        </el-form-item>
-        <el-form-item label="達成事項">
-          <el-input 
-            v-model="form.achievement"
-            type="textarea" 
-            :rows="5"
-            placeholder="達成事項"
-          />
-        </el-form-item>
-        <el-form-item label="改善点">
-          <el-input 
-            v-model="form.improvementPoints" 
-            :rows="5"
-            type="textarea" 
-            placeholder="改善点"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="create">
-            保存
-          </el-button>
-          <el-button type="secondary" @click="clear">
-            クリア
-          </el-button>
-          <!-- フィードバックボタン -->
-          <el-button v-if="isFeedbackVisible" type="success" @click="giveFeedback">
-            フィードバック作成
-          </el-button>
-        </el-form-item>
-      </el-form>
-      <!-- フィードバック結果表示 -->
-      <div v-if="feedback">
-        <h3>生成されたフィードバック</h3>
-        <p>{{ feedbackData.feedback }}</p>
-      </div>
-    </el-main>
-  </div>
+  <el-dialog>
+    <div class="form-wrapper">
+      <el-main>
+        <h2>振り返り</h2>
+        <el-form label-width="80px">
+          <el-form-item label="日付">
+            <el-date-picker
+              v-model="form.date"
+              type="date"
+              placeholder="日付を入力してください。"
+              :size="size"
+            />
+          </el-form-item>
+          <el-form-item label="活動内容">
+            <el-input 
+              v-model="form.activity" 
+              type="textarea" 
+              :rows="5"
+              placeholder="活動内容"
+            />
+          </el-form-item>
+          <el-form-item label="達成事項">
+            <el-input 
+              v-model="form.achievement"
+              type="textarea" 
+              :rows="5"
+              placeholder="達成事項"
+            />
+          </el-form-item>
+          <el-form-item label="改善点">
+            <el-input 
+              v-model="form.improvementPoints" 
+              :rows="5"
+              type="textarea" 
+              placeholder="改善点"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="create">
+              保存
+            </el-button>
+            <el-button type="secondary" @click="clear">
+              クリア
+            </el-button>
+            <!-- フィードバックボタン -->
+            <el-button v-if="isFeedbackVisible" type="success" @click="giveFeedback">
+              フィードバック作成
+            </el-button>
+          </el-form-item>
+        </el-form>
+        <!-- フィードバック結果表示 -->
+        <div v-if="feedback">
+          <h3>生成されたフィードバック</h3>
+          <p>{{ feedbackData.feedback }}</p>
+        </div>
+      </el-main>
+    </div>
+  </el-dialog>
 </template>
 
 <script>
@@ -67,10 +69,11 @@ const token = localStorage.getItem('token')
 export default {
   data() {
     const route = useRoute()
-    const reflectionData = this.fetchReflections();
+    // クエリからデータを取得
+    const reflectionData = route.query.reflection ? JSON.parse(route.query.reflection) : null;
+    console.log("reflectionData: " + reflectionData);
     return {
-      id: reflectionData.id || null, // 主キーID（更新時に使用）
-      date: route.query.date,
+      id: route.query.id || null, // 主キーID（更新時に使用）
       form: {
         date: route.query.date || '', // クエリから初期日付を取得
         activity: reflectionData ? reflectionData.activity : '',
@@ -91,26 +94,6 @@ export default {
   },
   
   methods: {
-    async fetchReflections() {
-      console.log('取得処理開始')
-      const route = useRoute()
-      try {
-        const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/${route.query.date}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-        console.log('レスポンスデータ：' + response.data)
-        if (response.status == 200) {
-          return response.data;
-        } else {
-          return null
-        }
-      } catch (error) {
-        console.error('データ取得に失敗:', error)
-        return null
-      }
-    },
     async create() {
       const router = this.$router
       console.log('JWT トークン:', token);
