@@ -1,6 +1,8 @@
 <template>
   <div class="home">
-    <div class="app-title">MyBusinessApp</div>
+    <div class="app-title">
+      <img src="@/assets/worklooplogo.png" alt="WorkLoop Logo" class="logo-image" />
+    </div>
     <div class="feature-grid">
       <div
         v-for="feature in features"
@@ -69,18 +71,18 @@ export default {
 
 /* アプリタイトル */
 .app-title {
-  font-size: 2rem;
-  font-weight: 700;
   text-align: center;
   margin: 0rem 0 1rem;
-  letter-spacing: 1px;
-  font-family: 'Poppins', 'Helvetica Neue', sans-serif;
-  background: linear-gradient(90deg, #1e3c72, #2a5298);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   animation: fadeIn 1s ease-in-out;
   animation-fill-mode: both;
+
+.logo-image {
+    height: auto; 
+    max-width: 300px;
+    object-fit: contain;
+  }
 }
+
 
 /* グリッドレイアウト */
 .feature-grid {

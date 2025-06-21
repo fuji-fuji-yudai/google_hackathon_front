@@ -3,6 +3,10 @@
   <div id="app">
     <!-- ナビバー -->
     <nav>
+      <router-link to="/home" class="logo-link">
+        <img src="/favicon.png" alt="WorkLoop Logo" class="logo-image" />
+      </router-link>
+
       <div class="nav-links">
         <router-link to="/">
           Login
@@ -77,7 +81,7 @@ nav {
 
   .nav-links {
     display: flex;
-    gap: 1.5rem;
+    gap: 3.5rem;
     align-items: center;
   }
 
@@ -122,6 +126,18 @@ router-view {
  flex: 1;
  overflow: auto;
 }
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  margin-right: 1.5rem;
+
+  .logo-image {
+    height: 32px;
+    width: auto;
+  }
+}
+
 
 </style>
 
