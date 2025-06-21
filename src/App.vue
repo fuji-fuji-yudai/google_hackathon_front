@@ -4,18 +4,21 @@
     <!-- ナビバー -->
     <nav>
       <router-link to="/">
+        Login
+      </router-link>
+      <router-link to="/home">
         Home
       </router-link>
       <router-link to="/chat">
         Chat
       </router-link>
-      <router-link to="/chat">
+      <router-link to="/reflection/home">
         Reflection
       </router-link>
-      <router-link to="/chat">
+      <router-link to="/roadmap">
         Roadmap
       </router-link>
-      <router-link to="/chat">
+      <router-link to="/taskManage">
         Task
       </router-link>
     </nav>
