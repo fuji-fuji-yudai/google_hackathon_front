@@ -45,6 +45,7 @@ export default {
         );
         // トークンなどを保存
         localStorage.setItem('token', response.data.token);
+        window.dispatchEvent(new Event('storage')) 
         this.$router.push('/home');
       } catch (err) {
         this.error = 'ログインに失敗しました';
