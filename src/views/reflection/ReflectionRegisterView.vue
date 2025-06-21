@@ -42,8 +42,17 @@
           <el-button type="secondary" @click="clear">
             クリア
           </el-button>
+          <!-- フィードバックボタン -->
+          <el-button v-if="isFeedbackVisible" type="success" @click="giveFeedback">
+            フィードバック作成
+          </el-button>
         </el-form-item>
       </el-form>
+      <!-- フィードバック結果表示 -->
+      <div v-if="feedback">
+        <h3>生成されたフィードバック</h3>
+        <p>{{ feedbackData.feedback }}</p>
+      </div>
     </el-main>
   </div>
 </template>
@@ -58,13 +67,27 @@ const token = localStorage.getItem('token')
 export default {
   data() {
     const route = useRoute()
+    // クエリからデータを取得
+    const reflectionData = route.query.reflection ? JSON.parse(route.query.reflection) : null;
+    console.log("reflectionData: " + reflectionData);
     return {
+      id: route.query.id || null, // 主キーID（更新時に使用）
       form: {
         date: route.query.date || '', // クエリから初期日付を取得
-        activity: '',
-        achievement: '',
-        improvementPoints: ''
-      }
+        activity: reflectionData ? reflectionData.activity : '',
+        achievement: reflectionData ? reflectionData.achievement : '',
+        improvementPoints: reflectionData ? reflectionData.improvementPoints : '',
+      },
+      isFeedbackVisible: !!reflectionData, // reflectionデータが存在する場合にフィードバックボタンを表示
+      feedbackData: null, // 生成されたフィードバックを格納する
+      error: null, // エラーメッセージ
+    };
+  },
+
+  mounted() {
+    // Reflection IDが存在する場合のみ getFeedback を実行
+    if (this.id) {
+      this.getFeedback();
     }
   },
   
@@ -90,14 +113,30 @@ export default {
       // 登録処理
       try {
         console.log(payload)
-        const response = await axios.post('https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}` // Authorization ヘッダーにトークンを設定
+        let response;
+        if (this.id) {
+          // 更新処理
+          response = await axios.put(
+            `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/update/${this.id}`,
+            payload,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`, // Authorization ヘッダーにトークンを設定
+              },
             }
-          }
-        )
+          );
+        } else {
+          // 登録処理
+          response = await axios.post(
+            'https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
+            payload,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`, // Authorization ヘッダーにトークンを設定
+              },
+            }
+          );
+        }
         if(response.status === 200) {
           // フラッシュメッセージを設定してリダイレクト
           router.push({
@@ -137,7 +176,50 @@ export default {
       this.form.activity = '';
       this.form.achievement = '';
       this.form.improvementPoints = '';
-    }
+    },
+    async giveFeedback() {
+      console.log(this.reflectionData)
+      try {
+        const response = await axios.post(
+          'https://my-image-14467698004.asia-northeast1.run.app/api/feedback/create',
+          this.reflectionData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Authorization ヘッダーにトークンを設定
+            },
+          }
+        );
+        if(response.status === 200) {
+          alert("成功")
+        }
+      } catch (error) {
+        console.error('フィードバック生成に失敗:', error);
+        alert('フィードバックを生成できませんでした。後ほど再試行してください。');
+      }
+    },
+    async getFeedback() {
+      try {
+        // APIを呼び出してフィードバックを取得
+        const response = await axios.get(
+          "https://my-image-14467698004.asia-northeast1.run.app/api/feedback", {
+          params: { reflectionId: this.reflectionData.id },
+          headers: {
+            Authorization: `Bearer ${token}`, // Authorization ヘッダーにトークンを設定
+          },
+        });
+        this.feedbackData = response.data; // フィードバックを格納
+        this.error = null; // エラーをリセット
+      } catch (error) {
+        // エラーが発生した場合
+        console.error("フィードバック取得に失敗:", error);
+        if (error.response && error.response.status === 404) {
+          this.error = "指定されたReflection IDに対応するフィードバックが見つかりません。";
+        } else {
+          this.error = "フィードバック取得中にエラーが発生しました。";
+        }
+        this.feedbackData = null; // フィードバックをリセット
+      }
+    },
   }
 }
 </script>

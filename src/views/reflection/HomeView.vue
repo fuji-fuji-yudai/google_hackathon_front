@@ -65,10 +65,18 @@ const router = useRouter()
 const handleDateClick = (date) => {
   console.log('クリックされた日付:', date)
   selectedDate.value = date
+  // フォーマットを YYYY-MM-DD に変換
+  const formattedDate = date.toISOString().split('T')[0]
+  // 該当の日付のデータが存在する場合
+  const reflection = completedDates.value.find((item) => item.date === formattedDate);
+  // データを登録画面に渡す
   router.push({
     name: 'reflectionRegister',
-    query: { date: date }
-  })
+    query: {
+      date: formattedDate,
+      ...(reflection ? { reflection: JSON.stringify(reflection) } : {}),
+    },
+  });
 }
 
 // カレンダーを切り替えたときの処理
