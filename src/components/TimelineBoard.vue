@@ -30,16 +30,32 @@
 
           <div class="task-assignee">担当: {{ task.assignee }}</div>
           <div class="task-parent" v-if="task.parent_id">親: {{ getParentTitle(task.parent_id) }}</div>
+          
+          <!-- 予定日付入力 -->
           <div class="date-picker-container">
             <span>予定：</span>
             <el-date-picker
-              v-if="taskDateMap[task.id]"
-              v-model="taskDateMap[task.id]"
+              v-if="taskPlanDateMap[task.id]"
+              v-model="taskPlanDateMap[task.id]"
               type="daterange"
               size="small"
               start-placeholder="開始日"
               end-placeholder="終了日"
-              @change="(value) => onTaskDateChange(task, value)"
+              @change="(value) => onPlanDateChange(task, value)"
+            />
+          </div>
+
+          <!-- 実績日付入力 -->
+          <div class="date-picker-container">
+            <span>実績：</span>
+            <el-date-picker
+              v-if="taskActualDateMap[task.id]"
+              v-model="taskActualDateMap[task.id]"
+              type="daterange"
+              size="small"
+              start-placeholder="実績開始日"
+              end-placeholder="実績終了日"
+              @change="(value) => onActualDateChange(task, value)"
             />
           </div>
         </div>
@@ -69,7 +85,8 @@ export default {
     const newAssignee = ref('')
     const newDates = ref([])
     const newParentId = ref(null)
-    const taskDateMap = ref({})
+    const taskPlanDateMap = ref({})      // 予定日付用
+    const taskActualDateMap = ref({})    // 実績日付用
 
     const dateRange = ref([])
     const generateFixedDateRange = () => {
@@ -80,51 +97,97 @@ export default {
       )
     }
 
-    const onTaskDateChange = (task, value) => {
-      if (!value || value.length !== 2) return
-      const [startDate, endDate] = value
-      task.plan_start = format(startDate, 'yyyy-MM-dd')
-      task.plan_end = format(endDate, 'yyyy-MM-dd')
-      taskDateMap.value[task.id] = [startDate, endDate]
+    // 予定日付変更
+    const onPlanDateChange = (task, value) => {
+      if (!value || value.length !== 2) {
+        task.plan_start = ''
+        task.plan_end = ''
+        taskPlanDateMap.value[task.id] = []
+      } else {
+        const [startDate, endDate] = value
+        task.plan_start = format(startDate, 'yyyy-MM-dd')
+        task.plan_end = format(endDate, 'yyyy-MM-dd')
+        taskPlanDateMap.value[task.id] = [startDate, endDate]
+      }
       emit('update', localTasks.value)
     }
 
-    // 修正：taskDateMapの初期化
+    // 実績日付変更
+    const onActualDateChange = (task, value) => {
+      if (!value || value.length !== 2) {
+        task.actual_start = ''
+        task.actual_end = ''
+        taskActualDateMap.value[task.id] = []
+      } else {
+        const [startDate, endDate] = value
+        task.actual_start = format(startDate, 'yyyy-MM-dd')
+        task.actual_end = format(endDate, 'yyyy-MM-dd')
+        taskActualDateMap.value[task.id] = [startDate, endDate]
+      }
+      emit('update', localTasks.value)
+    }
+
+    // タスクデータの初期化と監視
     watch(localTasks, (newTasks) => {
-      const newMap = {}
+      const newPlanMap = {}
+      const newActualMap = {}
+      
       newTasks.forEach(task => {
-        // デバッグログ追加
         console.log(`Task ${task.id}:`, {
           plan_start: task.plan_start,
-          plan_end: task.plan_end
+          plan_end: task.plan_end,
+          actual_start: task.actual_start,
+          actual_end: task.actual_end
         })
         
-        // plan_startとplan_endが存在し、有効な日付文字列の場合のみparseISO
+        // 予定日付の初期化
         if (task.plan_start && task.plan_end && 
             task.plan_start !== '' && task.plan_end !== '') {
           try {
-            const startDate = parseISO(task.plan_start)
-            const endDate = parseISO(task.plan_end)
+            const planStartDate = parseISO(task.plan_start)
+            const planEndDate = parseISO(task.plan_end)
             
-            // 有効な日付オブジェクトかチェック
-            if (!isNaN(startDate) && !isNaN(endDate)) {
-              newMap[task.id] = [startDate, endDate]
-              console.log(`Task ${task.id} 日付設定成功:`, [startDate, endDate])
+            if (!isNaN(planStartDate) && !isNaN(planEndDate)) {
+              newPlanMap[task.id] = [planStartDate, planEndDate]
+              console.log(`Task ${task.id} 予定日付設定成功:`, [planStartDate, planEndDate])
             } else {
-              newMap[task.id] = []
-              console.log(`Task ${task.id} 無効な日付:`, task.plan_start, task.plan_end)
+              newPlanMap[task.id] = []
             }
           } catch (error) {
-            console.error(`Task ${task.id} 日付パースエラー:`, error)
-            newMap[task.id] = []
+            console.error(`Task ${task.id} 予定日付パースエラー:`, error)
+            newPlanMap[task.id] = []
           }
         } else {
-          newMap[task.id] = []
-          console.log(`Task ${task.id} 日付なし`)
+          newPlanMap[task.id] = []
+        }
+
+        // 実績日付の初期化
+        if (task.actual_start && task.actual_end && 
+            task.actual_start !== '' && task.actual_end !== '') {
+          try {
+            const actualStartDate = parseISO(task.actual_start)
+            const actualEndDate = parseISO(task.actual_end)
+            
+            if (!isNaN(actualStartDate) && !isNaN(actualEndDate)) {
+              newActualMap[task.id] = [actualStartDate, actualEndDate]
+              console.log(`Task ${task.id} 実績日付設定成功:`, [actualStartDate, actualEndDate])
+            } else {
+              newActualMap[task.id] = []
+            }
+          } catch (error) {
+            console.error(`Task ${task.id} 実績日付パースエラー:`, error)
+            newActualMap[task.id] = []
+          }
+        } else {
+          newActualMap[task.id] = []
         }
       })
-      taskDateMap.value = newMap
-      console.log('Updated taskDateMap:', taskDateMap.value)
+      
+      taskPlanDateMap.value = newPlanMap
+      taskActualDateMap.value = newActualMap
+      
+      console.log('Updated taskPlanDateMap:', taskPlanDateMap.value)
+      console.log('Updated taskActualDateMap:', taskActualDateMap.value)
     }, { immediate: true, deep: true })
 
     const addTask = () => {
@@ -138,6 +201,7 @@ export default {
         plan_end: format(newDates.value[1], 'yyyy-MM-dd'),
         actual_start: '',
         actual_end: '',
+        status: 'TODO',
         parent_id: newParentId.value
       })
       emit('update', localTasks.value)
@@ -153,8 +217,15 @@ export default {
       const plan_end = task.plan_end ? parseISO(task.plan_end) : null
       const actual_start = task.actual_start ? parseISO(task.actual_start) : null
       const actual_end = task.actual_end ? parseISO(task.actual_end) : null
-      if (actual_start && actual_end && d >= actual_start && d <= actual_end) return '#a8e6cf'
-      if (plan_start && plan_end && d >= plan_start && d <= plan_end) return '#d0e8ff'
+      
+      // 実績がある場合は実績色を優先（緑）
+      if (actual_start && actual_end && d >= actual_start && d <= actual_end) {
+        return '#a8e6cf'  // 緑：実績
+      }
+      // 予定のみの場合は青
+      if (plan_start && plan_end && d >= plan_start && d <= plan_end) {
+        return '#d0e8ff'  // 青：予定
+      }
       return 'transparent'
     }
 
@@ -181,14 +252,17 @@ export default {
       newAssignee,
       newDates,
       newParentId,
-      taskDateMap,
+      taskPlanDateMap,
+      taskActualDateMap,
       localTasks,
       dateRange,
       addTask,
       getDayColor,
-      onTaskDateChange,
+      onPlanDateChange,
+      onActualDateChange,
       getIndentLevel,
-      getParentTitle
+      getParentTitle,
+      emit
     }
   }
 }
@@ -202,7 +276,7 @@ export default {
 .timeline-header,
 .timeline-row {
   display: grid;
-  grid-template-columns: 400px repeat(var(--day-count), 40px);
+  grid-template-columns: 450px repeat(var(--day-count), 40px);
   align-items: stretch;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -212,7 +286,7 @@ export default {
   min-height: 50px;
 }
 .timeline-row {
-  min-height: 120px;
+  min-height: 160px; /* 高さを増加 */
 }
 .label {
   padding: 12px;
@@ -245,6 +319,22 @@ export default {
   align-items: center;
   gap: 8px;
   font-size: 14px;
+  margin-bottom: 8px;
+}
+.date-picker-container span {
+  min-width: 40px;
+  font-weight: bold;
+}
+.status-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-top: 8px;
+}
+.status-container span {
+  min-width: 40px;
+  font-weight: bold;
 }
 .days {
   display: contents;
@@ -263,5 +353,12 @@ export default {
   height: 50px;
   font-weight: bold;
   background-color: #f8f9fa;
+}
+.task-input-row {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 </style>
