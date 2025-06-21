@@ -74,7 +74,8 @@ export default {
         const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          credentials: 'include'
         })
 
         if (!response.ok) {
@@ -107,7 +108,8 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          credentials: 'include'
         })
 
         if (!response.ok) {
