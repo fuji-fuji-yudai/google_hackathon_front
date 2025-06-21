@@ -21,10 +21,35 @@
       <router-link to="/taskManage">
         Task
       </router-link>
+      <div 
+        v-if="currentUsername" 
+        class="user-info" 
+      >
+        {{ currentUsername }} さん
+      </div>
     </nav>
     <router-view />
   </div>
 </template>
+
+<script setup>
+import { ref} from 'vue'
+const getUsernameFromToken = (token) => {
+  if (!token || typeof token !== 'string' || !token.includes('.')) {
+    console.error('トークンが無効です:', token);
+    return null;
+  }
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])); //JWTのペイロード部分（2番目のドット区切り★）をBase64でコードして、ユーザー名を取得
+    return payload.sub || payload.username; //subまたはusername★を返す。（JWTの仕様による）
+  } catch (e) {
+    console.error('トークンの解析に失敗しました', e);
+    return null;
+  }
+};
+const token = localStorage.getItem('token')
+const currentUsername = ref(getUsernameFromToken(token)) //JWTトークンから取得したユーザー名
+</script>
 
 
 <style lang="scss">
@@ -42,12 +67,24 @@
 nav {
   background-color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 0.75rem 1.5rem; /* ← 高さを抑える */
+  padding: 0.75rem 1.5rem;
   display: flex;
-  gap: 1.5rem;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between; /* ← 左右に分ける */
   border-bottom: 1px solid #e0e0e0;
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .user-info {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
 
   a {
     font-weight: 600;
@@ -79,11 +116,11 @@ nav {
 }
 
 
-
-
 router-view {
  flex: 1;
  overflow: auto;
 }
 
 </style>
+
+
