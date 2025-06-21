@@ -102,9 +102,9 @@ export default {
 
     const addTask = () => {
       if (!newTitle.value || !newAssignee.value || newDates.value.length !== 2) return
-      const id = Date.now()
+
       localTasks.value.push({
-        id,
+        id: null,
         title: newTitle.value,
         assignee: newAssignee.value,
         plan_start: format(newDates.value[0], 'yyyy-MM-dd'),

@@ -100,7 +100,7 @@ const addTask = () => {
   }
 
   emit('add-task-to-manager', {
-    id: `task-${Date.now()}`,
+    id: null,
     name: newTask.value.name,
     category: newTask.value.category,
     startMonthIndex: newTask.value.startMonthIndex,

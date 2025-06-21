@@ -81,7 +81,7 @@ export default {
       if (!newTitle.value || !newAssignee.value || newDates.value.length !== 2) return
 
       const newTask = {
-        id: Date.now(),
+        id: null,
         title: newTitle.value,
         assignee: newAssignee.value,
         plan_start: format(newDates.value[0], 'yyyy-MM-dd'),
