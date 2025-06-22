@@ -36,7 +36,7 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="create">
+          <el-button type="primary" :disabled="feedbackData !== null" @click="create">
             保存
           </el-button>
           <el-button type="secondary" @click="clear">
@@ -50,9 +50,9 @@
       </el-form>
       <!-- フィードバック結果表示 -->
       <div v-if="feedbackData">
-        <h3>生成されたフィードバック</h3>
+        <h3>フィードバック</h3>
         <!-- マークダウンをHTMLとしてレンダリング -->
-        <div v-html="renderMarkdown(feedbackData.feedback)"></div>
+        <div v-html="renderMarkdown(feedbackData.feedback)" class="feedback"></div>
       </div>
     </el-main>
   </div>
@@ -244,7 +244,6 @@ export default {
         });
         this.feedbackData = response.data; // フィードバックを格納
         console.log("フィードバック取得成功");
-        console.log("feedback : "+this.feedbackData.feedback);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
@@ -272,5 +271,8 @@ export default {
     width: 800px;
     margin-left: auto;
     margin-right: auto;
+  }
+  .feedback {
+    text-align: left;
   }
 </style>
