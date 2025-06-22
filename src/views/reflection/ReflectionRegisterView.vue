@@ -43,8 +43,8 @@
             クリア
           </el-button>
           <!-- フィードバックボタン -->
-          <el-button v-if="isFeedbackVisible" type="success" @click="giveFeedback">
-            フィードバック作成
+          <el-button v-if="isFeedbackButtonVisible" type="success" :disabled="feedbackData !== null" @click="giveFeedback">
+            {{ feedbackData !== null ? "フィードバック作成済み" : "フィードバック作成" }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -89,7 +89,7 @@ export default {
         this.form.activity = data.activity;
         this.form.achievement = data.achievement;
         this.form.improvementPoints = data.improvementPoints;
-        this.isFeedbackVisible = true;
+        this.isFeedbackButtonVisible = true;
         this.reflectionData = data;
         this.getFeedback();
       }
@@ -139,12 +139,15 @@ export default {
         ...this.form,
         date: formattedDate, // 変換された日付を送信
       };
-      // 登録処理
+      // 処理種別を定義
+      let shoriType;
+      // 登録・更新処理
       try {
         console.log(payload)
         let response;
         if (this.id) {
           // 更新処理
+          shoriType = '更新';
           response = await axios.put(
             `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/update/${this.id}`,
             payload,
@@ -156,6 +159,7 @@ export default {
           );
         } else {
           // 登録処理
+          shoriType = '登録';
           response = await axios.post(
             'https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
             payload,
@@ -171,7 +175,7 @@ export default {
           router.push({
             name: "reflectionHome",
             query: {
-              message: "登録に成功しました。",
+              message: `${shoriType}に成功しました。`,
               title: "成功",
               type: "success",
             },
@@ -180,7 +184,7 @@ export default {
           router.push({
             name: "reflectionHome",
             query: {
-              message: "登録に失敗しました。",
+              message: `${shoriType}に失敗しました。`,
               title: "エラー",
               type: "error",
             },
@@ -188,11 +192,11 @@ export default {
         }
         console.log('レスポンス:', response.data)
       } catch (error) {
-        console.error('登録失敗:', error)
+        console.error(`${shoriType}失敗:`, error)
         router.push({
           name: "reflectionHome",
           query: {
-            message: "登録に失敗しました。",
+            message: `${shoriType}に失敗しました。`,
             title: "エラー",
             type: "error",
           },
@@ -219,6 +223,7 @@ export default {
         );
         if(response.status === 200) {
           alert("成功")
+          this.getFeedback();
         }
       } catch (error) {
         console.error('フィードバック生成に失敗:', error);
@@ -236,6 +241,8 @@ export default {
           },
         });
         this.feedbackData = response.data; // フィードバックを格納
+        console.log("フィードバック取得成功");
+        console.log("feedback : "+this.feedbackData);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
