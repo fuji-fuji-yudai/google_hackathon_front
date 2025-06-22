@@ -1,398 +1,373 @@
 <template>
-  <div class="reminder-view-container">
-    <h3>リマインダー管理</h3>
-
-    <div class="create-reminder-section">
-      <h4>新しいリマインダーを作成</h4>
-      <input v-model="newReminder.customTitle" placeholder="タイトル" class="reminder-input" />
-      <textarea v-model="newReminder.description" placeholder="説明 (任意)" class="reminder-textarea"></textarea>
-      
-      <label for="remindDate">通知日:</label>
-      <input type="date" id="remindDate" v-model="newReminder.remindDate" class="reminder-input" />
-      
-      <label for="remindTime">通知時間:</label>
-      <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
-      
-      <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
-      <p v-if="createError" class="error-message">{{ createError }}</p>
-    </div>
-
-    <hr class="section-divider" />
-
-    <div class="reminder-list-section">
-      <h4>あなたのリマインダー</h4>
-      <p v-if="loadingReminders" class="loading-message">リマインダーを読み込み中...</p>
-      <p v-if="fetchError" class="error-message">{{ fetchError }}</p>
-      <p v-if="!hasToken" class="warning-message">
-        ログインするとリマインダーを作成・表示できます。
-      </p>
-
-      <ul v-if="filteredReminders.length > 0">
-        <li v-for="reminder in filteredReminders" :key="reminder.id" class="reminder-item">
-          <div class="reminder-details">
-            <strong>{{ reminder.customTitle }}</strong>
-            <p v-if="reminder.description">{{ reminder.description }}</p>
-            <p class="reminder-time">{{ formatDateTime(reminder.remindDate, reminder.remindTime) }}</p>
-            <p class="reminder-status">ステータス: {{ reminder.status }}</p>
-          </div>
-          <button @click="deleteReminder(reminder.id)" class="action-button delete-button">削除</button>
-        </li>
-      </ul>
-      <p v-else-if="!loadingReminders && hasToken">リマインダーはありません。</p>
-    </div>
+  <div class="roadmap-view">
+    <RoadmapManager 
+      :jwt-token="jwtToken"
+      :api-error="apiError"
+      :loading="loading"
+      :roadmap-data="roadmapDataForManager"
+      :category-colors="categoryColorsForManager"
+      :all-months="allMonths"
+      :all-quarters="allQuarters"
+      @add-task-to-manager="handleAddTask"
+      @save-task-edit-to-manager="handleSaveTaskEdit"
+      @delete-task-to-manager="handleDeleteTask"
+      @request-logout="handleLogout"
+    />
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue';
+<script>
+import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
+import RoadmapManager from '../components/RoadmapManager.vue';
+import { useRouter } from 'vue-router'; 
 
-// --- APIエンドポイントの設定 ---
-// バックエンドのリマインダーAPIエンドポイントを正確に指定してください
-const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders'; 
+export default {
+  name: 'RoadmapView',
+  components: {
+    RoadmapManager,
+  },
+  setup() {
+    const jwtToken = ref(localStorage.getItem('token') || null);
+    const loading = ref(true);
+    const apiError = ref(null);
+    const router = useRouter(); 
 
-// --- 状態変数 ---
-const reminders = ref([]);
-const newReminder = ref({
-  customTitle: '', // DTOに合わせる
-  description: '',
-  remindDate: '',  // DTOに合わせる
-  remindTime: '',  // DTOに合わせる
-  status: 'PENDING' // デフォルトステータス
-});
-const loadingReminders = ref(false);
-const fetchError = ref(null);
-const createError = ref(null);
-const hasToken = ref(false); // ログイン状態を保持
+    // バックエンドのURLは画像から確認できるものを正確に指定
+    const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries';
 
-// --- ライフサイクルフック ---
-onMounted(() => {
-  // コンポーネントがマウントされた時にトークンを確認し、リマインダーをフェッチ
-  checkAuthToken();
-  if (hasToken.value) {
-    fetchReminders();
-  }
-});
+    const allMonths = [
+      { id: 'm4_25', name: '4月', quarterId: 'q2_fy', year: '2025', monthNum: '04' },
+      { id: 'm5_25', name: '5月', quarterId: 'q2_fy', year: '2025', monthNum: '05' },
+      { id: 'm6_25', name: '6月', quarterId: 'q2_fy', year: '2025', monthNum: '06' },
+      { id: 'm7_25', name: '7月', quarterId: 'q3_fy', year: '2025', monthNum: '07' },
+      { id: 'm8_25', name: '8月', quarterId: 'q3_fy', year: '2025', monthNum: '08' },
+      { id: 'm9_25', name: '9月', quarterId: 'q3_fy', year: '2025', monthNum: '09' },
+      { id: 'm10_25', name: '10月', quarterId: 'q4_fy', year: '2025', monthNum: '10' },
+      { id: 'm11_25', name: '11月', quarterId: 'q4_fy', year: '2025', monthNum: '11' },
+      { id: 'm12_25', name: '12月', quarterId: 'q4_fy', year: '2025', monthNum: '12' },
+      { id: 'm1_26', name: '1月', quarterId: 'q1_fy', year: '2026', monthNum: '01' },
+      { id: 'm2_26', name: '2月', quarterId: 'q1_fy', year: '2026', monthNum: '02' },
+      { id: 'm3_26', name: '3月', quarterId: 'q1_fy', year: '2026', monthNum: '03' },
+    ];
 
-// --- 認証トークン確認 ---
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    hasToken.value = true;
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+    const allQuarters = [
+      { id: 'q1_fy', name: 'Q1', startMonthIndex: 9, endMonthIndex: 11 },
+      { id: 'q2_fy', name: 'Q2', startMonthIndex: 0, endMonthIndex: 2 },
+      { id: 'q3_fy', name: 'Q3', startMonthIndex: 3, endMonthIndex: 5 },
+      { id: 'q4_fy', name: 'Q4', startMonthIndex: 6, endMonthIndex: 8 },
+    ];
+
+    const DEFAULT_EMPTY_CATEGORIES_COUNT = 4;
+
+    const roadmapDataForManager = ref([]);
+    const categoryColorsForManager = ref({});
+
+    const generateRandomColor = () => {
+      const hue = Math.floor(Math.random() * 360);
+      const saturation = Math.floor(Math.random() * 30) + 70;
+      const lightness = Math.floor(Math.random() * 15) + 75;
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     };
-  } else {
-    hasToken.value = false;
-    return { 'Content-Type': 'application/json' };
-  }
-};
 
-const checkAuthToken = () => {
-    const token = localStorage.getItem('token');
-    hasToken.value = !!token; // トークンがあればtrue
-    if (!hasToken.value) {
-        ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
-    }
-};
+    watch(roadmapDataForManager, (newRoadmapData) => {
+        newRoadmapData.forEach(row => {
+            if (!Object.prototype.hasOwnProperty.call(categoryColorsForManager.value, row.category)) {
+                categoryColorsForManager.value[row.category] = generateRandomColor();
+            }
+        });
+    }, { deep: true });
 
-// --- リマインダー取得 ---
-const fetchReminders = async () => {
-  if (!hasToken.value) {
-    // トークンがない場合はフェッチしない
-    ElMessage.info('ログインしていません。リマインダーを読み込みません。');
-    reminders.value = [];
-    return;
-  }
 
-  loadingReminders.value = true;
-  fetchError.value = null;
-  try {
-    const headers = getAuthHeaders();
-    const response = await fetch(REMINDER_API_URL, { headers });
+    const fetchRoadmapData = async () => {
+      loading.value = true;
+      apiError.value = null;
+      
+      let fetchedRawData = [];
 
-    if (response.status === 401 || response.status === 403) {
-      ElMessage.error('認証情報が無効です。再度ログインしてください。');
-      localStorage.removeItem('token'); // 無効なトークンを削除
-      hasToken.value = false;
-      reminders.value = []; // リマインダーをクリア
-      return;
-    }
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'リマインダーの取得に失敗しました。');
-    }
-    const data = await response.json();
-    reminders.value = data; // バックエンドからユーザーに紐づくリマインダーが返される想定
-  } catch (err) {
-    console.error('リマインダー取得エラー:', err);
-    fetchError.value = err.message || 'リマインダーの読み込み中にエラーが発生しました。';
-    ElMessage.error(fetchError.value);
-  } finally {
-    loadingReminders.value = false;
-  }
-};
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        
+        if (jwtToken.value) {
+          headers['Authorization'] = `Bearer ${jwtToken.value}`;
+          console.log('Sending Authorization Header (GET):', headers['Authorization']); 
+        } else {
+          console.warn('JWT Token is not available in localStorage. Proceeding without authentication.');
+        }
 
-// --- リマインダー作成 ---
-const createReminder = async () => {
-  if (!hasToken.value) {
-    ElMessage.warning('リマインダーを作成するにはログインが必要です。');
-    return;
-  }
-  // DTOの必須フィールドに合わせてバリデーション
-  if (!newReminder.value.customTitle || !newReminder.value.remindDate || !newReminder.value.remindTime) {
-    createError.value = 'タイトル、通知日、通知時間は必須です。';
-    return;
-  }
+        const response = await fetch(backendUrl, {
+          method: 'GET',
+          headers: headers,
+        });
 
-  createError.value = null;
-  try {
-    const headers = getAuthHeaders();
-    const response = await fetch(REMINDER_API_URL, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({
-        customTitle: newReminder.value.customTitle,
-        description: newReminder.value.description,
-        remindDate: newReminder.value.remindDate, // YYYY-MM-DD 形式で送信
-        remindTime: newReminder.value.remindTime, // HH:MM 形式で送信
-        status: newReminder.value.status
-      })
+        if (response.status === 401 || response.status === 403) {
+          apiError.value = '認証情報が無効です。ログインするとデータを編集・保存できます。';
+          ElMessage.warning(apiError.value);
+          jwtToken.value = null;
+          localStorage.removeItem('token');
+        } else if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'ロードマップデータの取得に失敗しました。');
+        } else {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            fetchedRawData = data;
+          } else {
+            ElMessage.warning('ロードマップデータの形式が予期せぬものでした。');
+            console.warn('Unexpected roadmap data format:', data);
+          }
+        }
+      } catch (err) {
+        console.error('API Error (fetchRoadmapData):', err);
+        apiError.value = err.message || 'ロードマップデータの取得中に予期せぬエラーが発生しました。';
+        ElMessage.error(apiError.value);
+      } finally {
+        const categoriesMap = new Map();
+        const newCategoryColors = { ...categoryColorsForManager.value };
+
+        if (fetchedRawData.length > 0) {
+            fetchedRawData.forEach(item => {
+                // バックエンドの項目名に合わせて変更 (item.task -> item.taskName, item.category -> item.categoryName)
+                const startMonthData = allMonths.find(m => `${m.year}-${m.monthNum}` === item.startMonth);
+                const endMonthData = allMonths.find(m => `${m.year}-${m.monthNum}` === item.endMonth);
+
+                const startIndex = startMonthData ? allMonths.indexOf(startMonthData) : 0;
+                const endIndex = endMonthData ? allMonths.indexOf(endMonthData) : 0;
+
+                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) { 
+                    newCategoryColors[item.categoryName] = generateRandomColor(); 
+                }
+
+                const task = {
+                    id: item.id,
+                    name: item.taskName, 
+                    startIndex: startIndex,
+                    endIndex: endIndex,
+                    category: item.categoryName, 
+                    color: newCategoryColors[item.categoryName] 
+                };
+
+                if (!categoriesMap.has(item.categoryName)) { 
+                    categoriesMap.set(item.categoryName, { category: item.categoryName, tasks: [] }); 
+                }
+                categoriesMap.get(item.categoryName).tasks.push(task); 
+            });
+            roadmapDataForManager.value = Array.from(categoriesMap.values()).sort((a, b) => a.category.localeCompare(b.category));
+        } else {
+          roadmapDataForManager.value = [];
+        }
+
+        if (roadmapDataForManager.value.length < DEFAULT_EMPTY_CATEGORIES_COUNT) {
+            const existingCategoryNames = new Set(roadmapDataForManager.value.map(row => row.category));
+            for (let i = 0; roadmapDataForManager.value.length < DEFAULT_EMPTY_CATEGORIES_COUNT; i++) {
+                const defaultCategoryName = `カテゴリ${i + 1}`;
+                let uniqueCategoryName = defaultCategoryName;
+                let counter = 1;
+                while (existingCategoryNames.has(uniqueCategoryName)) {
+                    uniqueCategoryName = `カテゴリ${i + 1}_${counter}`;
+                    counter++;
+                }
+                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, uniqueCategoryName)) {
+                    newCategoryColors[uniqueCategoryName] = generateRandomColor();
+                }
+                roadmapDataForManager.value.push({ category: uniqueCategoryName, tasks: [] });
+                existingCategoryNames.add(uniqueCategoryName);
+            }
+            roadmapDataForManager.value.sort((a, b) => a.category.localeCompare(b.category));
+        }
+        categoryColorsForManager.value = newCategoryColors;
+        loading.value = false;
+      }
+    };
+
+    // saveRoadmapData関数は不要になったため、定義自体を削除しました。
+
+
+    const handleAddTask = async (taskPayload) => {
+        if (!jwtToken.value) {
+            ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            return;
+        }
+
+        const newCategory = taskPayload.category;
+        const startMonth = allMonths[taskPayload.startIndex] ? `${allMonths[taskPayload.startIndex].year}-${allMonths[taskPayload.startIndex].monthNum}` : null;
+        const endMonth = allMonths[taskPayload.endIndex] ? `${allMonths[taskPayload.endIndex].year}-${allMonths[taskPayload.endIndex].monthNum}` : null;
+
+        const payload = {
+            categoryName: newCategory,
+            taskName: taskPayload.name,
+            startMonth: startMonth,
+            endMonth: endMonth,
+        };
+
+        try {
+            console.log('Sending POST request to add task:', payload);
+            const response = await fetch(backendUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken.value}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                apiError.value = '認証情報が無効です。再度ログインしてください。';
+                ElMessage.error(apiError.value);
+                jwtToken.value = null;
+                localStorage.removeItem('token');
+                return;
+            }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'タスクの追加に失敗しました。');
+            }
+
+            await response.json(); // Consume the response
+            ElMessage.success('タスクを正常に追加しました！');
+            // データ再フェッチでフロントエンドのデータも最新の状態にする
+            fetchRoadmapData(); 
+
+        } catch (err) {
+            console.error('API Error (handleAddTask):', err);
+            apiError.value = err.message || 'タスクの追加中に予期せぬエラーが発生しました。';
+            ElMessage.error(apiError.value);
+        }
+    };
+
+    const handleSaveTaskEdit = async (updatedTask) => {
+        if (!jwtToken.value) {
+            ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            return;
+        }
+        if (!updatedTask.id) {
+            ElMessage.error('エラー: 編集対象のタスクIDがありません。');
+            return;
+        }
+
+        const startMonth = allMonths[updatedTask.startIndex] ? `${allMonths[updatedTask.startIndex].year}-${allMonths[updatedTask.startIndex].monthNum}` : null;
+        const endMonth = allMonths[updatedTask.endIndex] ? `${allMonths[updatedTask.endIndex].year}-${allMonths[updatedTask.endIndex].monthNum}` : null;
+
+        const payload = {
+            id: updatedTask.id, // PUTリクエストではIDを含める
+            categoryName: updatedTask.category,
+            taskName: updatedTask.name,
+            startMonth: startMonth,
+            endMonth: endMonth,
+        };
+
+        try {
+            console.log('Sending PUT request to update task:', payload);
+            const response = await fetch(`${backendUrl}/${updatedTask.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken.value}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                apiError.value = '認証情報が無効です。再度ログインしてください。';
+                ElMessage.error(apiError.value);
+                jwtToken.value = null;
+                localStorage.removeItem('token');
+                return;
+            }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'タスクの編集に失敗しました。');
+            }
+
+            ElMessage.success('タスクを正常に更新しました！');
+            // データ再フェッチでフロントエンドのデータも最新の状態にする
+            fetchRoadmapData(); 
+
+        } catch (err) {
+            console.error('API Error (handleSaveTaskEdit):', err);
+            apiError.value = err.message || 'タスクの編集中に予期せぬエラーが発生しました。';
+            ElMessage.error(apiError.value);
+        }
+    };
+
+    const handleDeleteTask = async (taskIdToDelete) => {
+        if (!jwtToken.value) {
+            ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            return;
+        }
+        if (!taskIdToDelete) {
+            ElMessage.error('エラー: 削除対象のタスクIDがありません。');
+            return;
+        }
+
+        try {
+            console.log(`Sending DELETE request for task ID: ${taskIdToDelete}`);
+            const response = await fetch(`${backendUrl}/${taskIdToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken.value}`,
+                },
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                apiError.value = '認証情報が無効です。再度ログインしてください。';
+                ElMessage.error(apiError.value);
+                jwtToken.value = null;
+                localStorage.removeItem('token');
+                return;
+            }
+            if (!response.ok) {
+                const errorData = await response.json(); // DELETEは通常レスポンスボディがないので注意
+                throw new Error(errorData.message || 'タスクの削除に失敗しました。');
+            }
+
+            ElMessage.success('タスクを正常に削除しました！');
+            // データ再フェッチでフロントエンドのデータも最新の状態にする
+            fetchRoadmapData(); 
+
+        } catch (err) {
+            console.error('API Error (handleDeleteTask):', err);
+            apiError.value = err.message || 'タスクの削除中に予期せぬエラーが発生しました。';
+            ElMessage.error(apiError.value);
+        }
+    };
+
+    const handleLogout = () => {
+        jwtToken.value = null;
+        localStorage.removeItem('token');
+        ElMessage.info('ログアウトしました。');
+        router.push('/login'); 
+    };
+
+    onMounted(() => {
+      fetchRoadmapData();
     });
 
-    if (response.status === 401 || response.status === 403) {
-      ElMessage.error('認証情報が無効です。再度ログインしてください。');
-      localStorage.removeItem('token');
-      hasToken.value = false;
-      return;
-    }
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'リマインダーの作成に失敗しました。');
-    }
-
-    ElMessage.success('リマインダーを作成しました！');
-    // フォームをクリア
-    newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
-    fetchReminders(); // リストを再読み込み
-  } catch (err) {
-    console.error('リマインダー作成エラー:', err);
-    createError.value = err.message || 'リマインダーの作成中にエラーが発生しました。';
-    ElMessage.error(createError.value);
-  }
-};
-
-// --- リマインダー削除 ---
-const deleteReminder = async (id) => {
-  if (!hasToken.value) {
-    ElMessage.warning('リマインダーを削除するにはログインが必要です。');
-    return;
-  }
-  try {
-    const headers = getAuthHeaders();
-    const response = await fetch(`${REMINDER_API_URL}/${id}`, {
-      method: 'DELETE',
-      headers: headers
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      ElMessage.error('認証情報が無効です。再度ログインしてください。');
-      localStorage.removeItem('token');
-      hasToken.value = false;
-      return;
-    }
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'リマインダーの削除に失敗しました。');
-    }
-
-    ElMessage.success('リマインダーを削除しました。');
-    fetchReminders(); // リストを再読み込み
-  } catch (err) {
-    console.error('リマインダー削除エラー:', err);
-    ElMessage.error(err.message || 'リマインダーの削除中にエラーが発生しました。');
-  }
-};
-
-// --- リマインダーの表示（ログイン状態に応じてフィルタリング） ---
-const filteredReminders = computed(() => {
-  return hasToken.value ? reminders.value : [];
-});
-
-// --- 日付と時刻のフォーマット ---
-const formatDateTime = (dateString, timeString) => {
-  if (!dateString || !timeString) return '';
-  
-  try {
-    // 例: dateString="2025-06-20", timeString="10:30"
-    const date = new Date(`${dateString}T${timeString}`);
-    if (isNaN(date)) return 'Invalid Date/Time';
-
-    return date.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (e) {
-    console.error("Date/Time formatting error:", e);
-    return 'Formatting Error';
-  }
+    return {
+      jwtToken,
+      loading,
+      apiError,
+      roadmapDataForManager,
+      categoryColorsForManager,
+      allMonths,
+      allQuarters,
+      handleAddTask,
+      handleSaveTaskEdit,
+      handleDeleteTask,
+      handleLogout,
+    };
+  },
 };
 </script>
 
 <style scoped>
-.reminder-view-container {
-  padding: 20px;
-  background-color: #f0f2f5;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  max-height: 100%; /* モーダル内でスクロール可能にするため */
-  overflow-y: auto; /* コンテンツがはみ出たらスクロール */
-}
-
-h3, h4 {
-  color: #333;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.create-reminder-section, .reminder-list-section {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
-}
-
-.reminder-input, .reminder-textarea {
-  width: calc(100% - 20px);
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1em;
-}
-
-/* ラベルのスタイルを追加 */
-label {
-  display: block; /* ラベルを新しい行に配置 */
-  text-align: left; /* 左寄せ */
-  margin-bottom: 5px; /* 下の入力フィールドとのスペース */
-  font-weight: bold;
-  color: #555;
-  font-size: 0.9em;
-}
-
-
-.reminder-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.action-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  font-weight: bold;
-  transition: background-color 0.3s ease;
-  margin-top: 10px; /* ボタンと入力フィールドの間にスペース */
-}
-
-.create-button {
-  background-color: #007bff;
-  color: white;
-}
-
-.create-button:hover {
-  background-color: #0056b3;
-}
-
-.delete-button {
-  background-color: #dc3545;
-  color: white;
-  margin-left: 10px;
-}
-
-.delete-button:hover {
-  background-color: #c82333;
-}
-
-.error-message {
-  color: #dc3545;
-  font-size: 0.9em;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.loading-message {
-  color: #007bff;
-  text-align: center;
-}
-
-.warning-message {
-  color: #ffc107;
-  background-color: #fff3cd;
-  border: 1px solid #ffeeba;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-  margin-top: 15px;
-}
-
-.section-divider {
-  border: 0;
-  height: 1px;
-  background-color: #eee;
-  margin: 30px 0;
-}
-
-.reminder-list-section ul {
-  list-style: none;
-  padding: 0;
-}
-
-.reminder-item {
+/* スタイルは変更なし */
+.roadmap-view {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.reminder-details {
-  flex-grow: 1;
-  text-align: left;
-}
-
-.reminder-details strong {
-  font-size: 1.1em;
-  color: #343a40;
-}
-
-.reminder-details p {
-  margin: 5px 0;
-  color: #6c757d;
-  font-size: 0.95em;
-}
-
-.reminder-time {
-  font-size: 0.85em;
-  color: #007bff;
-  font-weight: bold;
-}
-
-.reminder-status {
-    font-size: 0.85em;
-    color: #4CAF50; /* Green color for status */
-    font-weight: bold;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
 }
 </style>
