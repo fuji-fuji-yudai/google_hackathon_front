@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="Gemini チャットボット" width="600px" @close="reset">
+  <el-dialog v-model="visible" title="AI チャット分析" width="600px" @close="reset">
     <div class="chat-window" ref="chatWindow">
       <div
         v-for="(msg, index) in messages"
@@ -165,7 +165,7 @@ const submitTask = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload), //payloadの中身がjson形式でボディに含まれる。
       credentials: 'include',
     })
 
