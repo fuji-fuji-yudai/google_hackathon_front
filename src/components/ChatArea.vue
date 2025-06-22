@@ -135,26 +135,30 @@ watch(() => props.currentuser, (newVal) => {
 }
 
 .bubble {
-  background-color: #dcf8c6;
-  color: #000;
-  padding: 10px 15px;
-  border-radius: 18px;
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 16px;
   position: relative;
   word-wrap: break-word;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background-color: #dcf8c6; /* 自分のメッセージ色 */
+  color: #000;
 }
 
 .from-others .bubble {
   background-color: #fff;
-  border: 1px solid #ccc;
+  border: 1px solid #bbb;
 }
 
 .from-me .bubble::after {
   content: '';
   position: absolute;
-  right: -8px;
+  right: -10px;
   top: 10px;
-  border-width: 8px 0 8px 8px;
+  border-width: 10px 0 10px 10px;
   border-style: solid;
   border-color: transparent transparent transparent #dcf8c6;
 }
@@ -162,12 +166,13 @@ watch(() => props.currentuser, (newVal) => {
 .from-others .bubble::before {
   content: '';
   position: absolute;
-  left: -8px;
+  left: -10px;
   top: 10px;
-  border-width: 8px 8px 8px 0;
+  border-width: 10px 10px 10px 0;
   border-style: solid;
   border-color: transparent #fff transparent transparent;
 }
+
 
 .chat-input {
   display: flex;
