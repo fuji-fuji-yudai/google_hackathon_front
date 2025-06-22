@@ -51,7 +51,8 @@
       <!-- フィードバック結果表示 -->
       <div v-if="feedbackData">
         <h3>生成されたフィードバック</h3>
-        <p>{{ feedbackData.feedback }}</p>
+        <!-- マークダウンをHTMLとしてレンダリング -->
+        <div v-html="renderMarkdown(feedbackData.feedback)"></div>
       </div>
     </el-main>
   </div>
