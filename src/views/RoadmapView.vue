@@ -1,5 +1,6 @@
 <template>
   <div class="roadmap-view">
+    <!-- 新しい保存イベントを追加 -->
     <RoadmapManager 
       :jwt-token="jwtToken"
       :api-error="apiError"
@@ -12,6 +13,7 @@
       @save-task-edit-to-manager="handleSaveTaskEdit"
       @delete-task-to-manager="handleDeleteTask"
       @request-logout="handleLogout"
+      @request-save-roadmap="saveRoadmapData"
     />
   </div>
 </template>
@@ -127,29 +129,30 @@ export default {
 
         if (fetchedRawData.length > 0) {
             fetchedRawData.forEach(item => {
+                // バックエンドの項目名に合わせて変更 (item.task -> item.taskName, item.category -> item.categoryName)
                 const startMonthData = allMonths.find(m => `${m.year}-${m.monthNum}` === item.startMonth);
                 const endMonthData = allMonths.find(m => `${m.year}-${m.monthNum}` === item.endMonth);
 
                 const startIndex = startMonthData ? allMonths.indexOf(startMonthData) : 0;
                 const endIndex = endMonthData ? allMonths.indexOf(endMonthData) : 0;
 
-                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.category)) {
-                    newCategoryColors[item.category] = generateRandomColor();
+                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) { // categoryNameを使用
+                    newCategoryColors[item.categoryName] = generateRandomColor(); // categoryNameを使用
                 }
 
                 const task = {
                     id: item.id,
-                    name: item.task,
+                    name: item.taskName, // taskNameを使用
                     startIndex: startIndex,
                     endIndex: endIndex,
-                    category: item.category,
-                    color: newCategoryColors[item.category]
+                    category: item.categoryName, // categoryNameを使用
+                    color: newCategoryColors[item.categoryName] // categoryNameを使用
                 };
 
-                if (!categoriesMap.has(item.category)) {
-                    categoriesMap.set(item.category, { category: item.category, tasks: [] });
+                if (!categoriesMap.has(item.categoryName)) { // categoryNameを使用
+                    categoriesMap.set(item.categoryName, { category: item.categoryName, tasks: [] }); // categoryNameを使用
                 }
-                categoriesMap.get(item.category).tasks.push(task);
+                categoriesMap.get(item.categoryName).tasks.push(task); // categoryNameを使用
             });
             roadmapDataForManager.value = Array.from(categoriesMap.values()).sort((a, b) => a.category.localeCompare(b.category));
         } else {
@@ -186,53 +189,78 @@ export default {
         return;
       }
 
-      const dataToSend = [];
+      // 保存対象の全タスクを集める
+      const allTasksToSave = [];
       roadmapDataForManager.value.forEach(categoryRow => {
-          if (categoryRow.tasks && categoryRow.tasks.length > 0) {
-              const category = categoryRow.category;
-              categoryRow.tasks.forEach(task => {
-                  const startMonth = allMonths[task.startIndex] ? `${allMonths[task.startIndex].year}-${allMonths[task.startIndex].monthNum}` : null;
-                  const endMonth = allMonths[task.endIndex] ? `${allMonths[task.endIndex].year}-${allMonths[task.endIndex].monthNum}` : null;
+        if (categoryRow.tasks && categoryRow.tasks.length > 0) {
+          const category = categoryRow.category;
+          categoryRow.tasks.forEach(task => {
+            const startMonth = allMonths[task.startIndex] ? `${allMonths[task.startIndex].year}-${allMonths[task.startIndex].monthNum}` : null;
+            const endMonth = allMonths[task.endIndex] ? `${allMonths[task.endIndex].year}-${allMonths[task.endIndex].monthNum}` : null;
 
-                  dataToSend.push({
-                      id: task.id,
-                      category: category,
-                      task: task.name,
-                      startMonth: startMonth,
-                      endMonth: endMonth,
-                  });
-              });
-          }
+            allTasksToSave.push({
+              id: task.id, // IDは更新/削除のために必要だが、POST時は不要
+              categoryName: category, // バックエンドのフィールド名に合わせる
+              taskName: task.name,    // バックエンドのフィールド名に合わせる
+              startMonth: startMonth,
+              endMonth: endMonth,
+              // userフィールドはバックエンドで自動的に設定されるため、フロントからは送らない
+            });
+          });
+        }
       });
 
-      if (dataToSend.length === 0) {
+      if (allTasksToSave.length === 0) {
         ElMessage.info('保存するタスクデータがありません。');
         return;
       }
 
+      // 各タスクを個別にAPIに送信する
       try {
-        const response = await fetch(backendUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${jwtToken.value}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(dataToSend),
-        });
+        for (const taskPayload of allTasksToSave) {
+          const method = taskPayload.id ? 'PUT' : 'POST';
+          const url = taskPayload.id ? `${backendUrl}/${taskPayload.id}` : backendUrl;
+          
+          // 送信するデータから id を削除 (POSTの場合、IDはバックエンドで生成されるため)
+          const payload = { ...taskPayload };
+          if (method === 'POST') {
+            delete payload.id; 
+          }
 
-        if (response.status === 401 || response.status === 403) {
-          apiError.value = '認証情報が無効です。再度ログインしてください。';
-          ElMessage.error(apiError.value);
-          jwtToken.value = null;
-          localStorage.removeItem('token');
-          return;
-        }
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'ロードマップデータの保存に失敗しました。');
-        }
+          console.log(`Sending ${method} request to ${url} with payload:`, payload); // デバッグログ
 
+          const response = await fetch(url, {
+            method: method,
+            headers: {
+              'Authorization': `Bearer ${jwtToken.value}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload), // 単一のオブジェクトとして送信
+          });
+
+          if (response.status === 401 || response.status === 403) {
+            apiError.value = '認証情報が無効です。再度ログインしてください。';
+            ElMessage.error(apiError.value);
+            jwtToken.value = null;
+            localStorage.removeItem('token');
+            return; // 認証エラーの場合は処理を中断
+          }
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `ロードマップデータの保存に失敗しました (${method} ${url})。`);
+          }
+          
+          // POSTで新規作成された場合、バックエンドから返されるIDをフロントエンドのデータに反映
+          if (method === 'POST' && !taskPayload.id) {
+              const savedRoadmapEntry = await response.json();
+              // roadmapDataForManager 内の該当するタスクのIDを更新する
+              // これは複雑になるため、簡易的に全データ再フェッチで対応
+              console.log("Newly created task with ID:", savedRoadmapEntry.id);
+          }
+        }
         ElMessage.success('ロードマップデータを正常に保存しました！');
+        // 全ての保存が完了したら、データを再フェッチして最新の状態にする
+        fetchRoadmapData(); 
       } catch (err) {
         console.error('API Error (saveRoadmapData):', err);
         apiError.value = err.message || 'ロードマップデータの保存中に予期せぬエラーが発生しました。';
@@ -250,7 +278,7 @@ export default {
         }
 
         const taskData = {
-            id: taskPayload.id,
+            id: taskPayload.id, // 新規追加時はnull
             name: taskPayload.name,
             startIndex: taskPayload.startMonthIndex,
             endIndex: taskPayload.endMonthIndex,
@@ -268,7 +296,8 @@ export default {
             roadmapDataForManager.value.push(newRow);
             roadmapDataForManager.value.sort((a, b) => a.category.localeCompare(b.category));
         }
-        saveRoadmapData();
+        // saveRoadmapData(); // ★ここを削除またはコメントアウト★
+        ElMessage.success('タスクを一時的に追加しました。「ロードマップを保存」ボタンで確定してください。');
     };
 
     const handleSaveTaskEdit = (updatedTask) => {
@@ -326,7 +355,8 @@ export default {
                 color: categoryColorsForManager.value[updatedTask.category]
             });
         }
-        saveRoadmapData();
+        // saveRoadmapData(); // ★ここを削除またはコメントアウト★
+        ElMessage.success('タスクを一時的に更新しました。「ロードマップを保存」ボタンで確定してください。');
     };
 
     const handleDeleteTask = (taskIdToDelete) => {
@@ -337,6 +367,7 @@ export default {
             if (taskIndex !== -1) {
                 categoryRow.tasks.splice(taskIndex, 1);
                 found = true;
+                // カテゴリが空になり、かつデフォルトカテゴリでない場合は削除
                 if (categoryRow.tasks.length === 0 && !categoryRow.category.startsWith('カテゴリ')) {
                     roadmapDataForManager.value.splice(i, 1);
                     i--;
@@ -346,7 +377,8 @@ export default {
             }
         }
         if (found) {
-            saveRoadmapData();
+            // saveRoadmapData(); // ★ここを削除またはコメントアウト★
+            ElMessage.success('タスクを一時的に削除しました。「ロードマップを保存」ボタンで確定してください。');
         } else {
             ElMessage.error('削除対象のタスクが見つかりませんでした。');
         }
@@ -375,6 +407,7 @@ export default {
       handleSaveTaskEdit,
       handleDeleteTask,
       handleLogout,
+      saveRoadmapData, // saveRoadmapDataを公開する
     };
   },
 };
