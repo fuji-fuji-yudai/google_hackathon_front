@@ -1,5 +1,8 @@
 <template>
   <div>
+    <!-- Excel アップローダーコンポーネント追加 -->
+    <ExcelUploader @tasks-generated="handleTasksGenerated" />
+    
     <el-radio-group
       v-model="viewMode"
       style="margin-bottom: 20px"
@@ -25,11 +28,13 @@
 import { ref, onMounted } from 'vue'
 import CardBoardView from '@/components/CardBoardView.vue'
 import TimelineBoard from '@/components/TimelineBoard.vue'
+import ExcelUploader from '@/components/ExcelUploader.vue'
 
 export default {
   components: {
     CardBoardView,
-    TimelineBoard
+    TimelineBoard,
+    ExcelUploader
   },
   setup() {
     const viewMode = ref('card')
@@ -128,13 +133,22 @@ export default {
       tasks.value = newTasks
       saveTasks(newTasks)
     }
+    
+    // Excelからタスクが生成された時
+    const handleTasksGenerated = (generatedTasks) => {
+      // 既存のタスクに新しいタスクを追加
+      const newTasks = [...tasks.value, ...generatedTasks]
+      tasks.value = newTasks
+      saveTasks(newTasks)
+    }
 
     onMounted(fetchTasks)
 
     return {
       viewMode,
       tasks,
-      handleUpdate
+      handleUpdate,
+      handleTasksGenerated
     }
   }
 }
