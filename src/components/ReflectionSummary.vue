@@ -53,7 +53,7 @@ export default {
 
       try {
         const yearMonth = this.selectedYearMonth;
-        const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summary`, {
+        const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
           param: {
             yearMonth: yearMonth
           },
@@ -86,7 +86,7 @@ export default {
         this.month = parseInt(month, 10); // 月を数値型に変換
         // サマリー作成のAPIリクエスト
         const response = await axios.post(
-          `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summary`, {
+          `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
           param: {
             year: year,
             month: month
@@ -103,7 +103,6 @@ export default {
         this.fetchReflectionSummaries();
       } catch (error) {
         console.error("サマリー作成に失敗しました:", error.response?.data || error.message);
-        console.error('フィードバック生成に失敗:', error);
         this.flashMessage = 'サマリーの作成に失敗しました。後ほどお試しください。'
         this.flashTitle = 'エラー'
         this.flashType = 'error'
