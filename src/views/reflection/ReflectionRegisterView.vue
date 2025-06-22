@@ -57,7 +57,7 @@
       </el-form>
       <!-- フィードバック結果表示 -->
       <div v-if="feedbackData" class="feedback-container">
-        <h3>フィードバック</h3>
+        <h2>AIによるフィードバック</h2>
         <!-- マークダウンをHTMLとしてレンダリング -->
         <div v-html="renderMarkdown(feedbackData.feedback)" class="feedback"></div>
       </div>
@@ -260,6 +260,8 @@ export default {
         });
         this.feedbackData = response.data; // フィードバックを格納
         console.log("フィードバック取得成功");
+        console.log("feedback:" + this.feedbackData.feedback == '');
+        console.log("feedback:" + this.feedbackData.feedback == null);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
