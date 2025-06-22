@@ -9,18 +9,6 @@
     />
   </div>
   <el-container>
-    <el-aside>
-      <el-calendar class="side-calendar">
-        <template #date-cell="{ data }">
-          <div
-            style="width: 100%; height: 100%; cursor: pointer;"
-            @click="handleDateClick(data.date)"
-          >
-            {{ data.date.getDate() }}
-          </div>
-        </template>
-      </el-calendar>
-    </el-aside>
     <el-main>
       <el-calendar class="main-calendar">
         <template #date-cell="{ data }">
@@ -34,11 +22,13 @@
         </template>
       </el-calendar>
     </el-main>
+    <ReflectionSummary></ReflectionSummary>
   </el-container>
 </template>
 
 <script setup>
 import FlashMessage from '@/components/FlashMessage.vue'
+import ReflectionSummary from '@/components/ReflectionSummary.vue';
 import axios from 'axios';
 import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

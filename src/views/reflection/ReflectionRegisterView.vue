@@ -1,5 +1,12 @@
 <template>
   <div class="form-wrapper">
+    <FlashMessage
+      v-if="flashMessage"
+      :message="flashMessage"
+      :title="flashTitle"
+      :type="flashType"
+      :duration="5000"
+    />
     <el-main>
       <h2>振り返り</h2>
       <el-form label-width="80px">
@@ -36,22 +43,23 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="create">
+          <el-button type="primary" :disabled="feedbackData !== null" @click="create">
             保存
           </el-button>
           <el-button type="secondary" @click="clear">
             クリア
           </el-button>
           <!-- フィードバックボタン -->
-          <el-button v-if="isFeedbackVisible" type="success" @click="giveFeedback">
-            フィードバック作成
+          <el-button v-if="isFeedbackButtonVisible" type="success" :disabled="feedbackData !== null" @click="giveFeedback">
+            {{ feedbackData !== null ? "フィードバック作成済み" : "フィードバック作成" }}
           </el-button>
         </el-form-item>
       </el-form>
       <!-- フィードバック結果表示 -->
-      <div v-if="feedback">
-        <h3>生成されたフィードバック</h3>
-        <p>{{ feedbackData.feedback }}</p>
+      <div v-if="feedbackData" class="feedback-container">
+        <h2>AIによるフィードバック</h2>
+        <!-- マークダウンをHTMLとしてレンダリング -->
+        <div v-html="renderMarkdown(feedbackData.feedback)" class="feedback"></div>
       </div>
     </el-main>
   </div>
@@ -60,6 +68,8 @@
 <script>
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { marked } from 'marked'; // マークダウンライブラリをインポート
+import { ref } from 'vue'
 
 // ログインユーザーのトークンを取得
 const token = localStorage.getItem('token')
@@ -75,9 +85,13 @@ export default {
         achievement: '',
         improvementPoints: '',
       },
-      isFeedbackVisible: false,
+      isFeedbackButtonVisible: false,
       feedbackData: null,
       error: null,
+      // フラッシュメッセージ用の状態管理
+      flashMessage: ref(""), // メッセージ内容
+      flashTitle: ref(""), // メッセージのタイトル
+      flashType: ref("success") // メッセージの種類 (success, error, info, warning)
     };
   },
 
@@ -89,7 +103,7 @@ export default {
         this.form.activity = data.activity;
         this.form.achievement = data.achievement;
         this.form.improvementPoints = data.improvementPoints;
-        this.isFeedbackVisible = true;
+        this.isFeedbackButtonVisible = true;
         this.reflectionData = data;
         this.getFeedback();
       }
@@ -139,12 +153,15 @@ export default {
         ...this.form,
         date: formattedDate, // 変換された日付を送信
       };
-      // 登録処理
+      // 処理種別を定義
+      let shoriType;
+      // 登録・更新処理
       try {
         console.log(payload)
         let response;
         if (this.id) {
           // 更新処理
+          shoriType = '更新';
           response = await axios.put(
             `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/update/${this.id}`,
             payload,
@@ -156,6 +173,7 @@ export default {
           );
         } else {
           // 登録処理
+          shoriType = '登録';
           response = await axios.post(
             'https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
             payload,
@@ -171,7 +189,7 @@ export default {
           router.push({
             name: "reflectionHome",
             query: {
-              message: "登録に成功しました。",
+              message: `${shoriType}に成功しました。`,
               title: "成功",
               type: "success",
             },
@@ -180,7 +198,7 @@ export default {
           router.push({
             name: "reflectionHome",
             query: {
-              message: "登録に失敗しました。",
+              message: `${shoriType}に失敗しました。`,
               title: "エラー",
               type: "error",
             },
@@ -188,11 +206,11 @@ export default {
         }
         console.log('レスポンス:', response.data)
       } catch (error) {
-        console.error('登録失敗:', error)
+        console.error(`${shoriType}失敗:`, error)
         router.push({
           name: "reflectionHome",
           query: {
-            message: "登録に失敗しました。",
+            message: `${shoriType}に失敗しました。`,
             title: "エラー",
             type: "error",
           },
@@ -218,11 +236,16 @@ export default {
           }
         );
         if(response.status === 200) {
-          alert("成功")
+          this.getFeedback();
+          this.flashMessage = 'フィードバックの作成が完了しました。'
+          this.flashTitle = '成功'
+          this.flashType = 'success'
         }
       } catch (error) {
         console.error('フィードバック生成に失敗:', error);
-        alert('フィードバックを生成できませんでした。後ほど再試行してください。');
+        this.flashMessage = 'フィードバックの作成に失敗しました。後ほどお試しください。'
+        this.flashTitle = 'エラー'
+        this.flashType = 'error'
       }
     },
     async getFeedback() {
@@ -236,6 +259,10 @@ export default {
           },
         });
         this.feedbackData = response.data; // フィードバックを格納
+        console.log("フィードバック取得成功");
+        console.log(`feedback: ${this.feedbackData.feedback == ''}`);
+        console.log(`feedback: ${this.feedbackData.feedback == null}`);
+        console.log("feedback: "+ this.feedbackData.feedback);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
@@ -248,16 +275,33 @@ export default {
         this.feedbackData = null; // フィードバックをリセット
       }
     },
+    // マークダウンをHTMLとしてレンダリング
+    renderMarkdown(markdownText) {
+      return marked(markdownText);
+    },
   }
 }
 </script>
 
 <style>
+  .form-wrapper {
+    background: linear-gradient(to bottom right, #f0f2f5, #e6ebf1);
+  }
   main {
-    border-radius: 5px;
+    margin: 20px 0px;
+    border-radius: 10px;
     border: solid 1px rgb(210, 210, 210);
     width: 800px;
     margin-left: auto;
     margin-right: auto;
+    background-color: white;
+  }
+  .feedback-container {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: solid 1px rgb(210, 210, 210);
+  }
+  .feedback {
+    text-align: left;
   }
 </style>

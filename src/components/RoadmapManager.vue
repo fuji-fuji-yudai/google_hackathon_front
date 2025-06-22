@@ -9,9 +9,7 @@
       <button class="action-button reminder-button" @click="goToReminderForm">
         リマインダー作成
       </button>
-      <button class="save-roadmap-button" @click="emit('save-roadmap-data')" v-if="false">
-        データ保存 (自動保存有効中)
-      </button>
+      <!-- 「データ保存」ボタンは個別の操作で自動保存されるため、完全に削除しました。 -->
     </div>
 
     <p v-if="props.loading" class="loading-message">ロードマップデータを読み込み中...</p>
@@ -39,7 +37,7 @@
 
     <div v-if="isReminderModalOpen" class="reminder-modal-overlay" @click.self="closeReminderModal">
       <div class="reminder-modal-content">
-        <ReminderView />
+        <ReminderView :jwt-token="props.jwtToken" /> <!-- JWTトークンを渡しています -->
         <button class="close-button" @click="closeReminderModal">閉じる</button>
       </div>
     </div>
@@ -51,7 +49,7 @@ import { ref, defineProps, defineEmits } from 'vue';
 
 import RoadmapBase from './RoadmapBase.vue';
 import RoadmapChat from './RoadmapChat.vue';
-import ReminderView from '../views/ReminderView.vue';
+import ReminderView from '../views/ReminderView.vue'; // views ディレクトリからインポートされていることに注意
 
 const props = defineProps({
   jwtToken: {
@@ -90,26 +88,23 @@ const emit = defineEmits([
   'save-task-edit-to-manager',
   'delete-task-to-manager',
   'request-logout', // 親へのログアウト要求イベント
-  'save-roadmap-data' // 自動保存のインフォメーション表示のため、念のためエミットも定義
+  // 'save-roadmap-data' はもう不要なので削除
 ]);
 
 // RoadmapBase から受け取ったタスク追加イベントを親にエミット
 const handleAddTask = (taskPayload) => {
-  // デバッグ用にペイロードの内容をログ出力すると良いでしょう
   console.log('RoadmapManager: handleAddTask received payload:', taskPayload);
   emit('add-task-to-manager', taskPayload);
 };
 
 // RoadmapBase から受け取ったタスク編集イベントを親にエミット
 const handleSaveTaskEdit = (updatedTask) => {
-  // デバッグ用にペイロードの内容をログ出力すると良いでしょう
   console.log('RoadmapManager: handleSaveTaskEdit received payload:', updatedTask);
   emit('save-task-edit-to-manager', updatedTask);
 };
 
 // RoadmapBase から受け取ったタスク削除イベントを親にエミット
 const handleDeleteTask = (taskIdToDelete) => {
-  // デバッグ用にIDをログ出力すると良いでしょう
   console.log('RoadmapManager: handleDeleteTask received ID:', taskIdToDelete);
   emit('delete-task-to-manager', taskIdToDelete);
 };

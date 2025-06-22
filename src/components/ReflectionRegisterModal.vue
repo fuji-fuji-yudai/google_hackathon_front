@@ -44,8 +44,8 @@
               クリア
             </el-button>
             <!-- フィードバックボタン -->
-            <el-button v-if="isFeedbackVisible" type="success" @click="giveFeedback">
-              フィードバック作成
+            <el-button v-if="isFeedbackButtonVisible" type="success" :disabled="feedbackData !== null" @click="giveFeedback">
+              {{ feedbackData !== null ? "フィードバック作成済み" : "フィードバック作成" }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -69,31 +69,60 @@ const token = localStorage.getItem('token')
 export default {
   data() {
     const route = useRoute()
-    // クエリからデータを取得
-    const reflectionData = route.query.reflection ? JSON.parse(route.query.reflection) : null;
-    console.log("reflectionData: " + reflectionData);
     return {
-      id: route.query.id || null, // 主キーID（更新時に使用）
+      id: null,
       form: {
-        date: route.query.date || '', // クエリから初期日付を取得
-        activity: reflectionData ? reflectionData.activity : '',
-        achievement: reflectionData ? reflectionData.achievement : '',
-        improvementPoints: reflectionData ? reflectionData.improvementPoints : '',
+        date: route.query.date || '',
+        activity: '',
+        achievement: '',
+        improvementPoints: '',
       },
-      isFeedbackVisible: !!reflectionData, // reflectionデータが存在する場合にフィードバックボタンを表示
-      feedbackData: null, // 生成されたフィードバックを格納する
-      error: null, // エラーメッセージ
+      isFeedbackVisible: false,
+      feedbackData: null,
+      error: null,
     };
   },
 
   mounted() {
-    // Reflection IDが存在する場合のみ getFeedback を実行
-    if (this.id) {
-      this.getFeedback();
-    }
+    this.fetchReflections().then((data) => {
+      console.log(this.form.date);
+      if (data) {
+        this.id = data.id;
+        this.form.activity = data.activity;
+        this.form.achievement = data.achievement;
+        this.form.improvementPoints = data.improvementPoints;
+        this.isFeedbackButtonVisible = true;
+        this.reflectionData = data;
+        this.getFeedback();
+      }
+    }).catch((error) => {
+      console.error("Reflectionデータの取得に失敗:", error);
+    });
   },
   
   methods: {
+    async fetchReflections() {
+      console.log('取得処理開始')
+      const route = useRoute()
+      const date = route.query.date;
+      console.log(date)
+      try {
+        const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/${date}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        console.log('レスポンスデータ：' + response.data)
+        if (response.status == 200) {
+          return response.data;
+        } else {
+          return null
+        }
+      } catch (error) {
+        console.error('データ取得に失敗:', error)
+        return null
+      }
+    },
     async create() {
       const router = this.$router
       console.log('JWT トークン:', token);
@@ -112,12 +141,15 @@ export default {
         ...this.form,
         date: formattedDate, // 変換された日付を送信
       };
-      // 登録処理
+      // 処理種別を定義
+      let shoriType;
+      // 登録・更新処理
       try {
         console.log(payload)
         let response;
         if (this.id) {
           // 更新処理
+          shoriType = '更新';
           response = await axios.put(
             `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/update/${this.id}`,
             payload,
@@ -129,6 +161,7 @@ export default {
           );
         } else {
           // 登録処理
+          shoriType = '登録';
           response = await axios.post(
             'https://my-image-14467698004.asia-northeast1.run.app/api/reflection/create',
             payload,
@@ -144,7 +177,7 @@ export default {
           router.push({
             name: "reflectionHome",
             query: {
-              message: "登録に成功しました。",
+              message: `${shoriType}に成功しました。`,
               title: "成功",
               type: "success",
             },
@@ -153,7 +186,7 @@ export default {
           router.push({
             name: "reflectionHome",
             query: {
-              message: "登録に失敗しました。",
+              message: `${shoriType}に失敗しました。`,
               title: "エラー",
               type: "error",
             },
@@ -161,11 +194,11 @@ export default {
         }
         console.log('レスポンス:', response.data)
       } catch (error) {
-        console.error('登録失敗:', error)
+        console.error(`${shoriType}失敗:`, error)
         router.push({
           name: "reflectionHome",
           query: {
-            message: "登録に失敗しました。",
+            message: `${shoriType}に失敗しました。`,
             title: "エラー",
             type: "error",
           },
@@ -180,7 +213,6 @@ export default {
       this.form.improvementPoints = '';
     },
     async giveFeedback() {
-      console.log(this.reflectionData)
       try {
         const response = await axios.post(
           'https://my-image-14467698004.asia-northeast1.run.app/api/feedback/create',
@@ -193,6 +225,7 @@ export default {
         );
         if(response.status === 200) {
           alert("成功")
+          this.getFeedback();
         }
       } catch (error) {
         console.error('フィードバック生成に失敗:', error);
@@ -210,6 +243,8 @@ export default {
           },
         });
         this.feedbackData = response.data; // フィードバックを格納
+        console.log("フィードバック取得成功");
+        console.log("feedback : "+this.feedbackData);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合

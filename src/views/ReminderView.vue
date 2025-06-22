@@ -23,7 +23,7 @@
       <h4>あなたのリマインダー</h4>
       <p v-if="loadingReminders" class="loading-message">リマインダーを読み込み中...</p>
       <p v-if="fetchError" class="error-message">{{ fetchError }}</p>
-      <p v-if="!hasToken" class="warning-message">
+      <p v-if="!props.jwtToken" class="warning-message"> <!-- hasToken を props.jwtToken に変更 -->
         ログインするとリマインダーを作成・表示できます。
       </p>
 
@@ -38,70 +38,94 @@
           <button @click="deleteReminder(reminder.id)" class="action-button delete-button">削除</button>
         </li>
       </ul>
-      <p v-else-if="!loadingReminders && hasToken">リマインダーはありません。</p>
+      <p v-else-if="!loadingReminders && props.jwtToken">リマインダーはありません。</p> <!-- hasToken を props.jwtToken に変更 -->
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineProps, watch } from 'vue'; // defineProps と watch をインポート
 import { ElMessage } from 'element-plus';
 
 // --- APIエンドポイントの設定 ---
-// バックエンドのリマインダーAPIエンドポイントを正確に指定してください
 const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders'; 
+
+// --- プロップスの定義 ---
+const props = defineProps({
+  jwtToken: {
+    type: String,
+    default: null,
+  },
+});
 
 // --- 状態変数 ---
 const reminders = ref([]);
 const newReminder = ref({
-  customTitle: '', // DTOに合わせる
+  customTitle: '',
   description: '',
-  remindDate: '',  // DTOに合わせる
-  remindTime: '',  // DTOに合わせる
-  status: 'PENDING' // デフォルトステータス
+  remindDate: '',
+  remindTime: '',
+  status: 'PENDING'
 });
 const loadingReminders = ref(false);
 const fetchError = ref(null);
 const createError = ref(null);
-const hasToken = ref(false); // ログイン状態を保持
+// const hasToken = ref(false); // props.jwtToken を使うので、この ref は不要になります
 
 // --- ライフサイクルフック ---
 onMounted(() => {
-  // コンポーネントがマウントされた時にトークンを確認し、リマインダーをフェッチ
-  checkAuthToken();
-  if (hasToken.value) {
+  // コンポーネントがマウントされた時点でトークンがあればフェッチを試みる
+  if (props.jwtToken) {
     fetchReminders();
+  } else {
+    // トークンがない場合は警告を表示（モーダル表示時にも警告が出せる）
+    ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
   }
 });
 
-// --- 認証トークン確認 ---
+// --- JWTトークンの変更を監視 ---
+// 親から渡される jwtToken が変更されたら（例：ログイン状態になったら）データを再フェッチ
+watch(() => props.jwtToken, (newToken, oldToken) => {
+  // トークンがnull/undefinedから有効な値に変わった場合、または有効なトークン間で変わった場合
+  if (newToken && newToken !== oldToken) {
+    console.log('JWT Token changed, re-fetching reminders.');
+    fetchReminders();
+  } else if (!newToken && oldToken) {
+    // 有効なトークンからnull/undefinedに変わった場合（ログアウトなど）
+    console.log('JWT Token removed, clearing reminders.');
+    reminders.value = [];
+    ElMessage.warning('ログアウトしました。リマインダーを操作するには再度ログインが必要です。');
+  }
+}, { immediate: true }); // コンポーネント初期化時にもwatchを実行
+
+// --- 認証ヘッダーの取得 ---
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    hasToken.value = true;
+  // props.jwtToken を直接使用
+  if (props.jwtToken) {
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${props.jwtToken}`
     };
   } else {
-    hasToken.value = false;
+    // トークンがない場合は認証ヘッダーなし
     return { 'Content-Type': 'application/json' };
   }
 };
 
-const checkAuthToken = () => {
-    const token = localStorage.getItem('token');
-    hasToken.value = !!token; // トークンがあればtrue
-    if (!hasToken.value) {
-        ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
-    }
-};
+// checkAuthToken 関数は不要になります。watch と props.jwtToken で代替されます。
+// const checkAuthToken = () => {
+//     const token = localStorage.getItem('token');
+//     hasToken.value = !!token;
+//     if (!hasToken.value) {
+//         ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
+//     }
+// };
 
 // --- リマインダー取得 ---
 const fetchReminders = async () => {
-  if (!hasToken.value) {
-    // トークンがない場合はフェッチしない
-    ElMessage.info('ログインしていません。リマインダーを読み込みません。');
+  // props.jwtToken を直接使用
+  if (!props.jwtToken) {
+    ElMessage.info('認証トークンがありません。リマインダーを読み込みません。');
     reminders.value = [];
     return;
   }
@@ -115,8 +139,8 @@ const fetchReminders = async () => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token'); // 無効なトークンを削除
-      hasToken.value = false;
-      reminders.value = []; // リマインダーをクリア
+      // hasToken.value = false; // props.jwtToken を使うので不要
+      reminders.value = [];
       return;
     }
     if (!response.ok) {
@@ -124,7 +148,7 @@ const fetchReminders = async () => {
       throw new Error(errorData.message || 'リマインダーの取得に失敗しました。');
     }
     const data = await response.json();
-    reminders.value = data; // バックエンドからユーザーに紐づくリマインダーが返される想定
+    reminders.value = data;
   } catch (err) {
     console.error('リマインダー取得エラー:', err);
     fetchError.value = err.message || 'リマインダーの読み込み中にエラーが発生しました。';
@@ -136,11 +160,11 @@ const fetchReminders = async () => {
 
 // --- リマインダー作成 ---
 const createReminder = async () => {
-  if (!hasToken.value) {
+  // props.jwtToken を直接使用
+  if (!props.jwtToken) {
     ElMessage.warning('リマインダーを作成するにはログインが必要です。');
     return;
   }
-  // DTOの必須フィールドに合わせてバリデーション
   if (!newReminder.value.customTitle || !newReminder.value.remindDate || !newReminder.value.remindTime) {
     createError.value = 'タイトル、通知日、通知時間は必須です。';
     return;
@@ -155,8 +179,8 @@ const createReminder = async () => {
       body: JSON.stringify({
         customTitle: newReminder.value.customTitle,
         description: newReminder.value.description,
-        remindDate: newReminder.value.remindDate, // YYYY-MM-DD 形式で送信
-        remindTime: newReminder.value.remindTime, // HH:MM 形式で送信
+        remindDate: newReminder.value.remindDate,
+        remindTime: newReminder.value.remindTime,
         status: newReminder.value.status
       })
     });
@@ -164,7 +188,7 @@ const createReminder = async () => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
-      hasToken.value = false;
+      // hasToken.value = false; // props.jwtToken を使うので不要
       return;
     }
     if (!response.ok) {
@@ -173,9 +197,8 @@ const createReminder = async () => {
     }
 
     ElMessage.success('リマインダーを作成しました！');
-    // フォームをクリア
     newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
-    fetchReminders(); // リストを再読み込み
+    fetchReminders();
   } catch (err) {
     console.error('リマインダー作成エラー:', err);
     createError.value = err.message || 'リマインダーの作成中にエラーが発生しました。';
@@ -185,10 +208,17 @@ const createReminder = async () => {
 
 // --- リマインダー削除 ---
 const deleteReminder = async (id) => {
-  if (!hasToken.value) {
+  // props.jwtToken を直接使用
+  if (!props.jwtToken) {
     ElMessage.warning('リマインダーを削除するにはログインが必要です。');
     return;
   }
+  // alert() の代わりに Element Plus の確認ダイアログなどを使用することを推奨します
+  // 例: ElMessageBox.confirm('本当にこのリマインダーを削除しますか？').then(() => { ... }).catch(() => { ... });
+  if (!confirm('本当にこのリマインダーを削除しますか？')) { // confirm はモーダル内で動作しない可能性があります。
+    return;
+  }
+
   try {
     const headers = getAuthHeaders();
     const response = await fetch(`${REMINDER_API_URL}/${id}`, {
@@ -199,7 +229,7 @@ const deleteReminder = async (id) => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
-      hasToken.value = false;
+      // hasToken.value = false; // props.jwtToken を使うので不要
       return;
     }
     if (!response.ok) {
@@ -208,7 +238,7 @@ const deleteReminder = async (id) => {
     }
 
     ElMessage.success('リマインダーを削除しました。');
-    fetchReminders(); // リストを再読み込み
+    fetchReminders();
   } catch (err) {
     console.error('リマインダー削除エラー:', err);
     ElMessage.error(err.message || 'リマインダーの削除中にエラーが発生しました。');
@@ -217,7 +247,8 @@ const deleteReminder = async (id) => {
 
 // --- リマインダーの表示（ログイン状態に応じてフィルタリング） ---
 const filteredReminders = computed(() => {
-  return hasToken.value ? reminders.value : [];
+  // props.jwtToken を直接使用
+  return props.jwtToken ? reminders.value : [];
 });
 
 // --- 日付と時刻のフォーマット ---
@@ -225,7 +256,6 @@ const formatDateTime = (dateString, timeString) => {
   if (!dateString || !timeString) return '';
   
   try {
-    // 例: dateString="2025-06-20", timeString="10:30"
     const date = new Date(`${dateString}T${timeString}`);
     if (isNaN(date)) return 'Invalid Date/Time';
 
