@@ -259,10 +259,10 @@ export default {
           },
         });
         this.feedbackData = response.data; // フィードバックを格納
+        if (this.feedbackData.feedback == null) {
+          this.feedbackData == null;
+        }
         console.log("フィードバック取得成功");
-        console.log(`feedback: ${this.feedbackData.feedback == ''}`);
-        console.log(`feedback: ${this.feedbackData.feedback == null}`);
-        console.log("feedback: "+ this.feedbackData.feedback);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
