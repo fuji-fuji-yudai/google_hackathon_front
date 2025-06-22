@@ -1,5 +1,12 @@
 <template>
   <div class="form-wrapper">
+    <FlashMessage
+      v-if="flashMessage"
+      :message="flashMessage"
+      :title="flashTitle"
+      :type="flashType"
+      :duration="5000"
+    />
     <el-main>
       <h2>振り返り</h2>
       <el-form label-width="80px">
@@ -49,7 +56,7 @@
         </el-form-item>
       </el-form>
       <!-- フィードバック結果表示 -->
-      <div v-if="feedbackData">
+      <div v-if="feedbackData" class="feedback-container">
         <h3>フィードバック</h3>
         <!-- マークダウンをHTMLとしてレンダリング -->
         <div v-html="renderMarkdown(feedbackData.feedback)" class="feedback"></div>
@@ -62,6 +69,7 @@
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { marked } from 'marked'; // マークダウンライブラリをインポート
+import { ref } from 'vue'
 
 // ログインユーザーのトークンを取得
 const token = localStorage.getItem('token')
@@ -80,6 +88,10 @@ export default {
       isFeedbackButtonVisible: false,
       feedbackData: null,
       error: null,
+      // フラッシュメッセージ用の状態管理
+      flashMessage: ref(""), // メッセージ内容
+      flashTitle: ref(""), // メッセージのタイトル
+      flashType: ref("success") // メッセージの種類 (success, error, info, warning)
     };
   },
 
@@ -224,12 +236,16 @@ export default {
           }
         );
         if(response.status === 200) {
-          alert("成功")
           this.getFeedback();
+          this.flashMessage = 'フィードバックの作成が完了しました。'
+          this.flashTitle = '成功'
+          this.flashType = 'success'
         }
       } catch (error) {
         console.error('フィードバック生成に失敗:', error);
-        alert('フィードバックを生成できませんでした。後ほど再試行してください。');
+        this.flashMessage = 'フィードバックの作成に失敗しました。後ほどお試しください。'
+        this.flashTitle = 'エラー'
+        this.flashType = 'error'
       }
     },
     async getFeedback() {
@@ -265,12 +281,22 @@ export default {
 </script>
 
 <style>
+  .form-wrapper {
+    background: linear-gradient(to bottom right, #f0f2f5, #e6ebf1);
+  }
   main {
-    border-radius: 5px;
+    margin: 20px 0px;
+    border-radius: 10px;
     border: solid 1px rgb(210, 210, 210);
     width: 800px;
     margin-left: auto;
     margin-right: auto;
+    background-color: white;
+  }
+  .feedback-container {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: solid 1px rgb(210, 210, 210);
   }
   .feedback {
     text-align: left;
