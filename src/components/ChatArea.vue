@@ -153,27 +153,6 @@ watch(() => props.currentuser, (newVal) => {
   /* border: 1px solid #bbb; */
 }
 
-.from-me .bubble::after {
-  content: '';
-  position: absolute;
-  right: -10px;
-  top: 10px;
-  border-width: 10px 0 10px 10px;
-  border-style: solid;
-  border-color: transparent transparent transparent #dcf8c6;
-}
-
-.from-others .bubble::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 10px;
-  border-width: 10px 10px 10px 0;
-  border-style: solid;
-  border-color: transparent #fff transparent transparent;
-}
-
-
 .chat-input {
   display: flex;
   gap: 10px;

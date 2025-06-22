@@ -64,7 +64,7 @@ export default {
 .home {
   padding: 1rem 1rem;
   background: linear-gradient(to bottom right, #f0f2f5, #e6ebf1);
-  min-height: 100vh;
+  /* min-height: 100vh; */
   display: flex;
   flex-direction: column;
   align-items: center;
