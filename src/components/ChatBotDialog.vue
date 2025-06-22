@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="Gemini チャットボット" width="600px" @close="reset">
+  <el-dialog v-model="visible" title="AI チャット分析" width="600px" @close="reset">
     <div class="chat-window" ref="chatWindow">
       <div
         v-for="(msg, index) in messages"
@@ -45,14 +45,14 @@
     </el-form>
     <template #footer>
       <el-button @click="taskDialogVisible = false">キャンセル</el-button>
-      <!-- <el-button type="primary" @click="submitTask">追加</el-button> -->
-      <el-button type="primary">追加</el-button>
+      <el-button type="primary" @click="submitTask">追加</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -139,42 +139,48 @@ const addTask = () => {
   taskDialogVisible.value = true
 }
 
-// const submitTask = async () => {
-//   const { name, assignee, startDate, endDate } = newTask.value
-//   if (!name || !assignee || !startDate || !endDate) {
-//     ElMessage.error('すべての項目を入力してください。')
-//     return
-//   }
+const submitTask = async () => {
+  const { name, assignee, startDate, endDate } = newTask.value
+  if (!name || !assignee || !startDate || !endDate) {
+    ElMessage.error('すべての項目を入力してください。')
+    return
+  }
 
-//   try {
-//     const token = localStorage.getItem('token')
-//     const response = await fetch('/api/tasks/create', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'Authorization': `Bearer ${token}`,
-//       },
-//       body: JSON.stringify({
-//         name,
-//         assignee,
-//         startDate,
-//         endDate
-//       })
-//     })
+  try {
+    const token = localStorage.getItem('token')
+    const payload = [{
+      title: name,
+      assignee,
+      plan_start: startDate,
+      plan_end: endDate,
+      actual_start: null,
+      actual_end: null,
+      status: '未着手',
+      parent_id: null
+    }]
 
-//     const result = await response.json()
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload), //payloadの中身がjson形式でボディに含まれる。
+      credentials: 'include',
+    })
 
-//     if (!response.ok) {
-//       ElMessage.error(result.error || 'タスクの作成に失敗しました')
-//     } else {
-//       ElMessage.success('タスクが正常に追加されました')
-//       taskDialogVisible.value = false
-//       newTask.value = { name: '', assignee: '', startDate: '', endDate: '' }
-//     }
-//   } catch (err) {
-//     ElMessage.error(err.message || '通信エラーが発生しました')
-//   }
-// }
+    if (!response.ok) {
+      throw new Error(`保存失敗 status: ${response.status}`)
+    }
+
+    ElMessage.success('タスクが正常に追加されました')
+    taskDialogVisible.value = false
+    newTask.value = { name: '', assignee: '', startDate: '', endDate: '' }
+  } catch (err) {
+    ElMessage.error(err.message || '通信エラーが発生しました')
+  }
+}
+
 
 </script>
 

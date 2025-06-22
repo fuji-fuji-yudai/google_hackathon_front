@@ -99,74 +99,60 @@ watch(() => props.currentuser, (newVal) => {
   overflow: hidden;
 }
 
-/* .chat-log {
-  flex: 0.9;
-  overflow-y: auto;
-  padding: 10px;
-  background: #f9f9f9;
-  border-top: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
-} */
-
 .chat-log {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;   /* ← これがポイント！ */
   background: #f9f9f9;
   border-top: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
 }
 
-
-.chat-message {
-  margin-bottom: 10px;
-}
-
-.chat-input {
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  background: #fff;
-  border-top: 1px solid #ddd;
-  flex-shrink: 0;
-}
-
-.chat-textbox {
-  flex: 1;
-}
-
 .chat-message {
   display: flex;
-  margin-bottom: 10px;
+  flex-direction: column;
+  margin-bottom: 15px;
+  max-width: 80%;
 }
 
 .from-me {
-  justify-content: flex-end;
+  align-self: flex-end;
+  align-items: flex-end;
 }
 
 .from-others {
-  justify-content: flex-start;
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.sender-name {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 4px;
+  padding: 0 8px;
 }
 
 .bubble {
-  max-width: 70%;
-  padding: 10px 15px;
-  border-radius: 20px;
-  position: relative;
-  background-color: #dcf8c6; /* 自分のメッセージ色 */
+  white-space: pre-wrap;         /* 改行をそのまま表示 */
+  line-height: 1.8;              /* 行間を広めに */
+  font-size: 0.95rem;
+  padding: 12px 16px;
+  border-radius: 16px;
+  /* border: 1px solid #ccc; */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background-color: #dcf8c6;
   color: #000;
-  word-wrap: break-word;
+  word-break: break-word;
 }
+
 
 .from-others .bubble {
   background-color: #fff;
-  border: 1px solid #ccc;
+  /* border: 1px solid #bbb; */
 }
 
-/* 吹き出しのしっぽ（オプション） */
 .from-me .bubble::after {
   content: '';
   position: absolute;
@@ -187,11 +173,19 @@ watch(() => props.currentuser, (newVal) => {
   border-color: transparent #fff transparent transparent;
 }
 
-.sender-name {
-  font-size: 0.75rem;
-  color: #888;
-  margin-bottom: 2px;
-  padding: 0 10px;
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  flex-shrink: 0;
 }
+
+.chat-textbox {
+  flex: 1;
+}
+
 
 </style>

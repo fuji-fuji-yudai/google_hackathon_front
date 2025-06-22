@@ -63,7 +63,7 @@ export default {
     const data = await response.json();
 
     if (!response.ok) {
-      // サーバーからのエラーメッセージを表示
+      // サーバーからのエラーメッセージを表示する
       this.error = data.error || 'サーバーエラーが発生しました';
       return;
     }

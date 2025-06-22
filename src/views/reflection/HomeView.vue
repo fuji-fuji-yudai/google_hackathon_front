@@ -65,10 +65,18 @@ const router = useRouter()
 const handleDateClick = (date) => {
   console.log('クリックされた日付:', date)
   selectedDate.value = date
+  // ローカルタイムゾーンで日付をフォーマット
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため +1
+  const day = String(date.getDate()).padStart(2, '0');
+  const formattedDate = `${year}-${month}-${day}`;
+  // データを登録画面に渡す
   router.push({
     name: 'reflectionRegister',
-    query: { date: date }
-  })
+    query: {
+      date: formattedDate,
+    },
+  });
 }
 
 // カレンダーを切り替えたときの処理
@@ -97,7 +105,11 @@ const fetchReflections = async () => {
 }
 // 日付が完了済みかどうかをチェック
 const isDateCompleted = (date) => {
-  const formattedDate = date.toISOString().split('T')[0] // YYYY-MM-DD形式に変換
+  // ローカルタイムゾーンで日付をフォーマット
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため +1
+  const day = String(date.getDate()).padStart(2, '0');
+  const formattedDate = `${year}-${month}-${day}`;
   console.log('formattedDate：' + formattedDate)
   return completedDates.value.includes(formattedDate)
 }
