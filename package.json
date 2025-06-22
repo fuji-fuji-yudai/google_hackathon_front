@@ -17,6 +17,7 @@
     "core-js": "^3.8.3",
     "date-fns": "^4.1.0",
     "element-plus": "^2.9.10",
+    "mitt": "^3.0.1",
     "sockjs-client": "^1.6.1",
     "vue": "^3.2.13",
     "vue-chart-3": "^3.1.8",
