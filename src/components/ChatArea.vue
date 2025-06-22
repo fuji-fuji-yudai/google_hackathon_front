@@ -135,22 +135,22 @@ watch(() => props.currentuser, (newVal) => {
 }
 
 .bubble {
-  max-width: 70%;
+  white-space: pre-wrap;         /* 改行をそのまま表示 */
+  line-height: 1.8;              /* 行間を広めに */
+  font-size: 0.95rem;
   padding: 12px 16px;
   border-radius: 16px;
-  position: relative;
-  word-wrap: break-word;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  border: 1px solid #ccc;
+  /* border: 1px solid #ccc; */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  background-color: #dcf8c6; /* 自分のメッセージ色 */
+  background-color: #dcf8c6;
   color: #000;
+  word-break: break-word;
 }
+
 
 .from-others .bubble {
   background-color: #fff;
-  border: 1px solid #bbb;
+  /* border: 1px solid #bbb; */
 }
 
 .from-me .bubble::after {
