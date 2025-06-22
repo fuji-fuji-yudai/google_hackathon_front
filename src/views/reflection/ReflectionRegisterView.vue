@@ -83,6 +83,7 @@ export default {
 
   mounted() {
     this.fetchReflections().then((data) => {
+      console.log(this.form.date);
       if (data) {
         this.id = data.id;
         this.form.activity = data.activity;
