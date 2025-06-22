@@ -61,6 +61,7 @@
 <script>
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { marked } from 'marked'; // マークダウンライブラリをインポート
 
 // ログインユーザーのトークンを取得
 const token = localStorage.getItem('token')
@@ -255,6 +256,10 @@ export default {
         }
         this.feedbackData = null; // フィードバックをリセット
       }
+    },
+    // マークダウンをHTMLとしてレンダリング
+    renderMarkdown(markdownText) {
+      return marked(markdownText);
     },
   }
 }
