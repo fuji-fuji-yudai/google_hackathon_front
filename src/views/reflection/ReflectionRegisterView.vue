@@ -49,7 +49,7 @@
         </el-form-item>
       </el-form>
       <!-- フィードバック結果表示 -->
-      <div v-if="feedback">
+      <div v-if="feedbackData">
         <h3>生成されたフィードバック</h3>
         <p>{{ feedbackData.feedback }}</p>
       </div>
@@ -75,7 +75,7 @@ export default {
         achievement: '',
         improvementPoints: '',
       },
-      isFeedbackVisible: false,
+      isFeedbackButtonVisible: false,
       feedbackData: null,
       error: null,
     };
@@ -242,7 +242,7 @@ export default {
         });
         this.feedbackData = response.data; // フィードバックを格納
         console.log("フィードバック取得成功");
-        console.log("feedback : "+this.feedbackData);
+        console.log("feedback : "+this.feedbackData.feedback);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
