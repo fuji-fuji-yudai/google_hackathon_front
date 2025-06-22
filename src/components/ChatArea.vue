@@ -99,30 +99,74 @@ watch(() => props.currentuser, (newVal) => {
   overflow: hidden;
 }
 
-/* .chat-log {
-  flex: 0.9;
-  overflow-y: auto;
-  padding: 10px;
-  background: #f9f9f9;
-  border-top: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
-} */
-
 .chat-log {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;   /* ← これがポイント！ */
   background: #f9f9f9;
   border-top: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
 }
 
-
 .chat-message {
-  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  max-width: 80%;
+}
+
+.from-me {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.from-others {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.sender-name {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 4px;
+  padding: 0 8px;
+}
+
+.bubble {
+  background-color: #dcf8c6;
+  color: #000;
+  padding: 10px 15px;
+  border-radius: 18px;
+  position: relative;
+  word-wrap: break-word;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.from-others .bubble {
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+
+.from-me .bubble::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 10px;
+  border-width: 8px 0 8px 8px;
+  border-style: solid;
+  border-color: transparent transparent transparent #dcf8c6;
+}
+
+.from-others .bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 10px;
+  border-width: 8px 8px 8px 0;
+  border-style: solid;
+  border-color: transparent #fff transparent transparent;
 }
 
 .chat-input {
@@ -138,60 +182,5 @@ watch(() => props.currentuser, (newVal) => {
   flex: 1;
 }
 
-.chat-message {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.from-me {
-  justify-content: flex-end;
-}
-
-.from-others {
-  justify-content: flex-start;
-}
-
-.bubble {
-  max-width: 70%;
-  padding: 10px 15px;
-  border-radius: 20px;
-  position: relative;
-  background-color: #dcf8c6; /* 自分のメッセージ色 */
-  color: #000;
-  word-wrap: break-word;
-}
-
-.from-others .bubble {
-  background-color: #fff;
-  border: 1px solid #ccc;
-}
-
-/* 吹き出しのしっぽ（オプション） */
-.from-me .bubble::after {
-  content: '';
-  position: absolute;
-  right: -10px;
-  top: 10px;
-  border-width: 10px 0 10px 10px;
-  border-style: solid;
-  border-color: transparent transparent transparent #dcf8c6;
-}
-
-.from-others .bubble::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 10px;
-  border-width: 10px 10px 10px 0;
-  border-style: solid;
-  border-color: transparent #fff transparent transparent;
-}
-
-.sender-name {
-  font-size: 0.75rem;
-  color: #888;
-  margin-bottom: 2px;
-  padding: 0 10px;
-}
 
 </style>
