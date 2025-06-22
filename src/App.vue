@@ -28,10 +28,10 @@
         </router-link>
       </div>
       <div 
-        v-if="currentUsername" 
+        v-show="true" 
         class="user-info" 
       >
-        {{ currentUsername }} さん
+        {{ currentUsername ? currentUsername +' さん' : ''}} 
       </div>
     </nav>
     <router-view />
@@ -39,23 +39,32 @@
 </template>
 
 <script setup>
-import { ref} from 'vue'
+import { ref, onMounted } from 'vue'
+import emitter from './eventBus'
+
+const currentUsername = ref(null)
+
 const getUsernameFromToken = (token) => {
-  if (!token || typeof token !== 'string' || !token.includes('.')) {
-    console.error('トークンが無効です:', token);
-    return null;
-  }
+  if (!token || typeof token !== 'string' || !token.includes('.')) return null
   try {
-    const payload = JSON.parse(atob(token.split('.')[1])); //JWTのペイロード部分（2番目のドット区切り★）をBase64でコードして、ユーザー名を取得
-    return payload.sub || payload.username; //subまたはusername★を返す。（JWTの仕様による）
-  } catch (e) {
-    console.error('トークンの解析に失敗しました', e);
-    return null;
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.sub || payload.username
+  } catch {
+    return null
   }
-};
-const token = localStorage.getItem('token')
-const currentUsername = ref(getUsernameFromToken(token)) //JWTトークンから取得したユーザー名
+}
+
+const updateUsername = () => {
+  const token = localStorage.getItem('token')
+  currentUsername.value = getUsernameFromToken(token)
+}
+
+onMounted(() => {
+  updateUsername()
+  emitter.on('login-success', updateUsername) // ← ここでイベントを受け取る
+})
 </script>
+
 
 
 <style lang="scss">

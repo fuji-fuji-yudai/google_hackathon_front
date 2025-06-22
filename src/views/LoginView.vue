@@ -22,6 +22,7 @@
 
 <script>
 import axios from 'axios';
+import emitter from '../eventBus' 
 
 export default {
   data() {
@@ -45,6 +46,10 @@ export default {
         );
         // トークンなどを保存
         localStorage.setItem('token', response.data.token);
+        emitter.emit('login-success') 
+        // 例: ログイン処理後
+        
+
         window.dispatchEvent(new Event('storage')) 
         this.$router.push('/home');
       } catch (err) {
