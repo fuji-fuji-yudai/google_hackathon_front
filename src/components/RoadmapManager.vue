@@ -9,9 +9,7 @@
       <button class="action-button reminder-button" @click="goToReminderForm">
         リマインダー作成
       </button>
-      <button class="save-roadmap-button" @click="emit('save-roadmap-data')" v-if="false">
-        データ保存 (自動保存有効中)
-      </button>
+      <!-- 「データ保存」ボタンは個別の操作で自動保存されるため、削除しました。 -->
     </div>
 
     <p v-if="props.loading" class="loading-message">ロードマップデータを読み込み中...</p>
@@ -90,7 +88,7 @@ const emit = defineEmits([
   'save-task-edit-to-manager',
   'delete-task-to-manager',
   'request-logout', // 親へのログアウト要求イベント
-  'save-roadmap-data' // 自動保存のインフォメーション表示のため、念のためエミットも定義
+  // 'save-roadmap-data' // 一括保存は不要になったため削除
 ]);
 
 // RoadmapBase から受け取ったタスク追加イベントを親にエミット

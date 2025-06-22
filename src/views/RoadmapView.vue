@@ -1,6 +1,5 @@
 <template>
   <div class="roadmap-view">
-    <!-- 新しい保存イベントを追加 -->
     <RoadmapManager 
       :jwt-token="jwtToken"
       :api-error="apiError"
@@ -13,7 +12,6 @@
       @save-task-edit-to-manager="handleSaveTaskEdit"
       @delete-task-to-manager="handleDeleteTask"
       @request-logout="handleLogout"
-      @request-save-roadmap="saveRoadmapData"
     />
   </div>
 </template>
@@ -92,7 +90,7 @@ export default {
         
         if (jwtToken.value) {
           headers['Authorization'] = `Bearer ${jwtToken.value}`;
-          console.log('Sending Authorization Header:', headers['Authorization']); 
+          console.log('Sending Authorization Header (GET):', headers['Authorization']); 
         } else {
           console.warn('JWT Token is not available in localStorage. Proceeding without authentication.');
         }
@@ -136,23 +134,23 @@ export default {
                 const startIndex = startMonthData ? allMonths.indexOf(startMonthData) : 0;
                 const endIndex = endMonthData ? allMonths.indexOf(endMonthData) : 0;
 
-                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) { // categoryNameを使用
-                    newCategoryColors[item.categoryName] = generateRandomColor(); // categoryNameを使用
+                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) { 
+                    newCategoryColors[item.categoryName] = generateRandomColor(); 
                 }
 
                 const task = {
                     id: item.id,
-                    name: item.taskName, // taskNameを使用
+                    name: item.taskName, 
                     startIndex: startIndex,
                     endIndex: endIndex,
-                    category: item.categoryName, // categoryNameを使用
-                    color: newCategoryColors[item.categoryName] // categoryNameを使用
+                    category: item.categoryName, 
+                    color: newCategoryColors[item.categoryName] 
                 };
 
-                if (!categoriesMap.has(item.categoryName)) { // categoryNameを使用
-                    categoriesMap.set(item.categoryName, { category: item.categoryName, tasks: [] }); // categoryNameを使用
+                if (!categoriesMap.has(item.categoryName)) { 
+                    categoriesMap.set(item.categoryName, { category: item.categoryName, tasks: [] }); 
                 }
-                categoriesMap.get(item.categoryName).tasks.push(task); // categoryNameを使用
+                categoriesMap.get(item.categoryName).tasks.push(task); 
             });
             roadmapDataForManager.value = Array.from(categoriesMap.values()).sort((a, b) => a.category.localeCompare(b.category));
         } else {
@@ -182,205 +180,155 @@ export default {
       }
     };
 
-    const saveRoadmapData = async () => {
-      apiError.value = null;
-      if (!jwtToken.value) {
-        ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
-        return;
-      }
+    // saveRoadmapData関数は不要になったため、定義自体を削除します。
 
-      // 保存対象の全タスクを集める
-      const allTasksToSave = [];
-      roadmapDataForManager.value.forEach(categoryRow => {
-        if (categoryRow.tasks && categoryRow.tasks.length > 0) {
-          const category = categoryRow.category;
-          categoryRow.tasks.forEach(task => {
-            const startMonth = allMonths[task.startIndex] ? `${allMonths[task.startIndex].year}-${allMonths[task.startIndex].monthNum}` : null;
-            const endMonth = allMonths[task.endIndex] ? `${allMonths[task.endIndex].year}-${allMonths[task.endIndex].monthNum}` : null;
 
-            allTasksToSave.push({
-              id: task.id, // IDは更新/削除のために必要だが、POST時は不要
-              categoryName: category, // バックエンドのフィールド名に合わせる
-              taskName: task.name,    // バックエンドのフィールド名に合わせる
-              startMonth: startMonth,
-              endMonth: endMonth,
-              // userフィールドはバックエンドで自動的に設定されるため、フロントからは送らない
-            });
-          });
+    const handleAddTask = async (taskPayload) => {
+        if (!jwtToken.value) {
+            ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            return;
         }
-      });
 
-      if (allTasksToSave.length === 0) {
-        ElMessage.info('保存するタスクデータがありません。');
-        return;
-      }
-
-      // 各タスクを個別にAPIに送信する
-      try {
-        for (const taskPayload of allTasksToSave) {
-          const method = taskPayload.id ? 'PUT' : 'POST';
-          const url = taskPayload.id ? `${backendUrl}/${taskPayload.id}` : backendUrl;
-          
-          // 送信するデータから id を削除 (POSTの場合、IDはバックエンドで生成されるため)
-          const payload = { ...taskPayload };
-          if (method === 'POST') {
-            delete payload.id; 
-          }
-
-          console.log(`Sending ${method} request to ${url} with payload:`, payload); // デバッグログ
-
-          const response = await fetch(url, {
-            method: method,
-            headers: {
-              'Authorization': `Bearer ${jwtToken.value}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload), // 単一のオブジェクトとして送信
-          });
-
-          if (response.status === 401 || response.status === 403) {
-            apiError.value = '認証情報が無効です。再度ログインしてください。';
-            ElMessage.error(apiError.value);
-            jwtToken.value = null;
-            localStorage.removeItem('token');
-            return; // 認証エラーの場合は処理を中断
-          }
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `ロードマップデータの保存に失敗しました (${method} ${url})。`);
-          }
-          
-          // POSTで新規作成された場合、バックエンドから返されるIDをフロントエンドのデータに反映
-          if (method === 'POST' && !taskPayload.id) {
-              const savedRoadmapEntry = await response.json();
-              // roadmapDataForManager 内の該当するタスクのIDを更新する
-              // これは複雑になるため、簡易的に全データ再フェッチで対応
-              console.log("Newly created task with ID:", savedRoadmapEntry.id);
-          }
-        }
-        ElMessage.success('ロードマップデータを正常に保存しました！');
-        // 全ての保存が完了したら、データを再フェッチして最新の状態にする
-        fetchRoadmapData(); 
-      } catch (err) {
-        console.error('API Error (saveRoadmapData):', err);
-        apiError.value = err.message || 'ロードマップデータの保存中に予期せぬエラーが発生しました。';
-        ElMessage.error(apiError.value);
-      }
-    };
-
-
-    const handleAddTask = (taskPayload) => {
         const newCategory = taskPayload.category;
-        let existingCategoryRow = roadmapDataForManager.value.find(row => row.category === newCategory);
+        const startMonth = allMonths[taskPayload.startIndex] ? `${allMonths[taskPayload.startIndex].year}-${allMonths[taskPayload.startIndex].monthNum}` : null;
+        const endMonth = allMonths[taskPayload.endIndex] ? `${allMonths[taskPayload.endIndex].year}-${allMonths[taskPayload.endIndex].monthNum}` : null;
 
-        if (!Object.prototype.hasOwnProperty.call(categoryColorsForManager.value, newCategory)) {
-            categoryColorsForManager.value[newCategory] = generateRandomColor();
-        }
-
-        const taskData = {
-            id: taskPayload.id, // 新規追加時はnull
-            name: taskPayload.name,
-            startIndex: taskPayload.startMonthIndex,
-            endIndex: taskPayload.endMonthIndex,
-            category: newCategory,
-            color: categoryColorsForManager.value[newCategory]
+        const payload = {
+            categoryName: newCategory,
+            taskName: taskPayload.name,
+            startMonth: startMonth,
+            endMonth: endMonth,
         };
 
-        if (existingCategoryRow) {
-            existingCategoryRow.tasks.push(taskData);
-        } else {
-            const newRow = {
-                category: newCategory,
-                tasks: [taskData],
-            };
-            roadmapDataForManager.value.push(newRow);
-            roadmapDataForManager.value.sort((a, b) => a.category.localeCompare(b.category));
-        }
-        // saveRoadmapData(); // ★ここを削除またはコメントアウト★
-        ElMessage.success('タスクを一時的に追加しました。「ロードマップを保存」ボタンで確定してください。');
-    };
-
-    const handleSaveTaskEdit = (updatedTask) => {
-        const categoryIndex = roadmapDataForManager.value.findIndex(row => row.category === updatedTask.originalCategory);
-        if (categoryIndex === -1) {
-            ElMessage.error('元のカテゴリが見つかりませんでした。');
-            return;
-        }
-
-        const taskIndex = roadmapDataForManager.value[categoryIndex].tasks.findIndex(task => task.id === updatedTask.id);
-        if (taskIndex === -1) {
-            ElMessage.error('編集対象のタスクが見つかりませんでした。');
-            return;
-        }
-
-        if (updatedTask.category !== updatedTask.originalCategory) {
-            roadmapDataForManager.value[categoryIndex].tasks.splice(taskIndex, 1);
-
-            if (!Object.prototype.hasOwnProperty.call(categoryColorsForManager.value, updatedTask.category)) {
-                categoryColorsForManager.value[updatedTask.category] = generateRandomColor();
-            }
-
-            let newCategoryRow = roadmapDataForManager.value.find(row => row.category === updatedTask.category);
-            if (newCategoryRow) {
-                newCategoryRow.tasks.push({
-                    id: updatedTask.id,
-                    name: updatedTask.name,
-                    startIndex: updatedTask.startMonthIndex,
-                    endIndex: updatedTask.endMonthIndex,
-                    category: updatedTask.category,
-                    color: categoryColorsForManager.value[updatedTask.category]
-                });
-            } else {
-                const newRow = {
-                    category: updatedTask.category,
-                    tasks: [{
-                        id: updatedTask.id,
-                        name: updatedTask.name,
-                        startIndex: updatedTask.startMonthIndex,
-                        endIndex: updatedTask.endMonthIndex,
-                        category: updatedTask.category,
-                        color: categoryColorsForManager.value[updatedTask.category]
-                    }],
-                };
-                roadmapDataForManager.value.push(newRow);
-                roadmapDataForManager.value.sort((a, b) => a.category.localeCompare(b.category));
-            }
-        } else {
-            const task = roadmapDataForManager.value[categoryIndex].tasks[taskIndex];
-            Object.assign(task, {
-                name: updatedTask.name,
-                startIndex: updatedTask.startMonthIndex,
-                endIndex: updatedTask.endMonthIndex,
-                category: updatedTask.category,
-                color: categoryColorsForManager.value[updatedTask.category]
+        try {
+            console.log('Sending POST request to add task:', payload);
+            const response = await fetch(backendUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken.value}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
             });
+
+            if (response.status === 401 || response.status === 403) {
+                apiError.value = '認証情報が無効です。再度ログインしてください。';
+                ElMessage.error(apiError.value);
+                jwtToken.value = null;
+                localStorage.removeItem('token');
+                return;
+            }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'タスクの追加に失敗しました。');
+            }
+
+            await response.json(); // Consume the response
+            ElMessage.success('タスクを正常に追加しました！');
+            // データ再フェッチでフロントエンドのデータも最新の状態にする
+            fetchRoadmapData(); 
+
+        } catch (err) {
+            console.error('API Error (handleAddTask):', err);
+            apiError.value = err.message || 'タスクの追加中に予期せぬエラーが発生しました。';
+            ElMessage.error(apiError.value);
         }
-        // saveRoadmapData(); // ★ここを削除またはコメントアウト★
-        ElMessage.success('タスクを一時的に更新しました。「ロードマップを保存」ボタンで確定してください。');
     };
 
-    const handleDeleteTask = (taskIdToDelete) => {
-        let found = false;
-        for (let i = 0; i < roadmapDataForManager.value.length; i++) {
-            const categoryRow = roadmapDataForManager.value[i];
-            const taskIndex = categoryRow.tasks.findIndex(task => task.id === taskIdToDelete);
-            if (taskIndex !== -1) {
-                categoryRow.tasks.splice(taskIndex, 1);
-                found = true;
-                // カテゴリが空になり、かつデフォルトカテゴリでない場合は削除
-                if (categoryRow.tasks.length === 0 && !categoryRow.category.startsWith('カテゴリ')) {
-                    roadmapDataForManager.value.splice(i, 1);
-                    i--;
-                    delete categoryColorsForManager.value[categoryRow.category];
-                }
-                break;
-            }
+    const handleSaveTaskEdit = async (updatedTask) => {
+        if (!jwtToken.value) {
+            ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            return;
         }
-        if (found) {
-            // saveRoadmapData(); // ★ここを削除またはコメントアウト★
-            ElMessage.success('タスクを一時的に削除しました。「ロードマップを保存」ボタンで確定してください。');
-        } else {
-            ElMessage.error('削除対象のタスクが見つかりませんでした。');
+        if (!updatedTask.id) {
+            ElMessage.error('エラー: 編集対象のタスクIDがありません。');
+            return;
+        }
+
+        const startMonth = allMonths[updatedTask.startIndex] ? `${allMonths[updatedTask.startIndex].year}-${allMonths[updatedTask.startIndex].monthNum}` : null;
+        const endMonth = allMonths[updatedTask.endIndex] ? `${allMonths[updatedTask.endIndex].year}-${allMonths[updatedTask.endIndex].monthNum}` : null;
+
+        const payload = {
+            id: updatedTask.id, // PUTリクエストではIDを含める
+            categoryName: updatedTask.category,
+            taskName: updatedTask.name,
+            startMonth: startMonth,
+            endMonth: endMonth,
+        };
+
+        try {
+            console.log('Sending PUT request to update task:', payload);
+            const response = await fetch(`${backendUrl}/${updatedTask.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken.value}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                apiError.value = '認証情報が無効です。再度ログインしてください。';
+                ElMessage.error(apiError.value);
+                jwtToken.value = null;
+                localStorage.removeItem('token');
+                return;
+            }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'タスクの編集に失敗しました。');
+            }
+
+            ElMessage.success('タスクを正常に更新しました！');
+            // データ再フェッチでフロントエンドのデータも最新の状態にする
+            fetchRoadmapData(); 
+
+        } catch (err) {
+            console.error('API Error (handleSaveTaskEdit):', err);
+            apiError.value = err.message || 'タスクの編集中に予期せぬエラーが発生しました。';
+            ElMessage.error(apiError.value);
+        }
+    };
+
+    const handleDeleteTask = async (taskIdToDelete) => {
+        if (!jwtToken.value) {
+            ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            return;
+        }
+        if (!taskIdToDelete) {
+            ElMessage.error('エラー: 削除対象のタスクIDがありません。');
+            return;
+        }
+
+        try {
+            console.log(`Sending DELETE request for task ID: ${taskIdToDelete}`);
+            const response = await fetch(`${backendUrl}/${taskIdToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken.value}`,
+                },
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                apiError.value = '認証情報が無効です。再度ログインしてください。';
+                ElMessage.error(apiError.value);
+                jwtToken.value = null;
+                localStorage.removeItem('token');
+                return;
+            }
+            if (!response.ok) {
+                const errorData = await response.json(); // DELETEは通常レスポンスボディがないので注意
+                throw new Error(errorData.message || 'タスクの削除に失敗しました。');
+            }
+
+            ElMessage.success('タスクを正常に削除しました！');
+            // データ再フェッチでフロントエンドのデータも最新の状態にする
+            fetchRoadmapData(); 
+
+        } catch (err) {
+            console.error('API Error (handleDeleteTask):', err);
+            apiError.value = err.message || 'タスクの削除中に予期せぬエラーが発生しました。';
+            ElMessage.error(apiError.value);
         }
     };
 
@@ -407,13 +355,13 @@ export default {
       handleSaveTaskEdit,
       handleDeleteTask,
       handleLogout,
-      saveRoadmapData, // saveRoadmapDataを公開する
     };
   },
 };
 </script>
 
 <style scoped>
+/* スタイルは変更なし */
 .roadmap-view {
   display: flex;
   flex-direction: column;
