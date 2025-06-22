@@ -31,22 +31,23 @@ export default {
           route: "/chat",
         },
         {
-          name: "reflection",
-          title: "振り返りへ",
-          image: require("@/assets/logo.png"),
-          route: "/chat",
-        },
-        {
           name: "task",
           title: "タスク管理へ",
           image: require("@/assets/logo.png"),
-          route: "/chat",
+          route: "/taskManage",
         },
+        {
+          name: "reflection",
+          title: "振り返りへ",
+          image: require("@/assets/logo.png"),
+          route: "/reflection/home",
+        },
+        
         {
           name: "roadmap",
           title: "ロードマップへ",
           image: require("@/assets/logo.png"),
-          route: "/chat",
+          route: "/roadmap",
         },
       ],
     };
