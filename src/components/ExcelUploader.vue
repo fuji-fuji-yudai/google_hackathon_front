@@ -42,7 +42,7 @@
                 children: 'children'
               }"
             >
-              <template #default="{ node, data }">
+              <template #default="{data }">
                 <div class="task-node">
                   <span>{{ data.title }}</span>
                   <span v-if="data.assignee" class="task-assignee">担当: {{ data.assignee }}</span>
