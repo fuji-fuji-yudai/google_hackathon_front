@@ -52,7 +52,9 @@ export default {
       }
 
       try {
-        const yearMonth = this.selectedYearMonth;
+        const year = this.selectedYearMonth.getFullYear()
+        const month = this.selectedYearMonth.getMonth() + 1
+        const yearMonth = `${year}-${month}`;
         const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
           param: {
             yearMonth: yearMonth
@@ -80,10 +82,8 @@ export default {
         return;
       }
       try {
-        // 'YYYY-MM' を '-' で分割
-        const [year, month] = this.selectedYearMonth.split("-");
-        this.year = parseInt(year, 10); // 年を数値型に変換
-        this.month = parseInt(month, 10); // 月を数値型に変換
+        const year = this.selectedYearMonth.getFullYear()
+        const month = this.selectedYearMonth.getMonth() + 1
         // サマリー作成のAPIリクエスト
         const response = await axios.post(
           `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
