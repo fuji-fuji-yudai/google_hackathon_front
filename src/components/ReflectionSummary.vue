@@ -56,7 +56,7 @@ export default {
         const month = this.selectedYearMonth.getMonth() + 1
         const yearMonth = `${year}-${month}`;
         const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
-          param: {
+          params: {
             yearMonth: yearMonth
           },
           headers: {
@@ -87,7 +87,7 @@ export default {
         // サマリー作成のAPIリクエスト
         const response = await axios.post(
           `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
-          param: {
+          params: {
             year: year,
             month: month
           },
