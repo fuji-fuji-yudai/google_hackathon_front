@@ -86,7 +86,7 @@ export default {
     const newTitle = ref('')
     const newAssignee = ref('')
     const newDates = ref([])
-    const newParentId = ref({})
+    const newParentId = ref(null)
     const taskPlanDateMap = ref({})
     const taskActualDateMap = ref({})
     const expandedTasks = ref({}) // 展開状態を管理
@@ -241,14 +241,14 @@ export default {
         actual_start: '',
         actual_end: '',
         status: 'TODO',
-        parent_id: newParentId.value
+        parentId: newParentId.value
       }
 
       // ここにデバッグログを追加
       console.log('=== addTask デバッグ ===')
       console.log('選択された親ID:', newParentId.value)
       console.log('新しいタスク:', newTask)
-      console.log('parent_id の型:', typeof newTask.parent_id)
+      console.log('parent_id の型:', typeof newTask.parentId)
 
       localTasks.value.push(newTask)
       emit('update', localTasks.value)
@@ -261,7 +261,7 @@ export default {
       newTitle.value = ''
       newAssignee.value = ''
       newDates.value = []
-      newParentId.value = ''
+      newParentId.value = null
     }
 
     const getDayColor = (date, task) => {
