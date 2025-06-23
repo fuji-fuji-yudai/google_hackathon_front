@@ -12,7 +12,7 @@
     </div>
 
     <div class="timeline-header">
-      <div class="label">作業項目 / 担当 / 親 / 予定 / 実績</div>
+      <div class="label">作業項目 / 担当 / 予定 / 実績</div>
       <div class="days">
         <div v-for="date in dateRange" :key="date" class="day">
           {{ date.slice(5) }}
@@ -41,21 +41,18 @@
           </div>
 
           <div class="task-assignee">担当: {{ task.assignee }}</div>
-          <div class="task-parent" v-if="task.parent_id">親: {{ getParentTitle(task.parent_id) }}</div>
 
           <!-- 予定日付入力 -->
           <div class="date-picker-container">
-            <span>予定：</span>
             <el-date-picker v-if="taskPlanDateMap[task.id]" v-model="taskPlanDateMap[task.id]" type="daterange"
-              size="small" start-placeholder="開始日" end-placeholder="終了日"
+              size="small" start-placeholder="Plan Start" end-placeholder="Plan End"
               @change="(value) => onPlanDateChange(task, value)" />
           </div>
 
           <!-- 実績日付入力 -->
           <div class="date-picker-container">
-            <span>実績：</span>
             <el-date-picker v-if="taskActualDateMap[task.id]" v-model="taskActualDateMap[task.id]" type="daterange"
-              size="small" start-placeholder="実績開始日" end-placeholder="実績終了日"
+              size="small" start-placeholder="Actual Start" end-placeholder="Actual End"
               @change="(value) => onActualDateChange(task, value)" />
           </div>
         </div>
@@ -89,7 +86,7 @@ export default {
     const newTitle = ref('')
     const newAssignee = ref('')
     const newDates = ref([])
-    const newParentId = ref(null)
+    const newParentId = ref({})
     const taskPlanDateMap = ref({})
     const taskActualDateMap = ref({})
     const expandedTasks = ref({}) // 展開状態を管理
@@ -247,6 +244,12 @@ export default {
         parent_id: newParentId.value
       }
 
+      // ここにデバッグログを追加
+      console.log('=== addTask デバッグ ===')
+      console.log('選択された親ID:', newParentId.value)
+      console.log('新しいタスク:', newTask)
+      console.log('parent_id の型:', typeof newTask.parent_id)
+
       localTasks.value.push(newTask)
       emit('update', localTasks.value)
 
@@ -258,7 +261,7 @@ export default {
       newTitle.value = ''
       newAssignee.value = ''
       newDates.value = []
-      newParentId.value = null
+      newParentId.value = ''
     }
 
     const getDayColor = (date, task) => {
@@ -425,9 +428,15 @@ export default {
   margin-bottom: 8px;
 }
 
+.date-picker-container.compact {
+  margin-bottom: 0;
+  min-width: 220px;
+}
+
 .date-picker-container span {
   min-width: 40px;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .days {
