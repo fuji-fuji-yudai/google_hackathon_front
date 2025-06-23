@@ -10,7 +10,7 @@
           <option v-for="category in allAvailableCategories" :key="category" :value="category">
             {{ category }}
           </option>
-          </select>
+        </select>
       </div>
 
       <div class="form-group flex-grow" v-if="showCategoryNameInput">
@@ -43,18 +43,18 @@
     <div class="form-group month-selection">
       <div class="month-select-item">
         <label for="start-month">開始月:</label>
-        <select id="start-month" v-model.number="internalNewTask.startMonthIndex" class="input-field" @change="emitUpdatedNewTask">
+        <select id="start-month" v-model.number="internalNewTask.startMonth" class="input-field" @change="emitUpdatedNewTask">
           <option value="" disabled>-- 選択 --</option>
-          <option v-for="(month, index) in months" :key="month.id" :value="index">
+          <option v-for="month in months" :key="month.id" :value="month.monthNumber">
             {{ month.name }} ({{ month.year }})
           </option>
         </select>
       </div>
       <div class="month-select-item">
         <label for="end-month">終了月:</label>
-        <select id="end-month" v-model.number="internalNewTask.endMonthIndex" class="input-field" @change="emitUpdatedNewTask">
+        <select id="end-month" v-model.number="internalNewTask.endMonth" class="input-field" @change="emitUpdatedNewTask">
           <option value="" disabled>-- 選択 --</option>
-          <option v-for="(month, index) in months" :key="month.id" :value="index">
+          <option v-for="month in months" :key="month.id" :value="month.monthNumber">
             {{ month.name }} ({{ month.year }})
           </option>
         </select>
@@ -86,6 +86,8 @@ export default {
     months: {
       type: Array,
       required: true,
+      // months配列の各要素は { id: number, name: string, year: number, monthNumber: number } の形式を想定
+      // 例: { id: 1, name: '1月', year: 2025, monthNumber: 1 }
     },
   },
   emits: ['update:newTask', 'update:selectedCategory', 'add-task', 'update-category-name'],
@@ -105,14 +107,11 @@ export default {
       internalSelectedCategory.value = newVal;
       // カテゴリが外部から変更された場合も、元のカテゴリ名をリセット
       originalCategoryName.value = newVal !== '__new__' ? newVal : '';
-      // 新規作成オプションがなくなったため、__new__ が選択された場合の処理は不要になりますが、
-      // 念のため、意図しない値が入った場合はリセットするロジックは残しておくと安全です。
-      // ただし、このフォーム上ではもう __new__ が選択されることはないはずです。
     });
 
     // コンポーネントがマウントされたとき、またはカテゴリが初期化されたときに元のカテゴリ名をセット
     watch(() => internalSelectedCategory.value, (newVal) => {
-      if (newVal !== '__new__' && newVal !== '') { // '__new__'のチェックは実質不要になりますが、念のため残しておきます
+      if (newVal !== '__new__' && newVal !== '') {
         originalCategoryName.value = newVal;
       } else {
         originalCategoryName.value = '';
@@ -121,35 +120,21 @@ export default {
 
 
     const showCategoryNameInput = computed(() => {
-      // 「-- カテゴリを選択 --」以外が選択されたらカテゴリ名入力フィールドを表示するロジックは維持
       return internalSelectedCategory.value !== ''; 
     });
 
     const categoryNameInputLabel = computed(() => {
-      // 新しいカテゴリ作成のオプションがなくなるため、ラベルは常に「カテゴリ名」になります
       return 'カテゴリ名';
     });
 
+    // この computed property は正しく定義されているので変更なし
     const categoryNameInputPlaceholder = computed(() => {
-      // 新しいカテゴリ作成のオプションがなくなるため、プレースホルダーも常に「カテゴリ名を編集してください」になります
       return 'カテゴリ名を編集してください';
     });
 
 
     const handleCategoryChange = () => {
       const newCategoryValue = internalSelectedCategory.value;
-
-      // 新規作成のオプションがなくなるため、__new__ が選択された場合の制限ロジックは不要
-      // if (newCategoryValue === '__new__' && props.allAvailableCategories.length >= 4) {
-      //   alert('カテゴリは4つまでしか登録できません。既存のカテゴリを使用するか、不要なカテゴリを削除してください。');
-      //   internalSelectedCategory.value = ''; 
-      //   internalNewTask.value.category = ''; 
-      //   emit('update:selectedCategory', internalSelectedCategory.value); 
-      //   emitUpdatedNewTask();
-      //   return; 
-      // }
-
-      // ここでは、既存カテゴリが選択された場合と「-- カテゴリを選択 --」が選択された場合のみを処理します
       if (newCategoryValue !== '') {
         internalNewTask.value.category = newCategoryValue; // 既存カテゴリ選択の場合、カテゴリ名を設定
       } else {
@@ -169,7 +154,6 @@ export default {
     // カテゴリ名入力フィールドからフォーカスが外れたときにカテゴリ変更イベントを発火
     const handleCategoryNameInputBlur = () => {
         const currentCategoryValue = internalNewTask.value.category;
-        // 新しいカテゴリ作成のオプションがなくなるため、__new__ のチェックは不要になります
         if (originalCategoryName.value && originalCategoryName.value !== currentCategoryValue) {
             console.log(`Emitting update-category-name: old=${originalCategoryName.value}, new=${currentCategoryValue}`);
             emit('update-category-name', { oldCategory: originalCategoryName.value, newCategory: currentCategoryValue });
@@ -195,21 +179,15 @@ export default {
         return;
       }
       // 開始月と終了月が選択されているか確認
-      if (internalNewTask.value.startMonthIndex === '' || internalNewTask.value.endMonthIndex === '') {
+      if (internalNewTask.value.startMonth === null || internalNewTask.value.startMonth === '' || internalNewTask.value.endMonth === null || internalNewTask.value.endMonth === '') {
         alert('開始月と終了月を選択してください。');
         return;
       }
       // 開始月が終了月より後でないか確認
-      if (internalNewTask.value.startMonthIndex > internalNewTask.value.endMonthIndex) {
+      if (internalNewTask.value.startMonth > internalNewTask.value.endMonth) {
         alert('開始月は終了月より前の月を選択してください。');
         return;
       }
-
-      // 新しいカテゴリを作成しようとしているかのチェックは不要になります
-      // if (internalSelectedCategory.value === '__new__' && props.allAvailableCategories.length >= 4) {
-      //   alert('カテゴリは4つまでしか登録できません。');
-      //   return;
-      // }
 
       emit('add-task');
       console.log('RoadmapTaskAddForm: Emitting add-task event.');
@@ -223,7 +201,7 @@ export default {
       emitUpdatedNewTask,
       showCategoryNameInput,
       categoryNameInputLabel,
-      categoryNameInputPlaceholder,
+      categoryNameInputPlaceholder, 
       emitUpdatedNewTaskAndCategory,
       handleCategoryNameInputBlur,
     };
