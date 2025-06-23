@@ -39,8 +39,7 @@ const token = localStorage.getItem('token');
 export default {
   data() {
     return {
-      summary: null, // サマリーデータを格納
-      userId: 1, // 表示したいユーザーID（例: ログインユーザーのID）
+      summary: null,
       selectedYearMonth: "", // 選択された年月 (例: "2023-10")
     };
   },
@@ -53,8 +52,9 @@ export default {
 
       try {
         const year = this.selectedYearMonth.getFullYear()
-        const month = this.selectedYearMonth.getMonth() + 1
+        const month = String(this.selectedYearMonth.getMonth() + 1).padStart(2, '0'); 
         const yearMonth = `${year}-${month}`;
+        console.log(yearMonth)
         const response = await axios.get(`https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
           params: {
             yearMonth: yearMonth
@@ -83,14 +83,15 @@ export default {
       }
       try {
         const year = this.selectedYearMonth.getFullYear()
-        const month = this.selectedYearMonth.getMonth() + 1
+        const month = String(this.selectedYearMonth.getMonth() + 1).padStart(2, '0'); 
+        const yearMonth = `${year}-${month}`;
         // サマリー作成のAPIリクエスト
         const response = await axios.post(
-          `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, {
-          params: {
-            year: year,
-            month: month
+          `https://my-image-14467698004.asia-northeast1.run.app/api/reflection/summarize`, 
+          {
+            yearMonth: yearMonth
           },
+          {
           headers: {
             Authorization: `Bearer ${token}`
           }
