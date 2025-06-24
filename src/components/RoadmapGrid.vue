@@ -163,11 +163,12 @@ const positionedRoadmapData = computed(() => {
     const tasksWithPositions = [];
     const occupiedSlots = {};
 
-    const sortedTasks = [...categoryRow.tasks].sort((a, b) => {
-      if (a.startIndex !== b.startIndex) return a.startIndex - b.startIndex;
-      if (a.endIndex !== b.endIndex) return a.endIndex - b.endIndex;
-      return a.id.localeCompare(b.id);
-    });
+
+const sortedTasks = [...categoryRow.tasks].sort((a, b) => {
+  if (a.startIndex !== b.startIndex) return a.startIndex - b.startIndex;
+  if (a.endIndex !== b.endIndex) return a.endIndex - b.endIndex;
+  return a.id - b.id; // 数値のIDを昇順で比較
+});
 
     sortedTasks.forEach(task => {
       const startMonth = task.startIndex;

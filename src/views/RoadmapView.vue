@@ -36,19 +36,20 @@ export default {
     // バックエンドのURLは画像から確認できるものを正確に指定
     const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries';
 
+    // allMonths の monthNum を数値型に変更し、monthNumber にリネーム
     const allMonths = [
-      { id: 'm4_25', name: '4月', quarterId: 'q2_fy', year: '2025', monthNum: '04' },
-      { id: 'm5_25', name: '5月', quarterId: 'q2_fy', year: '2025', monthNum: '05' },
-      { id: 'm6_25', name: '6月', quarterId: 'q2_fy', year: '2025', monthNum: '06' },
-      { id: 'm7_25', name: '7月', quarterId: 'q3_fy', year: '2025', monthNum: '07' },
-      { id: 'm8_25', name: '8月', quarterId: 'q3_fy', year: '2025', monthNum: '08' },
-      { id: 'm9_25', name: '9月', quarterId: 'q3_fy', year: '2025', monthNum: '09' },
-      { id: 'm10_25', name: '10月', quarterId: 'q4_fy', year: '2025', monthNum: '10' },
-      { id: 'm11_25', name: '11月', quarterId: 'q4_fy', year: '2025', monthNum: '11' },
-      { id: 'm12_25', name: '12月', quarterId: 'q4_fy', year: '2025', monthNum: '12' },
-      { id: 'm1_26', name: '1月', quarterId: 'q1_fy', year: '2026', monthNum: '01' },
-      { id: 'm2_26', name: '2月', quarterId: 'q1_fy', year: '2026', monthNum: '02' },
-      { id: 'm3_26', name: '3月', quarterId: 'q1_fy', year: '2026', monthNum: '03' },
+      { id: 'm4_25', name: '4月', quarterId: 'q2_fy', year: 2025, monthNumber: 4 },
+      { id: 'm5_25', name: '5月', quarterId: 'q2_fy', year: 2025, monthNumber: 5 },
+      { id: 'm6_25', name: '6月', quarterId: 'q2_fy', year: 2025, monthNumber: 6 },
+      { id: 'm7_25', name: '7月', quarterId: 'q3_fy', year: 2025, monthNumber: 7 },
+      { id: 'm8_25', name: '8月', quarterId: 'q3_fy', year: 2025, monthNumber: 8 },
+      { id: 'm9_25', name: '9月', quarterId: 'q3_fy', year: 2025, monthNumber: 9 },
+      { id: 'm10_25', name: '10月', quarterId: 'q4_fy', year: 2025, monthNumber: 10 },
+      { id: 'm11_25', name: '11月', quarterId: 'q4_fy', year: 2025, monthNumber: 11 },
+      { id: 'm12_25', name: '12月', quarterId: 'q4_fy', year: 2025, monthNumber: 12 },
+      { id: 'm1_26', name: '1月', quarterId: 'q1_fy', year: 2026, monthNumber: 1 },
+      { id: 'm2_26', name: '2月', quarterId: 'q1_fy', year: 2026, monthNumber: 2 },
+      { id: 'm3_26', name: '3月', quarterId: 'q1_fy', year: 2026, monthNumber: 3 },
     ];
 
     const allQuarters = [
@@ -103,12 +104,15 @@ export default {
         if (response.status === 401 || response.status === 403) {
           apiError.value = '認証情報が無効です。ログインするとデータを編集・保存できます。';
           ElMessage.warning(apiError.value);
-          jwtToken.value = null;
-          localStorage.removeItem('token');
+          // jwtToken.value = null; // 本番では有効化
+          // localStorage.removeItem('token'); // 本番では有効化
         } else if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'ロードマップデータの取得に失敗しました。');
+          // エラーレスポンスがHTMLである可能性を考慮し、テキストとして取得
+          const errorText = await response.text(); 
+          console.error('Server returned non-JSON error or bad status for GET:', errorText);
+          throw new Error(errorText || 'ロードマップデータの取得に失敗しました。');
         } else {
+          // 成功レスポンスはJSONとしてパース
           const data = await response.json();
           if (Array.isArray(data)) {
             fetchedRawData = data;
@@ -127,13 +131,15 @@ export default {
 
         if (fetchedRawData.length > 0) {
             fetchedRawData.forEach(item => {
-                // バックエンドの項目名に合わせて変更 (item.task -> item.taskName, item.category -> item.categoryName)
-                const startMonthData = allMonths.find(m => `${m.year}-${m.monthNum}` === item.startMonth);
-                const endMonthData = allMonths.find(m => `${m.year}-${m.monthNum}` === item.endMonth);
+                // バックエンドから返される startMonth, endMonth が「数値の月番号」だと仮定
+                // フロントエンドの表示に必要な startIndex, endIndex を allMonths から見つける
+                const startMonthData = allMonths.find(m => m.monthNumber === item.startMonth && m.year === item.startYear); // 年も考慮するなら
+                const endMonthData = allMonths.find(m => m.monthNumber === item.endMonth && m.year === item.endYear); // 年も考慮するなら
 
                 const startIndex = startMonthData ? allMonths.indexOf(startMonthData) : 0;
                 const endIndex = endMonthData ? allMonths.indexOf(endMonthData) : 0;
 
+                // 新しいカテゴリの色を生成
                 if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) { 
                     newCategoryColors[item.categoryName] = generateRandomColor(); 
                 }
@@ -141,8 +147,8 @@ export default {
                 const task = {
                     id: item.id,
                     name: item.taskName, 
-                    startIndex: startIndex,
-                    endIndex: endIndex,
+                    startIndex: startIndex, // 表示用のインデックス
+                    endIndex: endIndex,     // 表示用のインデックス
                     category: item.categoryName, 
                     color: newCategoryColors[item.categoryName] 
                 };
@@ -180,9 +186,6 @@ export default {
       }
     };
 
-    // saveRoadmapData関数は不要になったため、定義自体を削除します。
-
-
     const handleAddTask = async (taskPayload) => {
         if (!jwtToken.value) {
             ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
@@ -190,14 +193,14 @@ export default {
         }
 
         const newCategory = taskPayload.category;
-        const startMonth = allMonths[taskPayload.startIndex] ? `${allMonths[taskPayload.startIndex].year}-${allMonths[taskPayload.startIndex].monthNum}` : null;
-        const endMonth = allMonths[taskPayload.endIndex] ? `${allMonths[taskPayload.endIndex].year}-${allMonths[taskPayload.endIndex].monthNum}` : null;
-
+        // RoadmapTaskAddFormから直接月番号が渡されるため、startIndex/endIndexを使った変換は不要
+        // taskPayload.startMonth と taskPayload.endMonth には既に数値の月番号が入っている
+        
         const payload = {
             categoryName: newCategory,
             taskName: taskPayload.name,
-            startMonth: startMonth,
-            endMonth: endMonth,
+            startMonth: taskPayload.startMonth, // RoadmapTaskAddFormでv-modelにバインドされた数値
+            endMonth: taskPayload.endMonth,     // RoadmapTaskAddFormでv-modelにバインドされた数値
         };
 
         try {
@@ -214,18 +217,20 @@ export default {
             if (response.status === 401 || response.status === 403) {
                 apiError.value = '認証情報が無効です。再度ログインしてください。';
                 ElMessage.error(apiError.value);
-                jwtToken.value = null;
-                localStorage.removeItem('token');
+                // jwtToken.value = null; // 本番では有効化
+                // localStorage.removeItem('token'); // 本番では有効化
                 return;
             }
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'タスクの追加に失敗しました。');
+                // エラーレスポンスがHTMLである可能性を考慮し、テキストとして取得
+                const errorText = await response.text(); 
+                console.error('Server returned non-JSON error or bad status for POST:', errorText);
+                throw new Error(`タスクの追加に失敗しました。サーバーからのレスポンス: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`);
             }
 
+            // 成功レスポンスはJSONとしてパース
             await response.json(); // Consume the response
             ElMessage.success('タスクを正常に追加しました！');
-            // データ再フェッチでフロントエンドのデータも最新の状態にする
             fetchRoadmapData(); 
 
         } catch (err) {
@@ -245,15 +250,13 @@ export default {
             return;
         }
 
-        const startMonth = allMonths[updatedTask.startIndex] ? `${allMonths[updatedTask.startIndex].year}-${allMonths[updatedTask.startIndex].monthNum}` : null;
-        const endMonth = allMonths[updatedTask.endIndex] ? `${allMonths[updatedTask.endIndex].year}-${allMonths[updatedTask.endIndex].monthNum}` : null;
-
+        // updatedTask.startMonth と updatedTask.endMonth は既に数値の月番号
         const payload = {
             id: updatedTask.id, // PUTリクエストではIDを含める
             categoryName: updatedTask.category,
             taskName: updatedTask.name,
-            startMonth: startMonth,
-            endMonth: endMonth,
+            startMonth: updatedTask.startMonth, // RoadmapTaskAddFormでv-modelにバインドされた数値
+            endMonth: updatedTask.endMonth,     // RoadmapTaskAddFormでv-modelにバインドされた数値
         };
 
         try {
@@ -270,17 +273,17 @@ export default {
             if (response.status === 401 || response.status === 403) {
                 apiError.value = '認証情報が無効です。再度ログインしてください。';
                 ElMessage.error(apiError.value);
-                jwtToken.value = null;
-                localStorage.removeItem('token');
+                // jwtToken.value = null; // 本番では有効化
+                // localStorage.removeItem('token'); // 本番では有効化
                 return;
             }
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'タスクの編集に失敗しました。');
+                const errorText = await response.text();
+                console.error('Server returned non-JSON error or bad status for PUT:', errorText);
+                throw new Error(`タスクの編集に失敗しました。サーバーからのレスポンス: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`);
             }
 
             ElMessage.success('タスクを正常に更新しました！');
-            // データ再フェッチでフロントエンドのデータも最新の状態にする
             fetchRoadmapData(); 
 
         } catch (err) {
@@ -312,17 +315,17 @@ export default {
             if (response.status === 401 || response.status === 403) {
                 apiError.value = '認証情報が無効です。再度ログインしてください。';
                 ElMessage.error(apiError.value);
-                jwtToken.value = null;
-                localStorage.removeItem('token');
+                // jwtToken.value = null; // 本番では有効化
+                // localStorage.removeItem('token'); // 本番では有効化
                 return;
             }
             if (!response.ok) {
-                const errorData = await response.json(); // DELETEは通常レスポンスボディがないので注意
-                throw new Error(errorData.message || 'タスクの削除に失敗しました。');
+                const errorText = await response.text(); // DELETEは通常レスポンスボディがないか、あってもJSONではない場合がある
+                console.error('Server returned non-JSON error or bad status for DELETE:', errorText);
+                throw new Error(`タスクの削除に失敗しました。サーバーからのレスポンス: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`);
             }
 
             ElMessage.success('タスクを正常に削除しました！');
-            // データ再フェッチでフロントエンドのデータも最新の状態にする
             fetchRoadmapData(); 
 
         } catch (err) {

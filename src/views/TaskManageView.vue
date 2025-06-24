@@ -2,25 +2,14 @@
   <div>
     <!-- Excel アップローダーコンポーネント追加 -->
     <ExcelUploader @tasks-generated="handleTasksGenerated" />
-    
-    <el-radio-group
-      v-model="viewMode"
-      style="margin-bottom: 20px"
-    >
+
+    <el-radio-group v-model="viewMode" style="margin-bottom: 20px">
       <el-radio-button label="card">カード</el-radio-button>
       <el-radio-button label="timeline">タイムライン</el-radio-button>
     </el-radio-group>
 
-    <CardBoardView
-      v-if="viewMode === 'card'"
-      :tasks="tasks"
-      @update="handleUpdate"
-    />
-    <TimelineBoard
-      v-else
-      :tasks="tasks"
-      @update="handleUpdate"
-    />
+    <CardBoardView v-if="viewMode === 'card'" :tasks="tasks" @update="handleUpdate" />
+    <TimelineBoard v-else :tasks="tasks" @update="handleUpdate" />
   </div>
 </template>
 
@@ -107,6 +96,16 @@ export default {
 
       try {
         const payload = newTasks.map(toSnake)
+        console.log('=== 保存前データ確認 ===')
+        console.log('変換前 (parentId):', newTasks)
+        console.log('変換後 (parent_id):', payload)
+
+        // parent_id が設定されているタスクをチェック
+        payload.forEach(task => {
+          if (task.parent_id) {
+            console.log(`${task.title} の parent_id: ${task.parent_id}`)
+          }
+        })
 
         const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           method: 'POST',
@@ -133,7 +132,7 @@ export default {
       tasks.value = newTasks
       saveTasks(newTasks)
     }
-    
+
     // Excelからタスクが生成された時
     const handleTasksGenerated = (generatedTasks) => {
       // 既存のタスクに新しいタスクを追加

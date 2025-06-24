@@ -12,7 +12,7 @@
           <option v-for="category in allAvailableCategories" :key="category" :value="category">
             {{ category }}
           </option>
-          </select>
+        </select>
       </div>
 
       <div class="form-group">
@@ -29,18 +29,18 @@
       <div class="form-group month-selection">
         <div class="month-select-item">
           <label for="edit-start-month">開始月:</label>
-          <select id="edit-start-month" v-model.number="internalTask.startMonthIndex" class="input-field">
+          <select id="edit-start-month" v-model.number="internalTask.startMonth" class="input-field">
             <option value="" disabled>-- 選択 --</option>
-            <option v-for="(month, index) in months" :key="month.id" :value="index">
+            <option v-for="month in months" :key="month.id" :value="month.monthNumber">
               {{ month.name }} ({{ month.year }})
             </option>
           </select>
         </div>
         <div class="month-select-item">
           <label for="edit-end-month">終了月:</label>
-          <select id="edit-end-month" v-model.number="internalTask.endMonthIndex" class="input-field">
+          <select id="edit-end-month" v-model.number="internalTask.endMonth" class="input-field">
             <option value="" disabled>-- 選択 --</option>
-            <option v-for="(month, index) in months" :key="month.id" :value="index">
+            <option v-for="month in months" :key="month.id" :value="month.monthNumber">
               {{ month.name }} ({{ month.year }})
             </option>
           </select>
@@ -70,6 +70,8 @@ const props = defineProps({
   taskToEdit: {
     type: Object,
     default: null,
+    // taskToEdit のプロパティとして startMonth と endMonth (月番号) が渡されることを想定
+    // { id: ..., name: ..., category: ..., startMonth: num, endMonth: num, startIndex: num, endIndex: num }
   },
   allAvailableCategories: {
     type: Array,
@@ -84,6 +86,7 @@ const props = defineProps({
 const emit = defineEmits(['update:isVisible', 'save-task-edit', 'delete-task']);
 
 const internalIsVisible = ref(props.isVisible);
+// internalTask の初期化。taskToEdit のプロパティ名に合わせる
 const internalTask = ref({});
 const originalCategory = ref(''); // カテゴリ変更を検出するために元のカテゴリを保存
 
@@ -91,39 +94,56 @@ watch(() => props.isVisible, (newVal) => {
   internalIsVisible.value = newVal;
 });
 
+// taskToEdit の変更を internalTask に同期
 watch(() => props.taskToEdit, (newVal) => {
   if (newVal) {
+    // newVal には startMonth と endMonth (月番号) が含まれることを想定
     internalTask.value = { ...newVal };
     originalCategory.value = newVal.category; // 元のカテゴリを保存
   }
-}, { deep: true, immediate: true });
+}, { deep: true, immediate: true }); // immediate: true で初期ロード時にもwatchが発火
 
 const handleSave = () => {
-  if (!internalTask.value.name) {
+  if (!internalTask.value.name?.trim()) { // .trim() を追加して空文字もチェック
     ElMessage.error('タスク名を入力してください。');
     return;
   }
-  if (!internalTask.value.category) {
+  if (!internalTask.value.category?.trim()) { // .trim() を追加して空文字もチェック
     ElMessage.error('カテゴリを選択してください。');
     return;
   }
-  if (internalTask.value.startMonthIndex === null || internalTask.value.endMonthIndex === null) {
+  //バリデーションを internalTask.startMonth と internalTask.endMonth に変更
+  // null または空文字列の場合をチェック (<option value=""> が選択された場合も考慮)
+  if (internalTask.value.startMonth === null || internalTask.value.startMonth === '' || 
+      internalTask.value.endMonth === null || internalTask.value.endMonth === '') {
     ElMessage.error('開始月と終了月を選択してください。');
     return;
   }
-  if (internalTask.value.startMonthIndex > internalTask.value.endMonthIndex) {
+  //月番号の比較に変更
+  if (internalTask.value.startMonth > internalTask.value.endMonth) {
     ElMessage.error('開始月は終了月よりも前に設定してください。');
     return;
   }
 
-  // 編集されたタスクデータと元のカテゴリを親にemit
-  emit('save-task-edit', { ...internalTask.value, originalCategory: originalCategory.value });
+  // 編集されたタスクデータを親にemit
+  // emit するペイロードを startMonth, endMonth (月番号) に変更
+  // RoadmapBase が期待する形式に合わせる
+  emit('save-task-edit', { 
+    id: internalTask.value.id, // IDは必須
+    name: internalTask.value.name,
+    category: internalTask.value.category,
+    startMonth: internalTask.value.startMonth, // 月番号
+    endMonth: internalTask.value.endMonth,     // 月番号
+    originalCategory: originalCategory.value // カテゴリ変更を検出するために渡す
+  });
   internalIsVisible.value = false;
 };
 
 const handleDelete = () => {
   if (internalTask.value && internalTask.value.id) {
     emit('delete-task', internalTask.value.id);
+  } else {
+    ElMessage.error('削除対象のタスクが見つかりませんでした。');
   }
 };
 
