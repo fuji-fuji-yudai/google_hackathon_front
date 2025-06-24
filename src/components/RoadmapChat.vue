@@ -69,7 +69,7 @@ const generateRoadmap = async () => {
     )
     const categoryLabel = selectedCategory ? selectedCategory.label : ''
 
-    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/roadmap/suggest', {
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/reflections/suggest', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
