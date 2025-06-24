@@ -35,7 +35,7 @@
     <el-dialog
       v-model="dialogVisible"
       title="作製されたロードマップ案"
-      width="700px"
+      width="900px"
       top="10vh"
       :close-on-click-modal="false"
     >
