@@ -5,7 +5,7 @@
 
       <el-form :model="form" label-width="100px">
         <el-form-item label="対象期間">
-          <el-select v-model="form.period" placeholder="期間を選択">
+          <el-select v-model="form.period" placeholder="期間を選択" style="width: 100%;">
             <el-option label="先月" value="lastMonth" />
             <el-option label="過去3か月" value="last3Months" />
             <el-option label="過去半年" value="last6Months" />
@@ -13,7 +13,7 @@
         </el-form-item>
 
         <el-form-item label="カテゴリ">
-          <el-select v-model="form.category" placeholder="カテゴリを選択">
+          <el-select v-model="form.category" placeholder="カテゴリを選択" style="width: 100%;">
             <el-option
               v-for="item in categoryOptions"
               :key="item.value"
@@ -31,13 +31,21 @@
       </el-form>
     </el-card>
 
-    <!-- ロードマップ出力表示 -->
-    <el-card v-if="roadmapText" class="result-card">
-      <h3>作製されたロードマップ案</h3>
+    <!-- モーダルでロードマップ表示 -->
+    <el-dialog
+      v-model="dialogVisible"
+      title="作製されたロードマップ案"
+      width="700px"
+      top="10vh"
+      :close-on-click-modal="false"
+    >
       <div class="scrollable-text">
         <pre>{{ roadmapText }}</pre>
       </div>
-    </el-card>
+      <template #footer>
+        <el-button @click="dialogVisible = false">閉じる</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -50,6 +58,7 @@ const form = ref({
 })
 
 const roadmapText = ref('')
+const dialogVisible = ref(false)
 
 const categoryOptions = [
   { label: '技術', value: 'technology' },
@@ -66,8 +75,6 @@ const generateRoadmap = async () => {
       option => option.value === form.value.category
     )
     const categoryLabel = selectedCategory ? selectedCategory.label : ''
-
-    console.log('送信するトークン:', token)
 
     const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/reflections/suggest', {
       method: 'POST',
@@ -86,8 +93,8 @@ const generateRoadmap = async () => {
     }
 
     const data = await response.text()
-    console.log('生成されたロードマップ案:', data)
     roadmapText.value = data
+    dialogVisible.value = true
   } catch (error) {
     console.error('APIリクエストエラー:', error)
   }
@@ -97,8 +104,8 @@ const generateRoadmap = async () => {
 <style scoped>
 .roadmap-generator {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  align-items: flex-start;
   padding: 40px;
   background-color: #f5f7fa;
   min-height: 100vh;
@@ -107,13 +114,6 @@ const generateRoadmap = async () => {
 .form-card {
   width: 400px;
   padding: 30px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-}
-
-.result-card {
-  margin-top: 30px;
-  width: 600px;
-  padding: 20px;
 }
 
 .scrollable-text {
