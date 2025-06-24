@@ -34,7 +34,9 @@
     <!-- ロードマップ出力表示 -->
     <el-card v-if="roadmapText" class="result-card">
       <h3>作製されたロードマップ案</h3>
-      <pre class="roadmap-text">{{ roadmapText }}</pre>
+      <div class="scrollable-text">
+        <pre>{{ roadmapText }}</pre>
+      </div>
     </el-card>
   </div>
 </template>
@@ -42,7 +44,6 @@
 <script setup>
 import { ref } from 'vue'
 
-// フォームデータ
 const form = ref({
   period: '',
   category: ''
@@ -50,7 +51,6 @@ const form = ref({
 
 const roadmapText = ref('')
 
-// 仮のカテゴリデータ（将来的にDBから取得予定）
 const categoryOptions = [
   { label: '技術', value: 'technology' },
   { label: '昇進', value: 'promotion' },
@@ -114,14 +114,17 @@ const generateRoadmap = async () => {
   margin-top: 30px;
   width: 600px;
   padding: 20px;
-  white-space: pre-wrap;
 }
 
-.roadmap-text {
+.scrollable-text {
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 4px;
   font-family: 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  border: 1px solid #ddd;
 }
 </style>
