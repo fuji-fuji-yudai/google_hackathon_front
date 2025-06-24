@@ -17,7 +17,12 @@ const props = defineProps({
 })
 
 // マークダウンをHTMLに変換
-const htmlContent = computed(() => marked(props.text))
+const htmlContent = computed(() => {
+  const html = marked(props.text)
+  console.log('変換後HTML:', html)
+  return html
+})
+
 </script>
 
 <style scoped>
