@@ -68,7 +68,7 @@ const generateRoadmap = async () => {
       option => option.value === form.value.category
     )
     const categoryLabel = selectedCategory ? selectedCategory.label : ''
-
+    console.log('送信するトークン:', token)
     const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/reflections/suggest', {
       method: 'POST',
       headers: {
