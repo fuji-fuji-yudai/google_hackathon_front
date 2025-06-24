@@ -108,7 +108,6 @@ const generateRoadmap = async () => {
   align-items: flex-start;
   padding: 40px;
   background-color: #f5f7fa;
-  min-height: 100vh;
 }
 
 .form-card {
@@ -127,4 +126,9 @@ const generateRoadmap = async () => {
   word-break: break-word;
   border: 1px solid #ddd;
 }
+
+.ai-chat-modal-content {
+  height: auto !important;
+}
+
 </style>
