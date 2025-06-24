@@ -34,11 +34,10 @@
     <!-- ロードマップ出力表示 -->
     <el-card v-if="roadmapText" class="result-card">
       <h3>作製されたロードマップ案</h3>
-      <p style="white-space: pre-wrap;">{{ roadmapText }}</p>
+      <pre class="roadmap-text">{{ roadmapText }}</pre>
     </el-card>
   </div>
 </template>
-
 
 <script setup>
 import { ref } from 'vue'
@@ -49,7 +48,7 @@ const form = ref({
   category: ''
 })
 
-const roadmapText = ref('') 
+const roadmapText = ref('')
 
 // 仮のカテゴリデータ（将来的にDBから取得予定）
 const categoryOptions = [
@@ -60,7 +59,6 @@ const categoryOptions = [
   { label: '企画', value: 'planning' }
 ]
 
-
 const generateRoadmap = async () => {
   try {
     const token = localStorage.getItem('token')
@@ -68,7 +66,9 @@ const generateRoadmap = async () => {
       option => option.value === form.value.category
     )
     const categoryLabel = selectedCategory ? selectedCategory.label : ''
+
     console.log('送信するトークン:', token)
+
     const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/reflections/suggest', {
       method: 'POST',
       headers: {
@@ -85,28 +85,23 @@ const generateRoadmap = async () => {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
-    
-const data = await response.text() // ← 文章が返ってくる前提
- console.log('生成されたロードマップ案:', data)
-
- // 画面に表示（例：refでバインドした変数にセット）
-  roadmapText.value = data
-
+    const data = await response.text()
+    console.log('生成されたロードマップ案:', data)
+    roadmapText.value = data
   } catch (error) {
     console.error('APIリクエストエラー:', error)
   }
 }
-
-
 </script>
 
 <style scoped>
 .roadmap-generator {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  height: 100vh;
+  padding: 40px;
   background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
 .form-card {
@@ -116,9 +111,17 @@ const data = await response.text() // ← 文章が返ってくる前提
 }
 
 .result-card {
-  margin-top: 20px;
+  margin-top: 30px;
   width: 600px;
+  padding: 20px;
   white-space: pre-wrap;
 }
 
+.roadmap-text {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 </style>
