@@ -51,6 +51,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import {onMounted } from 'vue'
 
 const form = ref({
   period: '',
@@ -99,6 +100,14 @@ const generateRoadmap = async () => {
     console.error('APIリクエストエラー:', error)
   }
 }
+
+onMounted(() => {
+  const modal = document.querySelector('.ai-chat-modal-content')
+  if (modal) {
+    modal.style.height = 'auto'
+  }
+})
+
 </script>
 
 <style scoped>
