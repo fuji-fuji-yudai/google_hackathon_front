@@ -36,19 +36,21 @@ export default {
           image: require("@/assets/logo.png"),
           route: "/taskManage",
         },
-        {
-          name: "reflection",
-          title: "振り返りへ",
-          image: require("@/assets/logo.png"),
-          route: "/reflection/home",
-        },
-        
+
         {
           name: "roadmap",
           title: "ロードマップへ",
           image: require("@/assets/logo.png"),
           route: "/roadmap",
         },
+
+        {
+          name: "reflection",
+          title: "振り返りへ",
+          image: require("@/assets/logo.png"),
+          route: "/reflection/home",
+        }
+        
       ],
     };
   },
