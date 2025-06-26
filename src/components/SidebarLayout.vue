@@ -152,7 +152,7 @@ onBeforeUnmount(() => { //アンマウント時にイベントを解除
 
 .sidebar-wrapper {
   height: 100%;
-  background-color: #f5f5f5;
+  /* background-color: #f5f5f5; */
   overflow-y: auto;
   box-sizing: border-box;
 }
