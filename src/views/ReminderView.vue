@@ -23,7 +23,7 @@
       <h4>あなたのリマインダー</h4>
       <p v-if="loadingReminders" class="loading-message">リマインダーを読み込み中...</p>
       <p v-if="fetchError" class="error-message">{{ fetchError }}</p>
-      <p v-if="!props.jwtToken" class="warning-message"> <!-- hasToken を props.jwtToken に変更 -->
+      <p v-if="!props.jwtToken" class="warning-message">
         ログインするとリマインダーを作成・表示できます。
       </p>
 
@@ -38,13 +38,13 @@
           <button @click="deleteReminder(reminder.id)" class="action-button delete-button">削除</button>
         </li>
       </ul>
-      <p v-else-if="!loadingReminders && props.jwtToken">リマインダーはありません。</p> <!-- hasToken を props.jwtToken に変更 -->
+      <p v-else-if="!loadingReminders && props.jwtToken">リマインダーはありません。</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, defineProps, watch } from 'vue'; // defineProps と watch をインポート
+import { ref, onMounted, computed, defineProps, watch, nextTick } from 'vue'; // nextTick をインポート
 import { ElMessage } from 'element-plus';
 
 // --- APIエンドポイントの設定 ---
@@ -70,7 +70,6 @@ const newReminder = ref({
 const loadingReminders = ref(false);
 const fetchError = ref(null);
 const createError = ref(null);
-// const hasToken = ref(false); // props.jwtToken を使うので、この ref は不要になります
 
 // --- ライフサイクルフック ---
 onMounted(() => {
@@ -79,7 +78,9 @@ onMounted(() => {
     fetchReminders();
   } else {
     // トークンがない場合は警告を表示（モーダル表示時にも警告が出せる）
-    ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
+    nextTick(() => { // nextTick でラップ
+      ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
+    });
   }
 });
 
@@ -94,7 +95,9 @@ watch(() => props.jwtToken, (newToken, oldToken) => {
     // 有効なトークンからnull/undefinedに変わった場合（ログアウトなど）
     console.log('JWT Token removed, clearing reminders.');
     reminders.value = [];
-    ElMessage.warning('ログアウトしました。リマインダーを操作するには再度ログインが必要です。');
+    nextTick(() => { // nextTick でラップ
+      ElMessage.warning('ログアウトしました。リマインダーを操作するには再度ログインが必要です。');
+    });
   }
 }, { immediate: true }); // コンポーネント初期化時にもwatchを実行
 
@@ -111,15 +114,6 @@ const getAuthHeaders = () => {
     return { 'Content-Type': 'application/json' };
   }
 };
-
-// checkAuthToken 関数は不要になります。watch と props.jwtToken で代替されます。
-// const checkAuthToken = () => {
-//     const token = localStorage.getItem('token');
-//     hasToken.value = !!token;
-//     if (!hasToken.value) {
-//         ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
-//     }
-// };
 
 // --- リマインダー取得 ---
 const fetchReminders = async () => {
@@ -139,7 +133,6 @@ const fetchReminders = async () => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token'); // 無効なトークンを削除
-      // hasToken.value = false; // props.jwtToken を使うので不要
       reminders.value = [];
       return;
     }
@@ -188,7 +181,6 @@ const createReminder = async () => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
-      // hasToken.value = false; // props.jwtToken を使うので不要
       return;
     }
     if (!response.ok) {
@@ -229,7 +221,6 @@ const deleteReminder = async (id) => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
-      // hasToken.value = false; // props.jwtToken を使うので不要
       return;
     }
     if (!response.ok) {
