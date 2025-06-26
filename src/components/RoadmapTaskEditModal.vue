@@ -16,23 +16,42 @@
       </div>
 
       <div class="form-group">
-        <label for="edit-task-name">タスク名:</label>
+        <label for="edit-task-name">目標:</label>
         <input
           id="edit-task-name"
           type="text"
           v-model="internalTask.name"
-          placeholder="タスク名を入力してください"
+          placeholder="目標を入力してください"
           class="input-field"
         />
       </div>
 
       <div class="form-group month-selection">
         <div class="month-select-item">
+          <label for="edit-start-year">開始年:</label> <select id="edit-start-year" v-model.number="internalTask.startYear" class="input-field">
+            <option value="" disabled>-- 選択 --</option>
+            <option v-for="year in availableYears" :key="year" :value="year">
+              {{ year }}年
+            </option>
+          </select>
+        </div>
+        <div class="month-select-item">
           <label for="edit-start-month">開始月:</label>
           <select id="edit-start-month" v-model.number="internalTask.startMonth" class="input-field">
             <option value="" disabled>-- 選択 --</option>
-            <option v-for="month in months" :key="month.id" :value="month.monthNumber">
+            <option v-for="month in filteredMonths(internalTask.startYear)" :key="month.id" :value="month.monthNumber">
               {{ month.name }} ({{ month.year }})
+            </option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group month-selection">
+        <div class="month-select-item">
+          <label for="edit-end-year">終了年:</label> <select id="edit-end-year" v-model.number="internalTask.endYear" class="input-field">
+            <option value="" disabled>-- 選択 --</option>
+            <option v-for="year in availableYears" :key="year" :value="year">
+              {{ year }}年
             </option>
           </select>
         </div>
@@ -40,7 +59,7 @@
           <label for="edit-end-month">終了月:</label>
           <select id="edit-end-month" v-model.number="internalTask.endMonth" class="input-field">
             <option value="" disabled>-- 選択 --</option>
-            <option v-for="month in months" :key="month.id" :value="month.monthNumber">
+            <option v-for="month in filteredMonths(internalTask.endYear)" :key="month.id" :value="month.monthNumber">
               {{ month.name }} ({{ month.year }})
             </option>
           </select>
@@ -59,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue'; // computed を追加
 import { ElMessage } from 'element-plus';
 
 const props = defineProps({
@@ -70,8 +89,6 @@ const props = defineProps({
   taskToEdit: {
     type: Object,
     default: null,
-    // taskToEdit のプロパティとして startMonth と endMonth (月番号) が渡されることを想定
-    // { id: ..., name: ..., category: ..., startMonth: num, endMonth: num, startIndex: num, endIndex: num }
   },
   allAvailableCategories: {
     type: Array,
@@ -86,55 +103,81 @@ const props = defineProps({
 const emit = defineEmits(['update:isVisible', 'save-task-edit', 'delete-task']);
 
 const internalIsVisible = ref(props.isVisible);
-// internalTask の初期化。taskToEdit のプロパティ名に合わせる
 const internalTask = ref({});
-const originalCategory = ref(''); // カテゴリ変更を検出するために元のカテゴリを保存
+const originalCategory = ref('');
+
+// months prop から利用可能な年を抽出する computed プロパティ
+const availableYears = computed(() => {
+  const years = new Set();
+  props.months.forEach(month => {
+    years.add(month.year);
+  });
+  return Array.from(years).sort((a, b) => a - b);
+});
+
+// 選択された年に応じて月をフィルタリングする関数
+const filteredMonths = (selectedYear) => {
+  if (!selectedYear) {
+    return props.months; // 年が選択されていなければ全ての月を返す
+  }
+  return props.months.filter(month => month.year === selectedYear);
+};
 
 watch(() => props.isVisible, (newVal) => {
   internalIsVisible.value = newVal;
 });
 
-// taskToEdit の変更を internalTask に同期
 watch(() => props.taskToEdit, (newVal) => {
   if (newVal) {
-    // newVal には startMonth と endMonth (月番号) が含まれることを想定
+    // newVal に startMonth, endMonth (月番号), startYear, endYear (年) が含まれることを想定
     internalTask.value = { ...newVal };
-    originalCategory.value = newVal.category; // 元のカテゴリを保存
+    originalCategory.value = newVal.category;
   }
-}, { deep: true, immediate: true }); // immediate: true で初期ロード時にもwatchが発火
+}, { deep: true, immediate: true });
 
 const handleSave = () => {
-  if (!internalTask.value.name?.trim()) { // .trim() を追加して空文字もチェック
-    ElMessage.error('タスク名を入力してください。');
+  if (!internalTask.value.name?.trim()) {
+    ElMessage.error('目標を入力してください。');
     return;
   }
-  if (!internalTask.value.category?.trim()) { // .trim() を追加して空文字もチェック
+  if (!internalTask.value.category?.trim()) {
     ElMessage.error('カテゴリを選択してください。');
     return;
   }
-  //バリデーションを internalTask.startMonth と internalTask.endMonth に変更
-  // null または空文字列の場合をチェック (<option value=""> が選択された場合も考慮)
+
+  // 年のバリデーションを追加
+  if (internalTask.value.startYear === null || internalTask.value.startYear === '' ||
+      internalTask.value.endYear === null || internalTask.value.endYear === '') {
+    ElMessage.error('開始年と終了年を選択してください。');
+    return;
+  }
+  // 月のバリデーションはそのまま
   if (internalTask.value.startMonth === null || internalTask.value.startMonth === '' || 
       internalTask.value.endMonth === null || internalTask.value.endMonth === '') {
     ElMessage.error('開始月と終了月を選択してください。');
     return;
   }
-  //月番号の比較に変更
-  if (internalTask.value.startMonth > internalTask.value.endMonth) {
-    ElMessage.error('開始月は終了月よりも前に設定してください。');
+
+  // 年と月の組み合わせで期間を比較
+  const startDate = new Date(internalTask.value.startYear, internalTask.value.startMonth - 1); // 月は0-indexed
+  const endDate = new Date(internalTask.value.endYear, internalTask.value.endMonth - 1);
+
+  if (startDate > endDate) {
+    ElMessage.error('開始日は終了日よりも前に設定してください。');
     return;
   }
 
   // 編集されたタスクデータを親にemit
-  // emit するペイロードを startMonth, endMonth (月番号) に変更
-  // RoadmapBase が期待する形式に合わせる
+  // startYear, endYear も含めて渡す
   emit('save-task-edit', { 
-    id: internalTask.value.id, // IDは必須
+    id: internalTask.value.id,
     name: internalTask.value.name,
     category: internalTask.value.category,
-    startMonth: internalTask.value.startMonth, // 月番号
-    endMonth: internalTask.value.endMonth,     // 月番号
-    originalCategory: originalCategory.value // カテゴリ変更を検出するために渡す
+    startMonth: internalTask.value.startMonth,
+    endMonth: internalTask.value.endMonth,
+    startYear: internalTask.value.startYear, 
+    endYear: internalTask.value.endYear,     
+    originalCategory: originalCategory.value
   });
   internalIsVisible.value = false;
 };
@@ -143,7 +186,7 @@ const handleDelete = () => {
   if (internalTask.value && internalTask.value.id) {
     emit('delete-task', internalTask.value.id);
   } else {
-    ElMessage.error('削除対象のタスクが見つかりませんでした。');
+    ElMessage.error('削除対象の目標が見つかりませんでした。');
   }
 };
 
@@ -154,11 +197,11 @@ const handleClose = () => {
 
 <style scoped>
 .edit-form-content {
-  padding: 10px 0; /* パディングを少し減らす */
+  padding: 10px 0;
 }
 
 .form-group {
-  margin-bottom: 15px; /* グループ間のマージン */
+  margin-bottom: 15px;
 }
 
 .form-group label {
@@ -170,7 +213,7 @@ const handleClose = () => {
 
 .input-field {
   width: 100%;
-  padding: 8px 10px; /* パディングを調整 */
+  padding: 8px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   box-sizing: border-box;
@@ -185,16 +228,19 @@ const handleClose = () => {
 
 .month-selection {
   display: flex;
-  gap: 10px; /* 月選択のアイテム間のギャップ */
+  gap: 10px;
+  /* 年と月のペアが同じ行に並ぶように調整 */
+  flex-wrap: wrap; /* 小さな画面で折り返す */
 }
 
 .month-select-item {
   flex: 1; /* 均等な幅 */
+  min-width: 48%; /* 2つ並べるために調整 */
 }
 
 .dialog-footer {
   display: flex;
-  justify-content: flex-end; /* ボタンを右寄せ */
-  gap: 10px; /* ボタン間のスペース */
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

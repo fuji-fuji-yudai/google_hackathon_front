@@ -1,6 +1,6 @@
 <template>
   <div class="task-add-form">
-    <h3>新規タスクを追加 / カテゴリを編集</h3>
+    <h3>新規目標を追加 / カテゴリを編集</h3>
     
     <div class="form-row">
       <div class="form-group flex-grow">
@@ -10,7 +10,7 @@
           <option v-for="category in allAvailableCategories" :key="category" :value="category">
             {{ category }}
           </option>
-        </select>
+          </select>
       </div>
 
       <div class="form-group flex-grow" v-if="showCategoryNameInput">
@@ -29,12 +29,12 @@
     </div>
 
     <div class="form-group">
-      <label for="task-name">タスク名:</label>
+      <label for="task-name">目標:</label>
       <input
         id="task-name"
         type="text"
         v-model="internalNewTask.name"
-        placeholder="タスク名を入力してください"
+        placeholder="目標を入力してください"
         class="input-field"
         @input="emitUpdatedNewTask"
       />
@@ -42,11 +42,29 @@
 
     <div class="form-group month-selection">
       <div class="month-select-item">
+        <label for="start-year">開始年:</label>
+        <select id="start-year" v-model.number="internalNewTask.startYear" class="input-field" @change="emitUpdatedNewTask">
+          <option value="" disabled>-- 選択 --</option>
+          <option v-for="year in availableYears" :key="year" :value="year">
+            {{ year }}年
+          </option>
+        </select>
+      </div>
+      <div class="month-select-item">
         <label for="start-month">開始月:</label>
         <select id="start-month" v-model.number="internalNewTask.startMonth" class="input-field" @change="emitUpdatedNewTask">
           <option value="" disabled>-- 選択 --</option>
           <option v-for="month in months" :key="month.id" :value="month.monthNumber">
-            {{ month.name }} ({{ month.year }})
+            {{ month.name }}
+          </option>
+        </select>
+      </div>
+      <div class="month-select-item">
+        <label for="end-year">終了年:</label>
+        <select id="end-year" v-model.number="internalNewTask.endYear" class="input-field" @change="emitUpdatedNewTask">
+          <option value="" disabled>-- 選択 --</option>
+          <option v-for="year in availableYears" :key="year" :value="year">
+            {{ year }}年
           </option>
         </select>
       </div>
@@ -55,13 +73,13 @@
         <select id="end-month" v-model.number="internalNewTask.endMonth" class="input-field" @change="emitUpdatedNewTask">
           <option value="" disabled>-- 選択 --</option>
           <option v-for="month in months" :key="month.id" :value="month.monthNumber">
-            {{ month.name }} ({{ month.year }})
+            {{ month.name }}
           </option>
         </select>
       </div>
     </div>
 
-    <button @click="addTask" class="add-task-button">タスクを追加</button>
+    <button @click="addTask" class="add-task-button">目標を追加</button>
   </div>
 </template>
 
@@ -83,29 +101,40 @@ export default {
       type: Array,
       default: () => [],
     },
-    months: {
+    months: { // allMonths のことです
       type: Array,
       required: true,
-      // months配列の各要素は { id: number, name: string, year: number, monthNumber: number } の形式を想定
-      // 例: { id: 1, name: '1月', year: 2025, monthNumber: 1 }
+      // months配列の各要素は { id: string, name: string, year: number, monthNumber: number } の形式を想定
     },
   },
   emits: ['update:newTask', 'update:selectedCategory', 'add-task', 'update-category-name'],
 
   setup(props, { emit }) {
-    const internalNewTask = ref({ ...props.newTask });
+    // internalNewTask の初期値に startYear と endYear を追加。
+    // props.newTask にもこれらのフィールドが来ることを想定し、なければデフォルト値
+    const internalNewTask = ref({ 
+      ...props.newTask,
+      startMonth: props.newTask.startMonth || new Date().getMonth() + 1,
+      endMonth: props.newTask.endMonth || new Date().getMonth() + 1,
+      startYear: props.newTask.startYear || new Date().getFullYear(),
+      endYear: props.newTask.endYear || new Date().getFullYear(),
+    });
     const internalSelectedCategory = ref(props.selectedCategory);
     const originalCategoryName = ref(''); // 既存カテゴリ編集のために元の名前を保持
 
     // props.newTask の変更を internalNewTask に同期
     watch(() => props.newTask, (newVal) => {
-      internalNewTask.value = { ...newVal };
+      // ★変更: newVal に startYear と endYear が含まれることを期待し、なければデフォルト値で補完
+      internalNewTask.value = { 
+        ...newVal,
+        startYear: newVal.startYear || new Date().getFullYear(),
+        endYear: newVal.endYear || new Date().getFullYear(),
+      };
     }, { deep: true });
 
     // props.selectedCategory の変更を internalSelectedCategory に同期
     watch(() => props.selectedCategory, (newVal) => {
       internalSelectedCategory.value = newVal;
-      // カテゴリが外部から変更された場合も、元のカテゴリ名をリセット
       originalCategoryName.value = newVal !== '__new__' ? newVal : '';
     });
 
@@ -118,6 +147,20 @@ export default {
       }
     }, { immediate: true });
 
+    // 年の選択肢を生成
+    const availableYears = computed(() => {
+      const years = new Set();
+      // props.monthsに含まれる全ての年を収集
+      props.months.forEach(month => years.add(month.year));
+      
+      // 現在の年と、その前後数年を追加して選択肢を広げる
+      const currentYear = new Date().getFullYear();
+      for (let i = currentYear - 2; i <= currentYear + 3; i++) { // 例: 現在の年から前後数年
+          years.add(i);
+      }
+      
+      return Array.from(years).sort((a, b) => a - b);
+    });
 
     const showCategoryNameInput = computed(() => {
       return internalSelectedCategory.value !== ''; 
@@ -127,40 +170,34 @@ export default {
       return 'カテゴリ名';
     });
 
-    // この computed property は正しく定義されているので変更なし
     const categoryNameInputPlaceholder = computed(() => {
       return 'カテゴリ名を編集してください';
     });
 
-
     const handleCategoryChange = () => {
       const newCategoryValue = internalSelectedCategory.value;
       if (newCategoryValue !== '') {
-        internalNewTask.value.category = newCategoryValue; // 既存カテゴリ選択の場合、カテゴリ名を設定
+        internalNewTask.value.category = newCategoryValue; 
       } else {
-        // 「-- カテゴリを選択 --」が選択された場合
-        internalNewTask.value.category = ''; // カテゴリ名をクリア
-        originalCategoryName.value = ''; // 元のカテゴリ名もクリア
+        internalNewTask.value.category = ''; 
+        originalCategoryName.value = ''; 
       }
       emit('update:selectedCategory', newCategoryValue);
       emitUpdatedNewTask();
     };
 
-    // カテゴリ名入力フィールドの更新とイベント発火
     const emitUpdatedNewTaskAndCategory = () => {
-        emitUpdatedNewTask(); // newTaskの更新イベント
+        emitUpdatedNewTask(); 
     };
 
-    // カテゴリ名入力フィールドからフォーカスが外れたときにカテゴリ変更イベントを発火
     const handleCategoryNameInputBlur = () => {
         const currentCategoryValue = internalNewTask.value.category;
         if (originalCategoryName.value && originalCategoryName.value !== currentCategoryValue) {
             console.log(`Emitting update-category-name: old=${originalCategoryName.value}, new=${currentCategoryValue}`);
             emit('update-category-name', { oldCategory: originalCategoryName.value, newCategory: currentCategoryValue });
-            originalCategoryName.value = currentCategoryValue; // 更新後、元のカテゴリ名も新しいものに設定
+            originalCategoryName.value = currentCategoryValue; 
         }
     };
-
 
     const emitUpdatedNewTask = () => {
       emit('update:newTask', internalNewTask.value);
@@ -168,24 +205,32 @@ export default {
     };
 
     const addTask = () => {
-      // カテゴリ名が未入力の場合のバリデーションを追加
+      // バリデーションを強化
       if (!internalNewTask.value.category || internalNewTask.value.category.trim() === '') {
         alert('カテゴリ名を入力してください。');
         return;
       }
-      // タスク名が未入力の場合のバリデーションを追加
       if (!internalNewTask.value.name || internalNewTask.value.name.trim() === '') {
-        alert('タスク名を入力してください。');
+        alert('目標を入力してください。');
         return;
       }
-      // 開始月と終了月が選択されているか確認
-      if (internalNewTask.value.startMonth === null || internalNewTask.value.startMonth === '' || internalNewTask.value.endMonth === null || internalNewTask.value.endMonth === '') {
-        alert('開始月と終了月を選択してください。');
+      // 年と月の両方の選択をチェック
+      // ★変更: null と '' の両方をチェック
+      if (internalNewTask.value.startMonth === null || internalNewTask.value.startMonth === '' || 
+          internalNewTask.value.endMonth === null || internalNewTask.value.endMonth === '' ||
+          internalNewTask.value.startYear === null || internalNewTask.value.startYear === '' ||
+          internalNewTask.value.endYear === null || internalNewTask.value.endYear === '') {
+        alert('開始年・月と終了年・月を選択してください。');
         return;
       }
-      // 開始月が終了月より後でないか確認
-      if (internalNewTask.value.startMonth > internalNewTask.value.endMonth) {
-        alert('開始月は終了月より前の月を選択してください。');
+
+      // 開始日 (年+月) が終了日 (年+月) より後でないか確認
+      // Dateオブジェクトは月を0から11で扱うため、-1する
+      const startDate = new Date(internalNewTask.value.startYear, internalNewTask.value.startMonth - 1, 1);
+      const endDate = new Date(internalNewTask.value.endYear, internalNewTask.value.endMonth - 1, 1);
+
+      if (startDate > endDate) {
+        alert('開始日は終了日より前の日付を選択してください。');
         return;
       }
 
@@ -204,6 +249,7 @@ export default {
       categoryNameInputPlaceholder, 
       emitUpdatedNewTaskAndCategory,
       handleCategoryNameInputBlur,
+      availableYears,
     };
   },
 };
@@ -276,10 +322,12 @@ h3 {
 .month-selection {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap; /* 小さい画面で折り返すように */
 }
 
 .month-select-item {
   flex: 1;
+  min-width: 120px; /* ある程度の幅を確保 */
 }
 
 .add-task-button {

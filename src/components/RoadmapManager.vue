@@ -9,7 +9,6 @@
       <button class="action-button reminder-button" @click="goToReminderForm">
         リマインダー作成
       </button>
-      <!-- 「データ保存」ボタンは個別の操作で自動保存されるため、完全に削除しました。 -->
     </div>
 
     <p v-if="props.loading" class="loading-message">ロードマップデータを読み込み中...</p>
@@ -37,7 +36,7 @@
 
     <div v-if="isReminderModalOpen" class="reminder-modal-overlay" @click.self="closeReminderModal">
       <div class="reminder-modal-content">
-        <ReminderView :jwt-token="props.jwtToken" /> <!-- JWTトークンを渡しています -->
+        <ReminderView :jwt-token="props.jwtToken" />
         <button class="close-button" @click="closeReminderModal">閉じる</button>
       </div>
     </div>
@@ -49,7 +48,7 @@ import { ref, defineProps, defineEmits } from 'vue';
 
 import RoadmapBase from './RoadmapBase.vue';
 import RoadmapChat from './RoadmapChat.vue';
-import ReminderView from '../views/ReminderView.vue'; // views ディレクトリからインポートされていることに注意
+import ReminderView from '../views/ReminderView.vue';
 
 const props = defineProps({
   jwtToken: {
@@ -82,52 +81,45 @@ const props = defineProps({
   },
 });
 
-// 親コンポーネント (RoadmapView.vue) にイベントを伝えるための emit を定義
 const emit = defineEmits([
   'add-task-to-manager',
   'save-task-edit-to-manager',
   'delete-task-to-manager',
-  'request-logout', // 親へのログアウト要求イベント
-  // 'save-roadmap-data' はもう不要なので削除
+  'request-logout',
 ]);
 
-// RoadmapBase から受け取ったタスク追加イベントを親にエミット
 const handleAddTask = (taskPayload) => {
   console.log('RoadmapManager: handleAddTask received payload:', taskPayload);
   emit('add-task-to-manager', taskPayload);
 };
 
-// RoadmapBase から受け取ったタスク編集イベントを親にエミット
 const handleSaveTaskEdit = (updatedTask) => {
   console.log('RoadmapManager: handleSaveTaskEdit received payload:', updatedTask);
   emit('save-task-edit-to-manager', updatedTask);
 };
 
-// RoadmapBase から受け取ったタスク削除イベントを親にエミット
 const handleDeleteTask = (taskIdToDelete) => {
   console.log('RoadmapManager: handleDeleteTask received ID:', taskIdToDelete);
   emit('delete-task-to-manager', taskIdToDelete);
 };
 
-// AIチャットモーダルの表示状態
 const isAIChatModalOpen = ref(false);
 const openAIChatModal = () => { isAIChatModalOpen.value = true; };
 const closeAIChatModal = () => { isAIChatModalOpen.value = false; };
 
-// リマインダーモーダルの表示状態
 const isReminderModalOpen = ref(false);
 const goToReminderForm = () => { isReminderModalOpen.value = true; };
 const closeReminderModal = () => { isReminderModalOpen.value = false; };
 </script>
 
 <style scoped>
-/* スタイルは変更なし */
 .roadmap-manager-container {
   padding: 20px;
-  max-width: 1500px; 
-  width: 95%; 
+  max-width: 1500px;
+  width: 95%;
   margin: 20px auto;
-  background-color: #f9f9f9;
+  /* グレーの背景色を透明に設定し、親の背景色を活かす */
+  background-color: transparent;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
@@ -140,15 +132,15 @@ h2 {
 
 .action-buttons {
   display: flex;
-  justify-content: flex-end; /* ボタンを右寄せに */
-  gap: 15px; /* ボタン間のスペース */
+  justify-content: flex-end;
+  gap: 15px;
   margin-bottom: 20px;
-  margin-top: -55px; /* h2 との重なりを調整 */
-  padding-right: 20px; /* 右側のパディング */
+  margin-top: -55px;
+  padding-right: 20px;
 }
 
 .action-button {
-  background-color: #6c757d; /* グレー系の色 */
+  background-color: #6c757d;
   color: white;
   padding: 10px 20px;
   border: none;
@@ -166,7 +158,7 @@ h2 {
 }
 
 .chat-button {
-  background-color: #007bff; /* 青系 */
+  background-color: #007bff;
   box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
 }
 .chat-button:hover {
@@ -174,7 +166,7 @@ h2 {
 }
 
 .reminder-button {
-  background-color: #28a745; /* 緑系 */
+  background-color: #28a745;
   box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
 }
 .reminder-button:hover {
@@ -193,7 +185,7 @@ h2 {
   margin-bottom: 30px;
   transition: background-color 0.3s ease, transform 0.2s ease;
   box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
-  display: none;
+  display: none; /* 現在は非表示 */
 }
 
 .save-roadmap-button:hover {
