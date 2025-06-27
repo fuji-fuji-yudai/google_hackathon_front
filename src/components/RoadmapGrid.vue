@@ -24,17 +24,17 @@
       
       <div class="month-headers-container">
         <div v-for="(month, index) in allMonths" :key="month.id" class="month-header"
-             :style="{ 
-                 gridColumn: `${index + 2}`, // 0-indexedからグリッド列番号に合わせる
-                 gridRow: 2 
-             }"> 
+              :style="{ 
+                  gridColumn: `${index + 2}`, // 0-indexedからグリッド列番号に合わせる
+                  gridRow: 2 
+               }"> 
           {{ month.name }} ({{ month.year }}) 
         </div>
       </div>
 
       <div v-for="(categoryRow, rowIndex) in positionedRoadmapData" :key="categoryRow.category" class="category-row">
         <div class="category-label" 
-             :style="{ backgroundColor: getCategoryColor(categoryRow.category), gridRow: rowIndex + 3 }"> 
+              :style="{ backgroundColor: getCategoryColor(categoryRow.category), gridRow: rowIndex + 3 }"> 
           <template v-if="editingCategory !== categoryRow.category">
             <span @click="startCategoryEdit(categoryRow.category)">
               {{ categoryRow.category }}
@@ -233,8 +233,9 @@ const positionedRoadmapData = computed(() => {
 });
 
 const getTaskStyle = (task, verticalOffset) => {
-  const startColumn = task.startIndex + 2; 
-  const spanLength = task.endIndex - task.startIndex + 1;
+  
+  const startColumn = task.startIndex + 2 - 2; 
+  const spanLength = task.endIndex - task.startIndex + 1; // 期間の長さは変わらない
 
   const taskBgColor = getTaskRandomColor(task.id); 
   const taskBorderColor = darkenColor(taskBgColor, 10);
