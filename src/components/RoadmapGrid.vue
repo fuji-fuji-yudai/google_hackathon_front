@@ -16,7 +16,7 @@
                :style="{ 
                    gridColumn: `${quarter.startMonthIndex + 2} / span ${quarter.endMonthIndex - quarter.startMonthIndex + 1}`,
                    gridRow: 1 
-                }">
+                 }">
             {{ quarter.name }}
           </div>
         </div>
@@ -24,10 +24,10 @@
       
       <div class="month-headers-container">
         <div v-for="(month, index) in allMonths" :key="month.id" class="month-header"
-              :style="{ 
-                  gridColumn: `${index + 2}`, // 0-indexedからグリッド列番号に合わせる
-                  gridRow: 2 
-               }"> 
+             :style="{ 
+                   gridColumn: `${index + 2}`, // 0-indexedからグリッド列番号に合わせる
+                   gridRow: 2 
+                 }"> 
           {{ month.name }} ({{ month.year }}) 
         </div>
       </div>
@@ -233,8 +233,10 @@ const positionedRoadmapData = computed(() => {
 });
 
 const getTaskStyle = (task, verticalOffset) => {
-  
-  const startColumn = task.startIndex + 2 - 2; 
+  // task.startIndex は 0-indexed の月のインデックス (例: 4月なら3)
+  // グリッドの最初の列が「年」のヘッダーであるため、1を加えて正しい開始列を計算
+  // month-headers-container の gridColumn: `${index + 2}` と合わせるために +2 を使用します。
+  const startColumn = task.startIndex + 2; 
   const spanLength = task.endIndex - task.startIndex + 1; // 期間の長さは変わらない
 
   const taskBgColor = getTaskRandomColor(task.id); 
