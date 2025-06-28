@@ -121,6 +121,7 @@ export default {
 
         const data = await response.json();
         this.allTasks = Array.isArray(data) ? data : [];
+        console.log(this.allTasks);
       } catch (error) {
         console.error('タスクの取得に失敗しました', error);
       }
