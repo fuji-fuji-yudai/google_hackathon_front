@@ -2,26 +2,26 @@
   <div>
     <!-- Excel アップローダーコンポーネント追加 -->
     <ExcelUploader @tasks-generated="handleTasksGenerated" />
-
-    <el-radio-group v-model="viewMode" style="margin-bottom: 20px">
+    <TimelineBoard :tasks="tasks" @update="handleUpdate" />
+    <!-- <el-radio-group v-model="viewMode" style="margin-bottom: 20px">
       <el-radio-button label="card">カード</el-radio-button>
       <el-radio-button label="timeline">タイムライン</el-radio-button>
     </el-radio-group>
 
     <CardBoardView v-if="viewMode === 'card'" :tasks="tasks" @update="handleUpdate" />
-    <TimelineBoard v-else :tasks="tasks" @update="handleUpdate" />
+    <TimelineBoard v-else :tasks="tasks" @update="handleUpdate" /> -->
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
-import CardBoardView from '@/components/CardBoardView.vue'
+// import CardBoardView from '@/components/CardBoardView.vue'
 import TimelineBoard from '@/components/TimelineBoard.vue'
 import ExcelUploader from '@/components/ExcelUploader.vue'
 
 export default {
   components: {
-    CardBoardView,
+    // CardBoardView,
     TimelineBoard,
     ExcelUploader
   },
