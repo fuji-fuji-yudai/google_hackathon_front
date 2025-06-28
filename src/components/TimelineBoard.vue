@@ -22,7 +22,7 @@
 
     <!-- 階層化されたタスクを表示 -->
     <div v-for="task in visibleTasks" :key="`task-${task.id}`" class="timeline-row"
-      :class="{ 'parent-task': hasChildren(task), 'child-task': task.parent_id }">
+      :class="{ 'parent-task': hasChildren(task), 'child-task': task.parentId }">
       <div class="label">
         <div class="task-info">
           <div class="task-title" :style="{ paddingLeft: `${getIndentLevel(task) * 20}px` }">
@@ -34,7 +34,7 @@
               </el-icon>
             </span>
             <!-- インデントスペース（子タスク） -->
-            <span v-else-if="task.parent_id" class="indent-space"></span>
+            <span v-else-if="task.parentId" class="indent-space"></span>
 
             <!-- タスクタイトル -->
             <span class="title-text" :class="{ 'parent-title': hasChildren(task) }">{{ task.title }}</span>
@@ -104,16 +104,22 @@ export default {
     const visibleTasks = computed(() => {
       const result = []
 
-      // ルートタスク（親がないタスク）から開始
-      const rootTasks = localTasks.value.filter(task => !task.parent_id)
-      console.log('ルートタスク:', rootTasks.map(t => t.title))
+      // ★ 修正: parent_id → parentId に変更
+      const rootTasks = localTasks.value.filter(task => !task.parentId)
       
+      console.log('=== visibleTasks デバッグ ===')
+      console.log('全タスク数:', localTasks.value.length)
+      console.log('ルートタスク数:', rootTasks.length)
+      console.log('ルートタスク:', rootTasks.map(t => `${t.title} (ID: ${t.id})`))
+
       const addTaskAndChildren = (task, level = 0) => {
         result.push({ ...task, level })
 
         // この親タスクが展開されている場合のみ子タスクを追加
         if (expandedTasks.value[task.id]) {
-          const children = localTasks.value.filter(child => child.parent_id === task.id)
+          // ★ 修正: parent_id → parentId に変更
+          const children = localTasks.value.filter(child => child.parentId === task.id)
+          console.log(`${task.title} の子タスク:`, children.map(c => c.title))
           children.forEach(child => addTaskAndChildren(child, level + 1))
         }
       }
@@ -124,7 +130,8 @@ export default {
 
     // 子タスクを持つかどうかの判定
     const hasChildren = (task) => {
-      return localTasks.value.some(t => t.parent_id === task.id)
+      // ★ 修正: parent_id → parentId に変更
+      return localTasks.value.some(t => t.parentId === task.id)
     }
 
     // 展開/折りたたみの切り替え
@@ -141,15 +148,28 @@ export default {
 
     // 初期状態で親タスクを展開
     watch(localTasks, (newTasks) => {
+      console.log('=== TimelineBoard watch デバッグ ===')
+      console.log('全タスク数:', newTasks.length)
+      
+      // 親子関係の確認（★ 修正: parent_id → parentId に変更）
+      newTasks.forEach(task => {
+        if (task.parentId) {
+          console.log(`子タスク: ${task.title} (ID: ${task.id}) -> 親ID: ${task.parentId}`)
+          const parent = newTasks.find(p => p.id === task.parentId)
+          console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
+        }
+      })
+      
+      // ルートタスクの確認（★ 修正: parent_id → parentId に変更）
+      const rootTasks = newTasks.filter(task => !task.parentId)
+      console.log('ルートタスク:', rootTasks.map(t => t.title))
+
       const newExpandedState = { ...expandedTasks.value }
 
       // 新しい親タスクがあれば自動展開
       newTasks.forEach(task => {
         if (hasChildren(task) && !(task.id in newExpandedState)) {
           newExpandedState[task.id] = true
-          console.log(`子タスク: ${task.title} (ID: ${task.id}) -> 親ID: ${task.parent_id}`)
-          const parent = newTasks.find(p => p.id === task.parent_id)
-          console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
         }
       })
 
@@ -248,11 +268,10 @@ export default {
         parentId: newParentId.value
       }
 
-      // ここにデバッグログを追加
       console.log('=== addTask デバッグ ===')
       console.log('選択された親ID:', newParentId.value)
       console.log('新しいタスク:', newTask)
-      console.log('parent_id の型:', typeof newTask.parentId)
+      console.log('parentId の型:', typeof newTask.parentId)
 
       localTasks.value.push(newTask)
       emit('update', localTasks.value)
