@@ -6,7 +6,12 @@
       <el-date-picker v-model="newDates" type="daterange" size="small" style="margin-right: 8px;" />
       <el-select v-model="newParentId" placeholder="親タスクを選択（任意）" style="width: 200px; margin-right: 8px;">
         <el-option :label="'（親なし）'" :value="null" />
-        <el-option v-for="task in localTasks" :key="task.id" :label="task.title" :value="task.id" />
+        <el-option 
+          v-for="task in availableParentTasks" 
+          :key="task.id" 
+          :label="task.title" 
+          :value="task.id" 
+        />
       </el-select>
       <el-button type="primary" @click="addTask">タスク追加</el-button>
     </div>
@@ -244,7 +249,14 @@ export default {
       return result
     })
 
-    // 子タスクを持つかどうかの判定
+    // 親タスクとして選択可能なタスク（parentIdを持たないタスクのみ）
+    const availableParentTasks = computed(() => {
+      return localTasks.value.filter(task => {
+        // parentId が null, undefined, または存在しない場合のみ
+        return (!task.parentId || task.parentId === null || task.parentId === undefined) &&
+               task.id !== null && task.id !== undefined // id が存在するタスクのみ
+      })
+    })
     const hasChildren = (task) => {
       // ★ 修正: id が null の場合は子タスクを持たないとする
       if (task.id === null || task.id === undefined) {
@@ -502,6 +514,7 @@ export default {
       dateRange,
       visibleTasks,
       expandedTasks,
+      availableParentTasks,
       addTask,
       getDayColor,
       onPlanDateChange,
