@@ -396,11 +396,11 @@ const getTaskBarStyle = (task, type) => {
     if (startIndex === -1) return { display: 'none' }
     
     const validEndIndex = endIndex === -1 ? dateRange.value.length - 1 : endIndex
-    const width = (validEndIndex - startIndex + 1) * 30 // 30pxは各日付セルの幅
+    const width = (validEndIndex - startIndex + 1) * 15 // 15pxは各日付セルの幅
     
     return {
       position: 'absolute',
-      left: `${startIndex * 30}px`,
+      left: `${startIndex * 15}px`,
       width: `${width}px`,
       zIndex: type === 'actual' ? 2 : 1
     }
@@ -740,7 +740,7 @@ generateDateRange()
 }
 
 .gantt-content {
-  min-width: 2700px; /* 日単位表示のため幅を拡張 */
+  min-width: 1350px; /* 日付列幅を半分にしたため幅も半分に */
 }
 
 .info-header {
@@ -753,7 +753,7 @@ generateDateRange()
   top: 0;
   z-index: 15;
   display: grid;
-  grid-template-columns: 40px 200px 100px 100px 100px 100px 100px 80px;
+  grid-template-columns: 40px 220px 90px 90px 90px 90px 100px 80px;
   gap: 0;
   padding: 0;
   height: 37px;
@@ -788,11 +788,11 @@ generateDateRange()
 .date-column {
   min-width: 30px;
   width: 30px;
-  padding: 0 2px;
+  padding: 0 1px;
   border-right: 1px solid #e0e0e0;
   border-bottom: 2px solid #e0e0e0;
   text-align: center;
-  font-size: 9px;
+  font-size: 11px;
   background: #f8f9fa;
   font-weight: bold;
   color: #333;
@@ -804,7 +804,7 @@ generateDateRange()
 }
 
 .date-column.weekend {
-  background-color: #ffeaa7 !important;
+  background-color: #d3d3d3 !important;
 }
 
 .date-column.today {
@@ -814,8 +814,8 @@ generateDateRange()
 
 .task-row {
   display: grid;
-  grid-template-columns: 40px 200px 100px 100px 100px 100px 100px 80px;
-  gap: 1px;
+  grid-template-columns: 40px 220px 90px 90px 90px 90px 100px 80px;
+  gap: 0;
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s;
   height: 37px;
@@ -921,7 +921,7 @@ generateDateRange()
 }
 
 .gantt-cell.weekend {
-  background-color: #ffeaa7;
+  background-color: #d3d3d3;
 }
 
 .gantt-cell.today {
