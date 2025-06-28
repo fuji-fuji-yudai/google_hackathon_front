@@ -15,6 +15,7 @@
         <RecursiveMenu 
           :items="menuData" 
           :addSubMenu="addSubMenu"
+          :selectedMenu="selectedMenu"
           @select="handleSelect" 
         /><!--メニュー項目のデータ、サブメニューを追加する関数、メニュー項目が選択された際のイベントハンドラ-->
       </el-menu> <!--elmenu配下に、el-menu-itemやel-sub-menuを記載して使う。 -->
@@ -47,7 +48,8 @@ defineProps({
 menuData: {
   type: Array,
   required: true
-  }
+  },
+  selectedMenu:Object
 })
 
 

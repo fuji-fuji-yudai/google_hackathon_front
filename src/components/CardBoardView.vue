@@ -10,9 +10,23 @@
           @end="onDragEnd"
         >
           <template #item="{ element }">
-            <el-card class="card">
-              <div>{{ element.title }}</div>
-              <small>予定：{{ element.plan_start }} ~ {{ element.plan_end }}</small>
+            <el-card class="card" :class="{ 'child-card': element.parentId }">
+              <div class="card-content">
+                <div class="task-title" :style="{ paddingLeft: `${getIndentLevel(element) * 16}px` }">
+                  <!-- 親タスクの場合は太字表示 -->
+                  <span :class="{ 'parent-title': hasChildren(element) }">
+                    {{ element.title }}
+                  </span>
+                </div>
+                <div class="task-info">
+                  <small>担当: {{ element.assignee }}</small>
+                  <small>予定：{{ element.plan_start }} ~ {{ element.plan_end }}</small>
+                  <!-- 親タスク情報を表示 -->
+                  <small v-if="element.parentId" class="parent-info">
+                    親: {{ getParentTitle(element.parentId) }}
+                  </small>
+                </div>
+              </div>
             </el-card>
           </template>
         </draggable>
@@ -40,6 +54,22 @@
         class="input"
         style="margin-top: 8px;"
       />
+      <!-- 親タスク選択を追加 -->
+      <el-select 
+        v-model="newParentId" 
+        placeholder="親タスクを選択（任意）" 
+        class="input"
+        style="margin-top: 8px;"
+        clearable
+      >
+        <el-option :label="'（親なし）'" :value="null" />
+        <el-option 
+          v-for="task in props.tasks" 
+          :key="task.id" 
+          :label="task.title" 
+          :value="task.id" 
+        />
+      </el-select>
       <el-button type="primary" @click="addTask" style="margin-top: 8px;">
         追加
       </el-button>
@@ -76,6 +106,30 @@ export default {
     const newTitle = ref('')
     const newAssignee = ref('')
     const newDates = ref([])
+    const newParentId = ref(null)
+
+    // 子タスクを持つかどうかの判定
+    const hasChildren = (task) => {
+      return props.tasks.some(t => t.parentId === task.id)
+    }
+
+    // インデントレベルの取得
+    const getIndentLevel = (task) => {
+      let level = 0
+      let currentTask = task
+      while (currentTask.parentId) {
+        level++
+        currentTask = props.tasks.find(t => t.id === currentTask.parentId)
+        if (!currentTask) break // 無限ループ防止
+      }
+      return level
+    }
+
+    // 親タスクのタイトルを取得
+    const getParentTitle = (parentId) => {
+      const parent = props.tasks.find(t => t.id === parentId)
+      return parent ? parent.title : ''
+    }
 
     function addTask() {
       if (!newTitle.value || !newAssignee.value || newDates.value.length !== 2) return
@@ -88,7 +142,8 @@ export default {
         plan_end: format(newDates.value[1], 'yyyy-MM-dd'),
         actual_start: '',
         actual_end: '',
-        status: 'ToDo'
+        status: 'ToDo',
+        parentId: newParentId.value
       }
 
       const updated = [...props.tasks, newTask]
@@ -97,6 +152,7 @@ export default {
       newTitle.value = ''
       newAssignee.value = ''
       newDates.value = []
+      newParentId.value = null
     }
 
     function onDragEnd() {
@@ -113,7 +169,12 @@ export default {
       newTitle,
       newAssignee,
       newDates,
-      addTask
+      newParentId,
+      addTask,
+      hasChildren,
+      getIndentLevel,
+      getParentTitle,
+      props
     }
   }
 }
@@ -138,6 +199,44 @@ export default {
 
 .card {
   margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.card.child-card {
+  background-color: #f8f9fa;
+  border-left: 3px solid #1890ff;
+}
+
+.card-content {
+  padding: 0;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.task-title .parent-title {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-info small {
+  color: #666;
+  font-size: 12px;
+}
+
+.parent-info {
+  color: #999 !important;
+  font-style: italic;
 }
 
 .task-input {
@@ -145,5 +244,9 @@ export default {
   display: flex;
   flex-direction: column;
   width: 300px;
+}
+
+.input {
+  margin-bottom: 8px;
 }
 </style>

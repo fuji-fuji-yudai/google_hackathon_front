@@ -6,7 +6,7 @@
     <!-- 親メニュー（子あり） -->
     <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.index">
       <template #title>
-        <div class="menu-title" :class="{ 'is-active': selectedMenu?.index === item.index }" @click.stop.prevent="$emit('select', item)">
+        <div class="menu-title" :class="{ 'is-selected': selectedMenu?.index === item.index }" @click.stop.prevent="$emit('select', item)">
           <div class="left-group">
             <span>{{ item.title || item.label }}</span>
             <el-button
@@ -42,7 +42,10 @@
       :index="item.index"
       @click="$emit('select', item)"
     >
-      <div class="menu-title">
+      <div
+        class="menu-title"
+        :class="{ 'is-selected': selectedMenu?.index === item.index }"
+      >
         <div class="left-group">
           <span>{{ item.title || item.label }}</span>
           <el-button class="ai-button" size="small" @click.stop="openChatBot(item.index)">AI</el-button>
@@ -77,7 +80,8 @@ const openChatBot = (index)=> {
 
 defineProps({
   items: Array,
-  addSubMenu: Function
+  addSubMenu: Function,
+  selectedMenu:Object
 })
 </script>
 
@@ -106,10 +110,16 @@ defineProps({
 }
 
 
-.menu-title.is-active {
-  color: var(--el-menu-active-color);
-  /* font-weight: 500; */
+.menu-title.is-selected {
+  color: var(--el-color-primary); /* Element Plus のテーマカラー */
+  font-weight: 500;
 }
+
+.el-menu-item.is-active {
+  color: inherit !important;
+  background-color: inherit !important;
+}
+
 
 
 </style>
