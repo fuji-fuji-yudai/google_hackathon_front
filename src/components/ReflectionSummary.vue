@@ -40,8 +40,11 @@ export default {
   data() {
     return {
       summary: null,
-      selectedYearMonth: "", // 選択された年月 (例: "2023-10")
+      selectedYearMonth: new Date(), // 選択された年月 (例: "2023-10")
     };
+  },
+  mounted() {
+    this.fetchReflectionSummaries(); // ✅ 初期ロード
   },
   methods: {
     async fetchReflectionSummaries() {

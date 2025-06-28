@@ -88,7 +88,8 @@ const fetchReflections = async () => {
       }
     })
     console.log('レスポンスデータ：' + response.data)
-    completedDates.value = response.data.map(reflection => reflection.date)
+    completedDates.value = response.data.map(reflection => {return new Date(Number(reflection.date)).toDateString();})
+
   } catch (error) {
     console.error('データ取得に失敗:', error)
   }
@@ -96,13 +97,15 @@ const fetchReflections = async () => {
 // 日付が完了済みかどうかをチェック
 const isDateCompleted = (date) => {
   // ローカルタイムゾーンで日付をフォーマット
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため +1
-  const day = String(date.getDate()).padStart(2, '0');
-  const formattedDate = `${year}-${month}-${day}`;
-  console.log('formattedDate：' + formattedDate)
+  // const year = date.getFullYear();
+  // const month = String(date.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため +1
+  // const day = String(date.getDate()).padStart(2, '0');
+  // const formattedDate = `${year}-${month}-${day}`;
+  const target = new Date(date).toDateString();
+  // console.log('formattedDate：' + formattedDate)
+  console.log("completedDates: " + target);
   console.log("completedDates: " + completedDates.value);
-  return completedDates.value.includes(formattedDate)
+  return completedDates.value.includes(target)
 }
 // カレンダーの月が変更されたときにデータを再取得
 watch(currentMonth, fetchReflections)
