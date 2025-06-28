@@ -123,7 +123,7 @@ export default {
         console.log('タスク一覧:', data);
 
         // データの正規化: snake_case形式に統一
-        generatedTasks.value = data.map((task, index) => ({
+        generatedTasks.value = data.map((task) => ({
           id: task.id,
           title: task.title,
           assignee: task.assignee,
@@ -188,6 +188,20 @@ export default {
         console.log('=== API呼び出し開始 ===');
         console.log('URL:', importUrl);
         console.log('送信データ:', JSON.stringify(generatedTasks.value, null, 2));
+
+        // デバッグ用：JSONデータをファイルとしてダウンロード
+        const dataStr = JSON.stringify(generatedTasks.value, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'import-tasks-debug.json';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log('デバッグ用JSONファイルをダウンロードしました');
 
         // DBに保存するためのAPIを呼び出し
         const response = await fetch(importUrl, {
