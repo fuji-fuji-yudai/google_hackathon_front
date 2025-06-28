@@ -100,11 +100,66 @@ export default {
       )
     }
 
+    // データ整合性チェック関数
+    const validateTaskHierarchy = (tasks) => {
+      const issues = []
+      
+      tasks.forEach(task => {
+        if (task.parentId) {
+          // 親タスクが存在するかチェック
+          const parent = tasks.find(t => t.id === task.parentId)
+          if (!parent) {
+            issues.push(`タスク "${task.title}" の親タスク ID ${task.parentId} が見つかりません`)
+          }
+          
+          // 自分自身を親に指定していないかチェック
+          if (task.parentId === task.id) {
+            issues.push(`タスク "${task.title}" が自分自身を親に指定しています`)
+          }
+        }
+      })
+      
+      // 循環参照チェック
+      tasks.forEach(task => {
+        const visited = new Set()
+        let current = task
+        let depth = 0
+        
+        while (current.parentId && depth < 20) {
+          if (visited.has(current.id)) {
+            issues.push(`循環参照を検出: タスク "${task.title}" の親子関係`)
+            break
+          }
+          visited.add(current.id)
+          current = tasks.find(t => t.id === current.parentId)
+          if (!current) break
+          depth++
+        }
+        
+        if (depth >= 20) {
+          issues.push(`階層が深すぎます: タスク "${task.title}" (深度: ${depth})`)
+        }
+      })
+      
+      if (issues.length > 0) {
+        console.error('=== タスク階層の問題 ===')
+        issues.forEach(issue => console.error(issue))
+      }
+      
+      return issues
+    }
+
     // 階層構造を考慮した表示用タスクリスト
     const visibleTasks = computed(() => {
       const result = []
+      const processedIds = new Set() // 処理済みIDを追跡
+      const rootTasks = localTasks.value.filter(task => !task.parentId)
+      
+      console.log('=== visibleTasks デバッグ ===')
+      console.log('全タスク数:', localTasks.value.length)
+      console.log('ルートタスク数:', rootTasks.length)
+      console.log('ルートタスク:', rootTasks.map(t => `${t.title} (ID: ${t.id})`))
 
-      // ★ 修正: parent_id → parentId に変更
       const addTaskAndChildren = (task, level = 0, ancestorIds = new Set()) => {
         // 循環参照チェック
         if (ancestorIds.has(task.id)) {
@@ -119,18 +174,24 @@ export default {
         }
 
         // レベル制限（安全装置）
-        if (level > 3) {
+        if (level > 10) {
           console.warn(`階層が深すぎます: レベル ${level}, タスクID ${task.id}`)
           return
         }
 
         processedIds.add(task.id)
         result.push({ ...task, level })
+
         // この親タスクが展開されている場合のみ子タスクを追加
         if (expandedTasks.value[task.id]) {
-          // ★ 修正: parent_id → parentId に変更
           const children = localTasks.value.filter(child => child.parentId === task.id)
-          children.forEach(child => addTaskAndChildren(child, level + 1))
+          console.log(`${task.title} の子タスク:`, children.map(c => c.title))
+          
+          // 新しい祖先セットを作成
+          const newAncestorIds = new Set(ancestorIds)
+          newAncestorIds.add(task.id)
+          
+          children.forEach(child => addTaskAndChildren(child, level + 1, newAncestorIds))
         }
       }
 
@@ -140,7 +201,6 @@ export default {
 
     // 子タスクを持つかどうかの判定
     const hasChildren = (task) => {
-      // ★ 修正: parent_id → parentId に変更
       return localTasks.value.some(t => t.parentId === task.id)
     }
 
@@ -156,9 +216,53 @@ export default {
       expandedTasks.value[parentId] = true
     }
 
+    // インデントレベルの取得（無限ループ防止）
+    const getIndentLevel = (task) => {
+      let level = 0
+      let currentTask = task
+      const visitedIds = new Set() // 訪問済みIDを追跡
+
+      while (currentTask.parentId && level < 10) { // レベル制限追加
+        // 循環参照チェック
+        if (visitedIds.has(currentTask.id)) {
+          console.warn(`getIndentLevel で循環参照を検出: ${currentTask.title}`)
+          break
+        }
+        
+        visitedIds.add(currentTask.id)
+        level++
+        currentTask = localTasks.value.find(t => t.id === currentTask.parentId)
+        
+        if (!currentTask) break // 親が見つからない場合
+      }
+      
+      return level
+    }
+
     // 初期状態で親タスクを展開
     watch(localTasks, (newTasks) => {
-
+      console.log('=== TimelineBoard watch デバッグ ===')
+      console.log('全タスク数:', newTasks.length)
+      
+      // データ整合性チェック
+      const issues = validateTaskHierarchy(newTasks)
+      if (issues.length > 0) {
+        console.error('階層データに問題があります:', issues)
+        // 問題がある場合は処理を中断
+        return
+      }
+      
+      // 親子関係の確認
+      newTasks.forEach(task => {
+        if (task.parentId) {
+          console.log(`子タスク: ${task.title} (ID: ${task.id}) -> 親ID: ${task.parentId}`)
+          const parent = newTasks.find(p => p.id === task.parentId)
+          console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
+        }
+      })
+      
+      const rootTasks = newTasks.filter(task => !task.parentId)
+      console.log('ルートタスク:', rootTasks.map(t => t.title))
 
       const newExpandedState = { ...expandedTasks.value }
 
@@ -264,6 +368,10 @@ export default {
         parentId: newParentId.value
       }
 
+      console.log('=== addTask デバッグ ===')
+      console.log('選択された親ID:', newParentId.value)
+      console.log('新しいタスク:', newTask)
+      console.log('parentId の型:', typeof newTask.parentId)
 
       localTasks.value.push(newTask)
       emit('update', localTasks.value)
@@ -293,10 +401,6 @@ export default {
         return '#d0e8ff'
       }
       return 'transparent'
-    }
-
-    const getIndentLevel = (task) => {
-      return task.level || 0
     }
 
     const getParentTitle = (parentId) => {
