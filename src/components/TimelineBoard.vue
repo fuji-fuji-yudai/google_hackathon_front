@@ -106,7 +106,8 @@ export default {
 
       // ルートタスク（親がないタスク）から開始
       const rootTasks = localTasks.value.filter(task => !task.parent_id)
-
+      console.log('ルートタスク:', rootTasks.map(t => t.title))
+      
       const addTaskAndChildren = (task, level = 0) => {
         result.push({ ...task, level })
 
@@ -146,6 +147,9 @@ export default {
       newTasks.forEach(task => {
         if (hasChildren(task) && !(task.id in newExpandedState)) {
           newExpandedState[task.id] = true
+          console.log(`子タスク: ${task.title} (ID: ${task.id}) -> 親ID: ${task.parent_id}`)
+          const parent = newTasks.find(p => p.id === task.parent_id)
+          console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
         }
       })
 

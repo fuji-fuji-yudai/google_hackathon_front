@@ -79,6 +79,29 @@ export default {
         const data = await response.json()
         console.log('取得成功:', data)
 
+
+        // ★ デバッグログ追加 ★
+        console.log('=== 階層構造デバッグ ===')
+        data.forEach(task => {
+          console.log(`ID: ${task.id}, Title: ${task.title}, parent_id: ${task.parent_id}, 型: ${typeof task.parent_id}`)
+        })
+
+        tasks.value = Array.isArray(data) ? data.map(toCamel) : []
+
+        // ★ 変換後のデバッグログ追加 ★
+        console.log('=== 変換後の階層構造デバッグ ===')
+        tasks.value.forEach(task => {
+          console.log(`ID: ${task.id}, Title: ${task.title}, parentId: ${task.parentId}, 型: ${typeof task.parentId}`)
+        })
+
+        // ★ 親子関係の確認 ★
+        const parentTasks = tasks.value.filter(t => !t.parentId)
+        const childTasks = tasks.value.filter(t => t.parentId)
+        console.log('親タスク数:', parentTasks.length)
+        console.log('子タスク数:', childTasks.length)
+        console.log('子タスク詳細:', childTasks)
+
+
         tasks.value = Array.isArray(data) ? data.map(toCamel) : []
       } catch (error) {
         console.error('タスクの取得に失敗しました', error)
