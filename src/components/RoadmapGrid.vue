@@ -233,10 +233,8 @@ const positionedRoadmapData = computed(() => {
 });
 
 const getTaskStyle = (task, verticalOffset) => {
-  // task.startIndex は 0-indexed の月のインデックス (例: 4月なら3)
-  // グリッドの最初の列が「年」のヘッダーであるため、1を加えて正しい開始列を計算
-  // month-headers-container の gridColumn: `${index + 2}` と合わせるために +2 を使用します。
-  const startColumn = task.startIndex + 2; 
+  
+  const startColumn = task.startIndex + 1; 
   const spanLength = task.endIndex - task.startIndex + 1; // 期間の長さは変わらない
 
   const taskBgColor = getTaskRandomColor(task.id); 
