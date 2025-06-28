@@ -8,7 +8,7 @@
       :duration="5000"
     />
   </div>
-  <el-container @current-month-change="onMonthChange">
+  <el-container>
     <el-main>
       <!-- 右上に表示するボタン -->
       <div class="toggle-btn top-right vertical-text-btn">
@@ -18,7 +18,7 @@
           </el-icon>
         </el-button>
       </div>
-      <el-calendar class="main-calendar">
+      <el-calendar class="main-calendar" @current-month-change="onMonthChange">
         <template #date-cell="{ data }">
           <div
             style="width: 100%; height: 100%; cursor: pointer; display: flex; flex-direction: column;"
