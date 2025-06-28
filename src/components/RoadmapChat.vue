@@ -1,109 +1,143 @@
 <template>
-  <div class="roadmap-chat">
-    <div class="chat-messages">
-      <div
-        v-for="(message, index) in messages"
-        :key="index"
-        class="chat-message"
-      >
-        <strong>{{ message.sender }}:</strong> {{ message.text }}
+  <div class="roadmap-generator">
+    <el-card class="form-card">
+      <h2>ロードマップ作製</h2>
+
+      <el-form :model="form" label-width="100px">
+        <el-form-item label="対象期間">
+          <el-select v-model="form.period" placeholder="期間を選択" style="width: 100%;">
+            <el-option label="先月" value="lastMonth" />
+            <el-option label="過去3か月" value="last3Months" />
+            <el-option label="過去半年" value="last6Months" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="カテゴリ">
+          <el-select v-model="form.category" placeholder="カテゴリを選択" style="width: 100%;">
+            <el-option
+              v-for="item in categoryOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="generateRoadmap">
+            ロードマップ作製案出力
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- モーダルでロードマップ表示 -->
+    <el-dialog
+      v-model="dialogVisible"
+      title="作製されたロードマップ案"
+      width="900px"
+      top="10vh"
+      :close-on-click-modal="false"
+    >
+      <div class="scrollable-text">
+        <pre>{{ roadmapText }}</pre>
       </div>
-    </div>
-    <div class="chat-input">
-      <input
-        v-model="newMessage"
-        type="text"
-        placeholder="メッセージを入力..."
-        @keyup.enter="sendMessage"
-      >
-      <button @click="sendMessage">
-        送信
-      </button>
-    </div>
+      <template #footer>
+        <el-button @click="dialogVisible = false">閉じる</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'RoadmapChat',
-  data() {
-    return {
-      messages: [
-        { sender: 'あなた', text: '' },
-        { sender: 'AI', text: 'ロードマップ作成において悩んでいる点を記載ください！' }
-      ],
-      newMessage: ''
-    };
-  },
-  methods: {
-    sendMessage() {
-      if (this.newMessage.trim()) {
-        this.messages.push({ sender: 'あなた', text: this.newMessage.trim() });
-        this.newMessage = '';
-        // TODO: ここでメッセージをバックエンドに送信する処理を追加
-        // 例: axios.post('/api/chat', { message: this.newMessage, sender: 'あなた' });
-      }
+<script setup>
+import { ref } from 'vue'
+import {onMounted } from 'vue'
+
+const form = ref({
+  period: '',
+  category: ''
+})
+
+const roadmapText = ref('')
+const dialogVisible = ref(false)
+
+const categoryOptions = [
+  { label: '技術', value: 'technology' },
+  { label: '昇進', value: 'promotion' },
+  { label: 'プロジェクトマネジメント', value: 'management' },
+  { label: '人事', value: 'hr' },
+  { label: '企画', value: 'planning' }
+]
+
+const generateRoadmap = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const selectedCategory = categoryOptions.find(
+      option => option.value === form.value.category
+    )
+    const categoryLabel = selectedCategory ? selectedCategory.label : ''
+
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/reflections/suggest', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        period: form.value.period,
+        category: categoryLabel
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
+
+    const data = await response.text()
+    roadmapText.value = data
+    dialogVisible.value = true
+  } catch (error) {
+    console.error('APIリクエストエラー:', error)
   }
-};
+}
+
+onMounted(() => {
+  const modal = document.querySelector('.ai-chat-modal-content')
+  if (modal) {
+    modal.style.height = 'auto'
+  }
+})
+
 </script>
 
 <style scoped>
-.roadmap-chat {
-  flex-grow: 1; /* サイドバー内で利用可能なスペースを全て使う */
+.roadmap-generator {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  background-color: #f5f7fa;
+}
+
+.form-card {
+  width: 400px;
+  padding: 30px;
+}
+
+.scrollable-text {
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
   padding: 15px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid #ddd;
 }
 
-.chat-messages {
-  flex-grow: 1; /* メッセージリストが利用可能なスペースを全て使う */
-  overflow-y: auto; /* メッセージが多い場合はスクロール可能に */
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  padding: 10px;
-  margin-bottom: 15px;
-  background-color: #fff;
-  display: flex;
-  flex-direction: column-reverse; /* 新しいメッセージが下に来るように */
+.ai-chat-modal-content {
+  height: auto !important;
 }
 
-.chat-message {
-  margin-bottom: 8px;
-  line-height: 1.4;
-  word-wrap: break-word; /* 長い単語でも改行されるように */
-}
-
-.chat-message strong {
-  color: #007bff;
-}
-
-.chat-input {
-  display: flex;
-  gap: 10px;
-  padding-top: 10px; /* 入力欄とメッセージの間にスペース */
-  border-top: 1px solid #e0e0e0;
-}
-
-.chat-input input {
-  flex-grow: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1em;
-}
-
-.chat-input button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.chat-input button:hover {
-  background-color: #0056b3;
-}
 </style>

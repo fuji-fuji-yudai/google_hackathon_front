@@ -6,13 +6,17 @@
       <h4>新しいリマインダーを作成</h4>
       <input v-model="newReminder.customTitle" placeholder="タイトル" class="reminder-input" />
       <textarea v-model="newReminder.description" placeholder="説明 (任意)" class="reminder-textarea"></textarea>
-      
+
       <label for="remindDate">通知日:</label>
       <input type="date" id="remindDate" v-model="newReminder.remindDate" class="reminder-input" />
-      
+
       <label for="remindTime">通知時間:</label>
       <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
-      
+
+      <div class="google-calendar-checkbox">
+        <input type="checkbox" id="linkToGoogleCalendar" v-model="linkToGoogleCalendar" />
+        <label for="linkToGoogleCalendar">Google カレンダーと連携する</label>
+      </div>
       <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
       <p v-if="createError" class="error-message">{{ createError }}</p>
     </div>
@@ -23,8 +27,13 @@
       <h4>あなたのリマインダー</h4>
       <p v-if="loadingReminders" class="loading-message">リマインダーを読み込み中...</p>
       <p v-if="fetchError" class="error-message">{{ fetchError }}</p>
-      <p v-if="!props.jwtToken" class="warning-message"> <!-- hasToken を props.jwtToken に変更 -->
+      
+      <!-- ★追加: ログインしていない場合に表示されるメッセージとボタン -->
+      <p v-if="!props.jwtToken" class="warning-message">
         ログインするとリマインダーを作成・表示できます。
+        <br>
+        <!-- Googleでログインボタン -->
+        <a :href="googleLoginUrl" class="google-login-button action-button">Googleでログイン</a>
       </p>
 
       <ul v-if="filteredReminders.length > 0">
@@ -38,17 +47,20 @@
           <button @click="deleteReminder(reminder.id)" class="action-button delete-button">削除</button>
         </li>
       </ul>
-      <p v-else-if="!loadingReminders && props.jwtToken">リマインダーはありません。</p> <!-- hasToken を props.jwtToken に変更 -->
+      <p v-else-if="!loadingReminders && props.jwtToken">リマインダーはありません。</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, defineProps, watch } from 'vue'; // defineProps と watch をインポート
-import { ElMessage } from 'element-plus';
+import { ref, onMounted, computed, defineProps, watch, nextTick } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 // --- APIエンドポイントの設定 ---
-const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders'; 
+const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders';
+// ★追加: GoogleログインのURLを直接指定
+const googleLoginUrl = 'https://my-frontimage-14467698004.asia-northeast1.run.app/oauth2/authorization/google';
+
 
 // --- プロップスの定義 ---
 const props = defineProps({
@@ -67,63 +79,57 @@ const newReminder = ref({
   remindTime: '',
   status: 'PENDING'
 });
+const linkToGoogleCalendar = ref(false); // ★追加: Googleカレンダー連携チェックボックスの状態
 const loadingReminders = ref(false);
 const fetchError = ref(null);
 const createError = ref(null);
-// const hasToken = ref(false); // props.jwtToken を使うので、この ref は不要になります
 
 // --- ライフサイクルフック ---
 onMounted(() => {
-  // コンポーネントがマウントされた時点でトークンがあればフェッチを試みる
   if (props.jwtToken) {
     fetchReminders();
   } else {
-    // トークンがない場合は警告を表示（モーダル表示時にも警告が出せる）
-    ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
+    // ElMessage.warning は watch で制御されるため、ここでは不要（重複を避ける）
+    // nextTick(() => {
+    //   ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
+    // });
   }
 });
 
 // --- JWTトークンの変更を監視 ---
-// 親から渡される jwtToken が変更されたら（例：ログイン状態になったら）データを再フェッチ
 watch(() => props.jwtToken, (newToken, oldToken) => {
-  // トークンがnull/undefinedから有効な値に変わった場合、または有効なトークン間で変わった場合
   if (newToken && newToken !== oldToken) {
     console.log('JWT Token changed, re-fetching reminders.');
     fetchReminders();
   } else if (!newToken && oldToken) {
-    // 有効なトークンからnull/undefinedに変わった場合（ログアウトなど）
     console.log('JWT Token removed, clearing reminders.');
     reminders.value = [];
-    ElMessage.warning('ログアウトしました。リマインダーを操作するには再度ログインが必要です。');
+    nextTick(() => {
+      ElMessage.warning('ログアウトしました。リマインダーを操作するには再度ログインが必要です。');
+    });
+  } else if (!newToken && !oldToken) { // 初回ロード時などでトークンがない場合
+    nextTick(() => {
+      ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
+    });
   }
-}, { immediate: true }); // コンポーネント初期化時にもwatchを実行
+}, { immediate: true });
+
 
 // --- 認証ヘッダーの取得 ---
 const getAuthHeaders = () => {
-  // props.jwtToken を直接使用
   if (props.jwtToken) {
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${props.jwtToken}`
     };
   } else {
-    // トークンがない場合は認証ヘッダーなし
+    // JWTがない場合は、認証ヘッダーを含めない
     return { 'Content-Type': 'application/json' };
   }
 };
 
-// checkAuthToken 関数は不要になります。watch と props.jwtToken で代替されます。
-// const checkAuthToken = () => {
-//     const token = localStorage.getItem('token');
-//     hasToken.value = !!token;
-//     if (!hasToken.value) {
-//         ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
-//     }
-// };
-
 // --- リマインダー取得 ---
 const fetchReminders = async () => {
-  // props.jwtToken を直接使用
   if (!props.jwtToken) {
     ElMessage.info('認証トークンがありません。リマインダーを読み込みません。');
     reminders.value = [];
@@ -139,7 +145,6 @@ const fetchReminders = async () => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token'); // 無効なトークンを削除
-      // hasToken.value = false; // props.jwtToken を使うので不要
       reminders.value = [];
       return;
     }
@@ -160,7 +165,6 @@ const fetchReminders = async () => {
 
 // --- リマインダー作成 ---
 const createReminder = async () => {
-  // props.jwtToken を直接使用
   if (!props.jwtToken) {
     ElMessage.warning('リマインダーを作成するにはログインが必要です。');
     return;
@@ -173,7 +177,12 @@ const createReminder = async () => {
   createError.value = null;
   try {
     const headers = getAuthHeaders();
-    const response = await fetch(REMINDER_API_URL, {
+    const url = new URL(REMINDER_API_URL);
+    if (linkToGoogleCalendar.value) {
+      url.searchParams.append('linkToGoogleCalendar', 'true');
+    }
+
+    const response = await fetch(url.toString(), {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -188,7 +197,6 @@ const createReminder = async () => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
-      // hasToken.value = false; // props.jwtToken を使うので不要
       return;
     }
     if (!response.ok) {
@@ -196,30 +204,49 @@ const createReminder = async () => {
       throw new Error(errorData.message || 'リマインダーの作成に失敗しました。');
     }
 
-    ElMessage.success('リマインダーを作成しました！');
-    newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
-    fetchReminders();
+    const responseData = await response.json();
+
+    // ★重要: ここで backend からの redirectUrl をチェックするロジックは、
+    // 初期の Google ログインが完了している前提の場合、通常は不要です。
+    // もし、リマインダー作成時に追加の Google 権限が必要で、
+    // それを backend がトリガーしてリダイレクトさせる場合は残しますが、
+    // 一般的な JWT フローでは、必要な権限は初期ログイン時に取得済みとします。
+    // 今回は「できるだけ変えない」という指示に基づき、このブロックをそのまま残します。
+    if (responseData && responseData.redirectUrl) {
+      ElMessage.info('Google カレンダー連携のため、Google 認証にリダイレクトします。');
+      window.location.href = responseData.redirectUrl; // Google 認証フローへリダイレクト
+    } else {
+      ElMessage.success('リマインダーを作成しました！');
+      newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
+      fetchReminders(); // リマインダーリストを更新
+    }
+
   } catch (err) {
     console.error('リマインダー作成エラー:', err);
-    createError.value = err.message || 'リマインダーの作成中にエラーが発生しました。';
-    ElMessage.error(createError.value);
+    if (err.response && err.response.data && err.response.data.message) {
+      createError.value = err.response.data.message;
+      ElMessage.error(err.response.data.message);
+    } else {
+      createError.value = err.message || 'リマインダーの作成中にエラーが発生しました。';
+      ElMessage.error(createError.value);
+    }
   }
 };
 
 // --- リマインダー削除 ---
 const deleteReminder = async (id) => {
-  // props.jwtToken を直接使用
   if (!props.jwtToken) {
     ElMessage.warning('リマインダーを削除するにはログインが必要です。');
     return;
   }
-  // alert() の代わりに Element Plus の確認ダイアログなどを使用することを推奨します
-  // 例: ElMessageBox.confirm('本当にこのリマインダーを削除しますか？').then(() => { ... }).catch(() => { ... });
-  if (!confirm('本当にこのリマインダーを削除しますか？')) { // confirm はモーダル内で動作しない可能性があります。
-    return;
-  }
 
   try {
+    await ElMessageBox.confirm('本当にこのリマインダーを削除しますか？', '確認', {
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      type: 'warning',
+    });
+
     const headers = getAuthHeaders();
     const response = await fetch(`${REMINDER_API_URL}/${id}`, {
       method: 'DELETE',
@@ -229,7 +256,6 @@ const deleteReminder = async (id) => {
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
-      // hasToken.value = false; // props.jwtToken を使うので不要
       return;
     }
     if (!response.ok) {
@@ -240,6 +266,10 @@ const deleteReminder = async (id) => {
     ElMessage.success('リマインダーを削除しました。');
     fetchReminders();
   } catch (err) {
+    if (err === 'cancel') {
+      ElMessage.info('削除をキャンセルしました。');
+      return;
+    }
     console.error('リマインダー削除エラー:', err);
     ElMessage.error(err.message || 'リマインダーの削除中にエラーが発生しました。');
   }
@@ -247,14 +277,13 @@ const deleteReminder = async (id) => {
 
 // --- リマインダーの表示（ログイン状態に応じてフィルタリング） ---
 const filteredReminders = computed(() => {
-  // props.jwtToken を直接使用
   return props.jwtToken ? reminders.value : [];
 });
 
 // --- 日付と時刻のフォーマット ---
 const formatDateTime = (dateString, timeString) => {
   if (!dateString || !timeString) return '';
-  
+
   try {
     const date = new Date(`${dateString}T${timeString}`);
     if (isNaN(date)) return 'Invalid Date/Time';
@@ -306,20 +335,36 @@ h3, h4 {
   font-size: 1em;
 }
 
-/* ラベルのスタイルを追加 */
 label {
-  display: block; /* ラベルを新しい行に配置 */
-  text-align: left; /* 左寄せ */
-  margin-bottom: 5px; /* 下の入力フィールドとのスペース */
+  display: block;
+  text-align: left;
+  margin-bottom: 5px;
   font-weight: bold;
   color: #555;
   font-size: 0.9em;
 }
 
-
 .reminder-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+/* Googleカレンダー連携チェックボックスのスタイル */
+.google-calendar-checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.google-calendar-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2); /* チェックボックスを少し大きく表示 */
+}
+
+.google-calendar-checkbox label {
+  margin-bottom: 0; /* ラベルのデフォルトマージンをリセット */
+  font-weight: normal; /* 太字を解除 */
+  color: #333;
 }
 
 .action-button {
@@ -330,7 +375,7 @@ label {
   font-size: 1em;
   font-weight: bold;
   transition: background-color 0.3s ease;
-  margin-top: 10px; /* ボタンと入力フィールドの間にスペース */
+  margin-top: 10px;
 }
 
 .create-button {
@@ -373,6 +418,24 @@ label {
   text-align: center;
   margin-top: 15px;
 }
+
+/* ★追加: Googleログインボタンのスタイル */
+.google-login-button {
+  display: inline-block; /* aタグをボタンのように見せる */
+  margin-top: 15px;
+  background-color: #db4437; /* Googleの赤色 */
+  color: white;
+  text-decoration: none; /* 下線を消す */
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.google-login-button:hover {
+  background-color: #c33d2e;
+}
+
 
 .section-divider {
   border: 0;
@@ -421,8 +484,8 @@ label {
 }
 
 .reminder-status {
-    font-size: 0.85em;
-    color: #4CAF50; /* Green color for status */
-    font-weight: bold;
+  font-size: 0.85em;
+  color: #4CAF50;
+  font-weight: bold;
 }
 </style>

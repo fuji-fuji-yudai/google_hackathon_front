@@ -1,6 +1,6 @@
 <template>
   <div class="roadmap-view">
-    <RoadmapManager 
+    <RoadmapManager
       :jwt-token="jwtToken"
       :api-error="apiError"
       :loading="loading"
@@ -20,7 +20,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import RoadmapManager from '../components/RoadmapManager.vue';
-import { useRouter } from 'vue-router'; 
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'RoadmapView',
@@ -31,33 +31,76 @@ export default {
     const jwtToken = ref(localStorage.getItem('token') || null);
     const loading = ref(true);
     const apiError = ref(null);
-    const router = useRouter(); 
+    const router = useRouter();
 
-    // バックエンドのURLは画像から確認できるものを正確に指定
     const backendUrl = 'https://my-image-14467698004.asia-northeast1.run.app/api/roadmap-entries';
 
-    // allMonths の monthNum を数値型に変更し、monthNumber にリネーム
-    const allMonths = [
-      { id: 'm4_25', name: '4月', quarterId: 'q2_fy', year: 2025, monthNumber: 4 },
-      { id: 'm5_25', name: '5月', quarterId: 'q2_fy', year: 2025, monthNumber: 5 },
-      { id: 'm6_25', name: '6月', quarterId: 'q2_fy', year: 2025, monthNumber: 6 },
-      { id: 'm7_25', name: '7月', quarterId: 'q3_fy', year: 2025, monthNumber: 7 },
-      { id: 'm8_25', name: '8月', quarterId: 'q3_fy', year: 2025, monthNumber: 8 },
-      { id: 'm9_25', name: '9月', quarterId: 'q3_fy', year: 2025, monthNumber: 9 },
-      { id: 'm10_25', name: '10月', quarterId: 'q4_fy', year: 2025, monthNumber: 10 },
-      { id: 'm11_25', name: '11月', quarterId: 'q4_fy', year: 2025, monthNumber: 11 },
-      { id: 'm12_25', name: '12月', quarterId: 'q4_fy', year: 2025, monthNumber: 12 },
-      { id: 'm1_26', name: '1月', quarterId: 'q1_fy', year: 2026, monthNumber: 1 },
-      { id: 'm2_26', name: '2月', quarterId: 'q1_fy', year: 2026, monthNumber: 2 },
-      { id: 'm3_26', name: '3月', quarterId: 'q1_fy', year: 2026, monthNumber: 3 },
-    ];
+    // 現在の年を含めて合計5年間表示
+    const TOTAL_DISPLAY_YEARS = 5;
 
-    const allQuarters = [
-      { id: 'q1_fy', name: 'Q1', startMonthIndex: 9, endMonthIndex: 11 },
-      { id: 'q2_fy', name: 'Q2', startMonthIndex: 0, endMonthIndex: 2 },
-      { id: 'q3_fy', name: 'Q3', startMonthIndex: 3, endMonthIndex: 5 },
-      { id: 'q4_fy', name: 'Q4', startMonthIndex: 6, endMonthIndex: 8 },
-    ];
+    const allMonths = ref([]);
+    const allQuarters = ref([]);
+
+    const generateTimeline = () => {
+        const currentYear = new Date().getFullYear();
+        const startYear = currentYear;
+        //終了年を「現在の年 + (合計年数 - 1)」に設定
+        const endYear = currentYear + (TOTAL_DISPLAY_YEARS - 1);
+
+        const months = [];
+        const quartersMap = new Map();
+
+        for (let year = startYear; year <= endYear; year++) {
+            for (let monthNum = 1; monthNum <= 12; monthNum++) {
+                const monthId = `m${monthNum}_${year}`;
+                const monthName = `${monthNum}月`;
+
+                let quarterId;
+                let quarterNamePrefix;
+                if (monthNum >= 1 && monthNum <= 3) {
+                    quarterId = `Q1_${year}`;
+                    quarterNamePrefix = 'Q1';
+                } else if (monthNum >= 4 && monthNum <= 6) {
+                    quarterId = `Q2_${year}`;
+                    quarterNamePrefix = 'Q2';
+                } else if (monthNum >= 7 && monthNum <= 9) {
+                    quarterId = `Q3_${year}`;
+                    quarterNamePrefix = 'Q3';
+                } else {
+                    quarterId = `Q4_${year}`;
+                    quarterNamePrefix = 'Q4';
+                }
+
+                //月を追加する前に、その月のインデックスを把握
+                const currentMonthIndex = months.length;
+
+                months.push({
+                    id: monthId,
+                    name: monthName,
+                    quarterId: quarterId,
+                    year: year,
+                    monthNumber: monthNum,
+                });
+
+                if (!quartersMap.has(quarterId)) {
+                    quartersMap.set(quarterId, {
+                        id: quarterId,
+                        name: `${quarterNamePrefix} ${year}年`,
+                        startMonthIndex: currentMonthIndex, //その四半期に属する最初の月のインデックス
+                        endMonthIndex: currentMonthIndex, //最初の時点では開始と同じ
+                    });
+                } else {
+                    const q = quartersMap.get(quarterId);
+                    q.endMonthIndex = currentMonthIndex;
+                }
+            }
+        }
+
+        allMonths.value = months;
+        allQuarters.value = Array.from(quartersMap.values());
+        console.log('Generated allMonths (total 5 years):', allMonths.value);
+        console.log('Generated allQuarters (total 5 years):', allQuarters.value);
+    };
 
     const DEFAULT_EMPTY_CATEGORIES_COUNT = 4;
 
@@ -79,19 +122,18 @@ export default {
         });
     }, { deep: true });
 
-
     const fetchRoadmapData = async () => {
       loading.value = true;
       apiError.value = null;
-      
+
       let fetchedRawData = [];
 
       try {
         const headers = { 'Content-Type': 'application/json' };
-        
+
         if (jwtToken.value) {
           headers['Authorization'] = `Bearer ${jwtToken.value}`;
-          console.log('Sending Authorization Header (GET):', headers['Authorization']); 
+          console.log('Sending Authorization Header (GET):', headers['Authorization']);
         } else {
           console.warn('JWT Token is not available in localStorage. Proceeding without authentication.');
         }
@@ -104,15 +146,12 @@ export default {
         if (response.status === 401 || response.status === 403) {
           apiError.value = '認証情報が無効です。ログインするとデータを編集・保存できます。';
           ElMessage.warning(apiError.value);
-          // jwtToken.value = null; // 本番では有効化
-          // localStorage.removeItem('token'); // 本番では有効化
+          router.push('/login');
         } else if (!response.ok) {
-          // エラーレスポンスがHTMLである可能性を考慮し、テキストとして取得
-          const errorText = await response.text(); 
+          const errorText = await response.text();
           console.error('Server returned non-JSON error or bad status for GET:', errorText);
           throw new Error(errorText || 'ロードマップデータの取得に失敗しました。');
         } else {
-          // 成功レスポンスはJSONとしてパース
           const data = await response.json();
           if (Array.isArray(data)) {
             fetchedRawData = data;
@@ -131,36 +170,47 @@ export default {
 
         if (fetchedRawData.length > 0) {
             fetchedRawData.forEach(item => {
-                // バックエンドから返される startMonth, endMonth が「数値の月番号」だと仮定
-                // フロントエンドの表示に必要な startIndex, endIndex を allMonths から見つける
-                const startMonthData = allMonths.find(m => m.monthNumber === item.startMonth && m.year === item.startYear); // 年も考慮するなら
-                const endMonthData = allMonths.find(m => m.monthNumber === item.endMonth && m.year === item.endYear); // 年も考慮するなら
+                const startMonthData = allMonths.value.find(
+                    m => m.monthNumber === item.startMonth && m.year === item.startYear
+                );
+                const endMonthData = allMonths.value.find(
+                    m => m.monthNumber === item.endMonth && m.year === item.endYear
+                );
 
-                const startIndex = startMonthData ? allMonths.indexOf(startMonthData) : 0;
-                const endIndex = endMonthData ? allMonths.indexOf(endMonthData) : 0;
+                const startIndex = startMonthData ? allMonths.value.indexOf(startMonthData) : -1;
+                const endIndex = endMonthData ? allMonths.value.indexOf(endMonthData) : -1;
 
-                // 新しいカテゴリの色を生成
-                if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) { 
-                    newCategoryColors[item.categoryName] = generateRandomColor(); 
+                console.log(`DEBUG (RoadmapView): Fetched Item ID: ${item.id}, Name: ${item.taskName}, Raw SM: ${item.startMonth}, Raw EM: ${item.endMonth}, Raw SY: ${item.startYear}, Raw EY: ${item.endYear}, Converted SI: ${startIndex}, Converted EI: ${endIndex}`);
+
+                if (startIndex !== -1 && endIndex !== -1) {
+                    if (!Object.prototype.hasOwnProperty.call(newCategoryColors, item.categoryName)) {
+                        newCategoryColors[item.categoryName] = generateRandomColor();
+                    }
+
+                    const task = {
+                        id: item.id,
+                        name: item.taskName,
+                        startIndex: startIndex,
+                        endIndex: endIndex,
+                        category: item.categoryName,
+                        color: newCategoryColors[item.categoryName],
+                        startMonth: item.startMonth,
+                        endMonth: item.endMonth,
+                        startYear: item.startYear,
+                        endYear: item.endYear,
+                    };
+
+                    if (!categoriesMap.has(item.categoryName)) {
+                        categoriesMap.set(item.categoryName, { category: item.categoryName, tasks: [] });
+                    }
+                    categoriesMap.get(item.categoryName).tasks.push(task);
+                } else {
+                    console.warn(`タスク "${item.taskName}" (${item.id}) の期間情報が不正なため表示できませんでした: 開始月/年または終了月/年がロードマップ期間内に見つかりません。`);
                 }
-
-                const task = {
-                    id: item.id,
-                    name: item.taskName, 
-                    startIndex: startIndex, // 表示用のインデックス
-                    endIndex: endIndex,     // 表示用のインデックス
-                    category: item.categoryName, 
-                    color: newCategoryColors[item.categoryName] 
-                };
-
-                if (!categoriesMap.has(item.categoryName)) { 
-                    categoriesMap.set(item.categoryName, { category: item.categoryName, tasks: [] }); 
-                }
-                categoriesMap.get(item.categoryName).tasks.push(task); 
             });
             roadmapDataForManager.value = Array.from(categoriesMap.values()).sort((a, b) => a.category.localeCompare(b.category));
         } else {
-          roadmapDataForManager.value = [];
+            roadmapDataForManager.value = [];
         }
 
         if (roadmapDataForManager.value.length < DEFAULT_EMPTY_CATEGORIES_COUNT) {
@@ -189,18 +239,17 @@ export default {
     const handleAddTask = async (taskPayload) => {
         if (!jwtToken.value) {
             ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            router.push('/login');
             return;
         }
 
-        const newCategory = taskPayload.category;
-        // RoadmapTaskAddFormから直接月番号が渡されるため、startIndex/endIndexを使った変換は不要
-        // taskPayload.startMonth と taskPayload.endMonth には既に数値の月番号が入っている
-        
         const payload = {
-            categoryName: newCategory,
+            categoryName: taskPayload.category,
             taskName: taskPayload.name,
-            startMonth: taskPayload.startMonth, // RoadmapTaskAddFormでv-modelにバインドされた数値
-            endMonth: taskPayload.endMonth,     // RoadmapTaskAddFormでv-modelにバインドされた数値
+            startMonth: taskPayload.startMonth,
+            endMonth: taskPayload.endMonth,
+            startYear: taskPayload.startYear,
+            endYear: taskPayload.endYear,
         };
 
         try {
@@ -217,21 +266,18 @@ export default {
             if (response.status === 401 || response.status === 403) {
                 apiError.value = '認証情報が無効です。再度ログインしてください。';
                 ElMessage.error(apiError.value);
-                // jwtToken.value = null; // 本番では有効化
-                // localStorage.removeItem('token'); // 本番では有効化
+                router.push('/login');
                 return;
             }
             if (!response.ok) {
-                // エラーレスポンスがHTMLである可能性を考慮し、テキストとして取得
-                const errorText = await response.text(); 
+                const errorText = await response.text();
                 console.error('Server returned non-JSON error or bad status for POST:', errorText);
                 throw new Error(`タスクの追加に失敗しました。サーバーからのレスポンス: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`);
             }
 
-            // 成功レスポンスはJSONとしてパース
-            await response.json(); // Consume the response
+            await response.json();
             ElMessage.success('タスクを正常に追加しました！');
-            fetchRoadmapData(); 
+            fetchRoadmapData();
 
         } catch (err) {
             console.error('API Error (handleAddTask):', err);
@@ -243,6 +289,7 @@ export default {
     const handleSaveTaskEdit = async (updatedTask) => {
         if (!jwtToken.value) {
             ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            router.push('/login');
             return;
         }
         if (!updatedTask.id) {
@@ -250,13 +297,13 @@ export default {
             return;
         }
 
-        // updatedTask.startMonth と updatedTask.endMonth は既に数値の月番号
         const payload = {
-            id: updatedTask.id, // PUTリクエストではIDを含める
             categoryName: updatedTask.category,
             taskName: updatedTask.name,
-            startMonth: updatedTask.startMonth, // RoadmapTaskAddFormでv-modelにバインドされた数値
-            endMonth: updatedTask.endMonth,     // RoadmapTaskAddFormでv-modelにバインドされた数値
+            startMonth: updatedTask.startMonth,
+            endMonth: updatedTask.endMonth,
+            startYear: updatedTask.startYear,
+            endYear: updatedTask.endYear,
         };
 
         try {
@@ -273,8 +320,7 @@ export default {
             if (response.status === 401 || response.status === 403) {
                 apiError.value = '認証情報が無効です。再度ログインしてください。';
                 ElMessage.error(apiError.value);
-                // jwtToken.value = null; // 本番では有効化
-                // localStorage.removeItem('token'); // 本番では有効化
+                router.push('/login');
                 return;
             }
             if (!response.ok) {
@@ -284,7 +330,7 @@ export default {
             }
 
             ElMessage.success('タスクを正常に更新しました！');
-            fetchRoadmapData(); 
+            fetchRoadmapData();
 
         } catch (err) {
             console.error('API Error (handleSaveTaskEdit):', err);
@@ -296,6 +342,7 @@ export default {
     const handleDeleteTask = async (taskIdToDelete) => {
         if (!jwtToken.value) {
             ElMessage.error('エラー: 認証トークンがありません。ログインしてください。');
+            router.push('/login');
             return;
         }
         if (!taskIdToDelete) {
@@ -315,18 +362,17 @@ export default {
             if (response.status === 401 || response.status === 403) {
                 apiError.value = '認証情報が無効です。再度ログインしてください。';
                 ElMessage.error(apiError.value);
-                // jwtToken.value = null; // 本番では有効化
-                // localStorage.removeItem('token'); // 本番では有効化
+                router.push('/login');
                 return;
             }
             if (!response.ok) {
-                const errorText = await response.text(); // DELETEは通常レスポンスボディがないか、あってもJSONではない場合がある
+                const errorText = await response.text();
                 console.error('Server returned non-JSON error or bad status for DELETE:', errorText);
                 throw new Error(`タスクの削除に失敗しました。サーバーからのレスポンス: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`);
             }
 
             ElMessage.success('タスクを正常に削除しました！');
-            fetchRoadmapData(); 
+            fetchRoadmapData();
 
         } catch (err) {
             console.error('API Error (handleDeleteTask):', err);
@@ -339,10 +385,11 @@ export default {
         jwtToken.value = null;
         localStorage.removeItem('token');
         ElMessage.info('ログアウトしました。');
-        router.push('/login'); 
+        router.push('/login');
     };
 
     onMounted(() => {
+      generateTimeline();
       fetchRoadmapData();
     });
 
@@ -364,7 +411,6 @@ export default {
 </script>
 
 <style scoped>
-/* スタイルは変更なし */
 .roadmap-view {
   display: flex;
   flex-direction: column;

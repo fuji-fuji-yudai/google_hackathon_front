@@ -6,7 +6,7 @@
     <!-- 親メニュー（子あり） -->
     <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.index">
       <template #title>
-        <div class="menu-title" @click.stop.prevent="$emit('select', item)">
+        <div class="menu-title" :class="{ 'is-active': selectedMenu?.index === item.index }" @click.stop.prevent="$emit('select', item)">
           <div class="left-group">
             <span>{{ item.title || item.label }}</span>
             <el-button
@@ -104,5 +104,12 @@ defineProps({
  align-items: center;
  gap: 6px;
 }
+
+
+.menu-title.is-active {
+  color: var(--el-menu-active-color);
+  /* font-weight: 500; */
+}
+
 
 </style>

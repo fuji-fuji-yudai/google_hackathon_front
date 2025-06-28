@@ -17,14 +17,14 @@
         <router-link to="/chat">
           Chat
         </router-link>
+        <router-link to="/taskManage">
+          Task
+        </router-link>
         <router-link to="/reflection/home">
           Reflection
         </router-link>
         <router-link to="/roadmap">
           Roadmap
-        </router-link>
-        <router-link to="/taskManage">
-          Task
         </router-link>
       </div>
       <div 
