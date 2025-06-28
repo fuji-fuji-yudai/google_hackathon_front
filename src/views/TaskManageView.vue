@@ -46,7 +46,7 @@ export default {
       
       // デバッグ: 親タスクがある場合のみログ出力
       if (obj.parent_id) {
-        console.log(`toCamel変換: ${obj.title} - parent_id: ${obj.parent_id} → parentId: ${converted.parentId}`)
+        // console.log(`toCamel変換: ${obj.title} - parent_id: ${obj.parent_id} → parentId: ${converted.parentId}`)
       }
       
       return converted
@@ -87,28 +87,28 @@ export default {
         }
 
         const data = await response.json()
-        console.log('=== サーバーから取得したデータ ===')
-        data.forEach(task => {
-          console.log(`ID: ${task.id}, Title: ${task.title}, parent_id: ${task.parent_id} (型: ${typeof task.parent_id})`)
-        })
+        // // console.log('=== サーバーから取得したデータ ===')
+        // data.forEach(task => {
+        //   // console.log(`ID: ${task.id}, Title: ${task.title}, parent_id: ${task.parent_id} (型: ${typeof task.parent_id})`)
+        // })
 
         tasks.value = Array.isArray(data) ? data.map(toCamel) : []
         
-        console.log('=== toCamel変換後のデータ ===')
-        tasks.value.forEach(task => {
-          console.log(`ID: ${task.id}, Title: ${task.title}, parentId: ${task.parentId} (型: ${typeof task.parentId})`)
-        })
+        // console.log('=== toCamel変換後のデータ ===')
+        // tasks.value.forEach(task => {
+        //   console.log(`ID: ${task.id}, Title: ${task.title}, parentId: ${task.parentId} (型: ${typeof task.parentId})`)
+        // })
         
         // 親子関係の確認
         const parentTasks = tasks.value.filter(t => !t.parentId)
         const childTasks = tasks.value.filter(t => t.parentId)
-        console.log('=== 親子関係の分析 ===')
-        console.log('親タスク:', parentTasks.map(t => `${t.title} (ID: ${t.id})`))
-        console.log('子タスク:', childTasks.map(t => `${t.title} (ID: ${t.id}, 親ID: ${t.parentId})`))
+        // console.log('=== 親子関係の分析 ===')
+        // console.log('親タスク:', parentTasks.map(t => `${t.title} (ID: ${t.id})`))
+        // console.log('子タスク:', childTasks.map(t => `${t.title} (ID: ${t.id}, 親ID: ${t.parentId})`))
         
       } catch (error) {
-        console.error('タスクの取得に失敗しました', error)
-        console.log(JSON.stringify(JSON.parse(atob(token.split('.')[1])), null, 2))
+        // console.error('タスクの取得に失敗しました', error)
+        // console.log(JSON.stringify(JSON.parse(atob(token.split('.')[1])), null, 2))
       }
     }
 
@@ -116,20 +116,20 @@ export default {
     const saveTasks = async (newTasks) => {
       const token = localStorage.getItem('token')
       if (!token) {
-        console.error('トークンが取得できませんでした')
+        // console.error('トークンが取得できませんでした')
         return
       }
 
       try {
         const payload = newTasks.map(toSnake)
-        console.log('=== 保存前データ確認 ===')
-        console.log('変換前 (parentId):', newTasks)
-        console.log('変換後 (parent_id):', payload)
+        // console.log('=== 保存前データ確認 ===')
+        // console.log('変換前 (parentId):', newTasks)
+        // console.log('変換後 (parent_id):', payload)
 
         // parent_id が設定されているタスクをチェック
         payload.forEach(task => {
           if (task.parent_id) {
-            console.log(`${task.title} の parent_id: ${task.parent_id}`)
+            // console.log(`${task.title} の parent_id: ${task.parent_id}`)
           }
         })
 
