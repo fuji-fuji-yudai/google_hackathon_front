@@ -15,13 +15,13 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import CardBoardView from '@/components/CardBoardView.vue'
+// import CardBoardView from '@/components/CardBoardView.vue'
 import TimelineBoard from '@/components/TimelineBoard.vue'
 import ExcelUploader from '@/components/ExcelUploader.vue'
 
 export default {
   components: {
-    CardBoardView,
+    // CardBoardView,
     TimelineBoard,
     ExcelUploader
   },
