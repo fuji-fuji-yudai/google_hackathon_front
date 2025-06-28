@@ -193,6 +193,7 @@ export default {
 
 <style scoped>
 .excel-uploader {
+  margin-top: 20px;
   margin-bottom: 20px;
 }
 
@@ -210,9 +211,9 @@ export default {
 }
 
 .upload-icon {
-  font-size: 48px;
+  font-size: 20px;
   color: #c0c4cc;
-  margin-bottom: 16px;
+  margin-bottom: 0px;
 }
 
 .upload-text {

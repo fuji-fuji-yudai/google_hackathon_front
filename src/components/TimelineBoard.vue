@@ -177,7 +177,7 @@
     </el-dialog>
 
     <!-- ガントチャート用日付範囲ピッカーモーダル -->
-    <el-dialog v-model="showGanttDatePicker" title="期間設定" width="500px">
+    <el-dialog v-model="showGanttDatePicker" title="期間設定" width="600px">
       <div v-if="selectedTask">
         <h4>{{ selectedTask.title }}</h4>
         <div style="margin: 20px 0;">
