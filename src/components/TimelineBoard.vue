@@ -1,30 +1,4 @@
-.task-content {
-overflow-y: auto;
-max-height: calc(600px - 37px);
-}.date-cell-container {
-display: flex;
-flex-direction: column;
-padding: 5px 8px;
-border-right: 1px solid #e0e0e0;
-font-size: 11px;
-background: white;
-justify-content: center;
-}
-
-.date-top {
-text-align: center;
-padding: 2px 0;
-font-weight: 500;
-color: #333;
-}
-
-.date-bottom {
-text-align: center;
-padding: 2px 0;
-font-style: italic;
-color: #666;
-font-size: 10px;
-}<template>
+<template>
   <div class="container">
     <div class="header">
     </div>
@@ -37,82 +11,123 @@ font-size: 10px;
         <el-date-picker v-model="newDates" type="daterange" size="small" style="width: 240px;" />
         <el-select v-model="newParentId" placeholder="親タスクを選択（任意）" style="width: 200px;">
           <el-option :label="'（親なし）'" :value="null" />
-          <el-option v-for="task in availableParentTasks" :key="task.id" :label="task.title" :value="task.id" />
+          <el-option 
+            v-for="task in availableParentTasks" 
+            :key="task.id" 
+            :label="task.title" 
+            :value="task.id" 
+          />
         </el-select>
         <el-button type="primary" @click="addTask">タスク追加</el-button>
       </div>
     </div>
-
+    
     <div class="wbs-container">
       <!-- タスク情報部分 -->
       <div class="task-info">
         <div class="info-header">
           <div></div>
           <div>タスク名</div>
-          <div>予定開始</div>
-          <div>予定完了</div>
-          <div>実績開始</div>
-          <div>実績完了</div>
+          <div>開始予定</div>
+          <div>完了予定</div>
+          <div>開始実績</div>
+          <div>完了実績</div>
           <div>担当者</div>
           <div>操作</div>
         </div>
-
-        <div v-for="task in visibleTasks" :key="`task-${task.id}`" class="task-row" :class="{
-          'parent-task': hasChildren(task),
-          'child-task': task.parentId
-        }">
+        
+        <div 
+          v-for="task in visibleTasks" 
+          :key="`task-${task.id}`"
+          class="task-row"
+          :class="{ 
+            'parent-task': hasChildren(task), 
+            'child-task': task.parentId 
+          }"
+        >
           <div class="toggle-column">
-            <span v-if="hasChildren(task)" class="toggle-btn" @click="toggleExpand(task.id)">
+            <span 
+              v-if="hasChildren(task)" 
+              class="toggle-btn" 
+              @click="toggleExpand(task.id)"
+            >
               {{ expandedTasks[task.id] ? '▼' : '▶' }}
             </span>
           </div>
-
+          
           <div class="task-name" :style="{ paddingLeft: `${getIndentLevel(task) * 20}px` }">
             <span class="status-indicator" :class="`status-${getStatusClass(task.status)}`"></span>
             {{ hasChildren(task) ? '📋' : '📄' }} {{ task.title }}
           </div>
-
+          
           <div class="date-cell">{{ formatDate(task.plan_start) }}</div>
           <div class="date-cell">{{ formatDate(task.plan_end) }}</div>
           <div class="date-cell">{{ formatDate(task.actual_start) }}</div>
           <div class="date-cell">{{ formatDate(task.actual_end) }}</div>
           <div class="assignee-cell">{{ task.assignee }}</div>
-
+          
           <div class="action-cell">
-            <el-button type="danger" size="small" plain @click="confirmDeleteTask(task)" :disabled="task.id === null">
+            <el-button 
+              type="danger" 
+              size="small" 
+              plain 
+              @click="confirmDeleteTask(task)"
+              :disabled="task.id === null"
+            >
               🗑️
             </el-button>
           </div>
         </div>
       </div>
-
+      
       <!-- ガントチャート部分 -->
       <div class="gantt-chart">
         <div class="gantt-content">
           <div class="chart-header">
-            <div v-for="date in dateRange" :key="date" class="date-column" :class="{
-              'weekend': isWeekend(date),
-              'today': isToday(date)
-            }">
+            <div 
+              v-for="date in dateRange" 
+              :key="date" 
+              class="date-column"
+              :class="{ 
+                'weekend': isWeekend(date),
+                'today': isToday(date)
+              }"
+            >
               {{ formatDateHeader(date) }}
             </div>
           </div>
-
-          <div v-for="task in visibleTasks" :key="`gantt-${task.id}`" class="gantt-row" :class="{
-            'parent-row': hasChildren(task),
-            'child-row': task.parentId
-          }">
-            <div v-for="date in dateRange" :key="date" class="gantt-cell" :class="{
-              'weekend': isWeekend(date),
-              'today': isToday(date)
-            }">
+          
+          <div 
+            v-for="task in visibleTasks" 
+            :key="`gantt-${task.id}`"
+            class="gantt-row"
+            :class="{ 
+              'parent-row': hasChildren(task), 
+              'child-row': task.parentId 
+            }"
+          >
+            <div 
+              v-for="date in dateRange" 
+              :key="date"
+              class="gantt-cell"
+              :class="{ 
+                'weekend': isWeekend(date),
+                'today': isToday(date)
+              }"
+            >
               <!-- 予定タスクバー -->
-              <div v-if="isDateInRange(date, task.plan_start, task.plan_end)" class="task-bar"
-                :class="hasChildren(task) ? 'parent-bar' : 'child-bar'">
+              <div 
+                v-if="isDateInRange(date, task.plan_start, task.plan_end)"
+                class="task-bar"
+                :class="hasChildren(task) ? 'parent-bar' : 'child-bar'"
+              >
               </div>
-
+              
               <!-- 実績タスクバー -->
-              <div v-if="isDateInRange(date, task.actual_start, task.actual_end)" class="task-bar actual-bar">
+              <div 
+                v-if="isDateInRange(date, task.actual_start, task.actual_end)"
+                class="task-bar actual-bar"
+              >
               </div>
             </div>
           </div>
@@ -126,11 +141,19 @@ font-size: 10px;
         <h4>{{ selectedTask.title }}</h4>
         <div style="margin: 20px 0;">
           <label>予定期間:</label>
-          <el-date-picker v-model="tempPlanDates" type="daterange" style="width: 100%; margin-top: 8px;" />
+          <el-date-picker 
+            v-model="tempPlanDates" 
+            type="daterange"
+            style="width: 100%; margin-top: 8px;"
+          />
         </div>
         <div style="margin: 20px 0;">
           <label>実績期間:</label>
-          <el-date-picker v-model="tempActualDates" type="daterange" style="width: 100%; margin-top: 8px;" />
+          <el-date-picker 
+            v-model="tempActualDates" 
+            type="daterange"
+            style="width: 100%; margin-top: 8px;"
+          />
         </div>
       </div>
       <template #footer>
@@ -191,9 +214,9 @@ const visibleTasks = computed(() => {
     result.push({ ...task, level })
 
     const children = localTasks.value.filter(child => {
-      return child.parentId !== null &&
-        child.parentId !== undefined &&
-        child.parentId === task.id
+      return child.parentId !== null && 
+             child.parentId !== undefined && 
+             child.parentId === task.id
     })
 
     const isExpanded = expandedTasks.value[task.id]
@@ -201,7 +224,7 @@ const visibleTasks = computed(() => {
     if (isExpanded && children.length > 0) {
       const newAncestorIds = new Set(ancestorIds)
       newAncestorIds.add(task.id)
-
+      
       children.forEach(child => {
         addTaskAndChildren(child, level + 1, newAncestorIds)
       })
@@ -219,7 +242,7 @@ const visibleTasks = computed(() => {
 const availableParentTasks = computed(() => {
   return localTasks.value.filter(task => {
     return (!task.parentId || task.parentId === null || task.parentId === undefined) &&
-      task.id !== null && task.id !== undefined
+           task.id !== null && task.id !== undefined
   })
 })
 
@@ -227,11 +250,11 @@ const hasChildren = (task) => {
   if (task.id === null || task.id === undefined) {
     return false
   }
-
+  
   const children = localTasks.value.filter(t => {
     return t.parentId !== null && t.parentId !== undefined && t.parentId === task.id
   })
-
+  
   return children.length > 0
 }
 
@@ -284,7 +307,7 @@ const formatDateHeader = (dateStr) => {
 const getStatusClass = (status) => {
   switch (status) {
     case 'TODO': return 'planned'
-    case 'Doing': return 'progress'
+    case 'Doing': return 'progress' 
     case 'Done': return 'completed'
     default: return 'planned'
   }
@@ -293,7 +316,7 @@ const getStatusClass = (status) => {
 // 日付範囲チェック
 const isDateInRange = (date, startDate, endDate) => {
   if (!startDate || !endDate || startDate === '' || endDate === '') return false
-
+  
   try {
     const d = parseISO(date)
     const start = parseISO(startDate)
@@ -440,7 +463,7 @@ const getTaskAndChildren = (taskId) => {
 // props.tasks の変更を監視
 watch(() => props.tasks, (newTasks) => {
   localTasks.value = [...newTasks]
-
+  
   nextTick(() => {
     newTasks.forEach(task => {
       if (task.parentId) {
@@ -485,7 +508,7 @@ const addTask = () => {
   newAssignee.value = ''
   newDates.value = []
   newParentId.value = null
-
+  
   ElMessage.success('タスクを追加しました')
 }
 
@@ -500,7 +523,7 @@ generateDateRange()
 .container {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   overflow: hidden;
   margin: 20px;
 }
@@ -508,7 +531,7 @@ generateDateRange()
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 20px;
+  padding: 5px;
   text-align: center;
 }
 
@@ -528,7 +551,6 @@ generateDateRange()
 .wbs-container {
   display: flex;
   height: 600px;
-  overflow: hidden;
 }
 
 .task-info {
@@ -537,7 +559,9 @@ generateDateRange()
   flex-shrink: 0;
   background: white;
   z-index: 10;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
 }
 
 .gantt-chart {
@@ -567,7 +591,7 @@ generateDateRange()
   height: 37px;
 }
 
-.info-header>div {
+.info-header > div {
   padding: 0 8px;
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
@@ -625,21 +649,22 @@ generateDateRange()
   gap: 1px;
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s;
-  min-height: 41px;
+  height: 37px;
 }
 
 .task-row:hover {
   background-color: #f0f8ff;
 }
 
-.task-row>div {
-  padding: 10px 8px;
+.task-row > div {
+  padding: 0 8px;
   border-right: 1px solid #e0e0e0;
   font-size: 12px;
   background: white;
   display: flex;
   align-items: center;
-  min-height: 41px;
+  height: 37px;
+  overflow: hidden;
 }
 
 .parent-task {
@@ -647,7 +672,7 @@ generateDateRange()
   font-weight: bold;
 }
 
-.parent-task>div {
+.parent-task > div {
   background: #e8f4f8 !important;
 }
 
@@ -679,8 +704,7 @@ generateDateRange()
   font-weight: 500;
 }
 
-.date-cell,
-.assignee-cell {
+.date-cell, .assignee-cell {
   text-align: center;
   font-size: 11px;
   justify-content: center;
@@ -735,7 +759,7 @@ generateDateRange()
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .parent-bar {
@@ -763,15 +787,7 @@ generateDateRange()
   flex-shrink: 0;
 }
 
-.status-planned {
-  background-color: #95a5a6;
-}
-
-.status-progress {
-  background-color: #f39c12;
-}
-
-.status-completed {
-  background-color: #27ae60;
-}
+.status-planned { background-color: #95a5a6; }
+.status-progress { background-color: #f39c12; }
+.status-completed { background-color: #27ae60; }
 </style>
