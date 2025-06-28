@@ -80,7 +80,7 @@ const openChatBot = (index) => {
   showChatMap[index] = true
 }
 
-const props = defineProps({
+defineProps({
   items: Array,
   addSubMenu: Function,
   selectedMenu: Object
