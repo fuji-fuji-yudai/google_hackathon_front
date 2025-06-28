@@ -8,7 +8,7 @@
       :duration="5000"
     />
   </div>
-  <el-container>
+  <el-container @current-month-change="onMonthChange">
     <el-main>
       <!-- 右上に表示するボタン -->
       <div class="toggle-btn top-right vertical-text-btn">
@@ -127,6 +127,11 @@ const isDateCompleted = (date) => {
 watch(currentMonth, fetchReflections)
 // 初期データ取得
 onMounted(fetchReflections)
+
+const onMonthChange = (date) => {
+  currentMonth.value = date
+  console.log('カレンダーの月が変更された:', date)
+}
 
 
 </script>

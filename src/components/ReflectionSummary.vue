@@ -3,7 +3,7 @@
     <el-tabs v-model="activeTab" type="border-card">
       <el-tab-pane label="振り返りサマリー" name="summary">
         <div v-if="summary">
-          <h3>{{ summary.yearMonth }} の振り返り</h3>
+          <h3>{{yearMonth.getFullYear()}}年{{yearMonth.getMonth()+1}} の振り返り</h3>
           <p><strong>活動内容:</strong> {{ summary.activitySummary }}</p>
           <p><strong>達成事項:</strong> {{ summary.achievementSummary }}</p>
           <p><strong>改善点:</strong> {{ summary.improvementSummary }}</p>
@@ -14,13 +14,13 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="本日着手中のタスク" name="todayTasks">
+      <el-tab-pane label="本日のタスク" name="todayTasks">
         <ul>
-          <li v-for="task in todayTasks" :key="task.id">
+          <li v-for="task in allTasks" :key="task.id">
             {{ task.title }}
           </li>
         </ul>
-        <p v-if="todayTasks.length === 0">本日着手中のタスクはありません。</p>
+        <p v-if="allTasks.length === 0">タスクはありません。</p>
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -39,6 +39,7 @@ export default {
     },
   },
   data() {
+    console.log("yearMonthdouyo: " + this.yearMonth)
     return {
       summary: null,
       activeTab: 'summary',
