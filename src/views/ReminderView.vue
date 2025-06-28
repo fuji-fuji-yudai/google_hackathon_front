@@ -13,6 +13,8 @@
       <label for="remindTime">通知時間:</label>
       <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
 
+      <!-- チェックボックスは削除済み -->
+      
       <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
       <p v-if="createError" class="error-message">{{ createError }}</p>
     </div>
@@ -53,7 +55,8 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 // APIエンドポイントの設定
 const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders';
 // GoogleログインのURLを直接指定 (バックエンドのOAuth2認証エンドポイント)
-const googleLoginUrl = 'https://my-image-14467698004.asia-northeast1.run.app/oauth2/authorization/google';
+// ★修正: バックエンドのSecurityConfig.javaで定義されたカスタムURIに合わせる
+const googleLoginUrl = 'https://my-image-14467698004.asia-northeast1.run.app/oauth2/authorization/google-calendar';
 
 
 // プロップスの定義
@@ -149,7 +152,7 @@ const fetchReminders = async () => {
     const data = await response.json();
     reminders.value = data;
   } catch (err) {
-    console.error('リマインダー取得エラー:', err);
+    console.error('リमाインダー取得エラー:', err);
     fetchError.value = err.message || 'リマインダーの読み込み中にエラーが発生しました。';
     ElMessage.error(fetchError.value);
   } finally {
