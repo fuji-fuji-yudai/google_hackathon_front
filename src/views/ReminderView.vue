@@ -13,6 +13,8 @@
       <label for="remindTime">通知時間:</label>
       <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
 
+      <!-- チェックボックスを削除しました -->
+      
       <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
       <p v-if="createError" class="error-message">{{ createError }}</p>
     </div>
@@ -50,13 +52,13 @@
 import { ref, onMounted, computed, defineProps, watch, nextTick } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
-// --- APIエンドポイントの設定 ---
+// APIエンドポイントの設定
 const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders';
-// GoogleログインのURLを直接指定
-const googleLoginUrl = 'https://my-frontimage-14467698004.asia-northeast1.run.app/oauth2/authorization/google';
+// GoogleログインのURLを直接指定 (バックエンドのOAuth2認証エンドポイント)
+const googleLoginUrl = 'https://my-image-14467698004.asia-northeast1.run.app/oauth2/authorization/google';
 
 
-// --- プロップスの定義 ---
+// プロップスの定義
 const props = defineProps({
   jwtToken: {
     type: String,
@@ -64,7 +66,7 @@ const props = defineProps({
   },
 });
 
-// --- 状態変数 ---
+// 状態変数
 const reminders = ref([]);
 const newReminder = ref({
   customTitle: '',
@@ -74,19 +76,29 @@ const newReminder = ref({
   status: 'PENDING'
 });
 
+const googleAccessToken = ref(null); // Googleアクセストークンを保持するref
+
 const loadingReminders = ref(false);
 const fetchError = ref(null);
 const createError = ref(null);
 
-// --- ライフサイクルフック ---
+// ライフサイクルフック
 onMounted(() => {
   if (props.jwtToken) {
     fetchReminders();
+  } else {
+    // コンポーネントがマウントされた後に警告を表示
+    ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
   }
-  // 以前ここにコメントアウトされていた ElMessage.warning は、watchで適切に処理されるため削除済み
+  // GoogleアクセストークンをlocalStorageから読み込む
+  const storedGoogleToken = localStorage.getItem('google_access_token');
+  if (storedGoogleToken) {
+    googleAccessToken.value = storedGoogleToken;
+    console.log('Google Access Token loaded from localStorage.');
+  }
 });
 
-// --- JWTトークンの変更を監視 ---
+// JWTトークンの変更を監視
 watch(() => props.jwtToken, (newToken, oldToken) => {
   if (newToken && newToken !== oldToken) {
     console.log('JWT Token changed, re-fetching reminders.');
@@ -97,28 +109,22 @@ watch(() => props.jwtToken, (newToken, oldToken) => {
     nextTick(() => {
       ElMessage.warning('ログアウトしました。リマインダーを操作するには再度ログインが必要です。');
     });
-  } else if (!newToken && !oldToken) { // 初回ロード時などでトークンがない場合
-    nextTick(() => {
-      ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
-    });
   }
 }, { immediate: true });
 
 
-// --- 認証ヘッダーの取得 ---
+// 認証ヘッダーの取得
 const getAuthHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
   if (props.jwtToken) {
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${props.jwtToken}`
-    };
-  } else {
-    // JWTがない場合は、認証ヘッダーを含めない
-    return { 'Content-Type': 'application/json' };
+    headers['Authorization'] = `Bearer ${props.jwtToken}`;
   }
+  return headers;
 };
 
-// --- リマインダー取得 ---
+// リマインダー取得
 const fetchReminders = async () => {
   if (!props.jwtToken) {
     ElMessage.info('認証トークンがありません。リマインダーを読み込みません。');
@@ -153,7 +159,7 @@ const fetchReminders = async () => {
   }
 };
 
-// --- リマインダー作成 ---
+// リマインダー作成
 const createReminder = async () => {
   if (!props.jwtToken) {
     ElMessage.warning('リマインダーを作成するにはログインが必要です。');
@@ -168,8 +174,19 @@ const createReminder = async () => {
   try {
     const headers = getAuthHeaders();
     const url = new URL(REMINDER_API_URL);
+    // チェックボックスがないため、常にtrueを渡す
     url.searchParams.append('linkToGoogleCalendar', 'true'); 
 
+    // Googleカレンダー連携が強制されるため、アクセストークンを常にチェック
+    if (!googleAccessToken.value) {
+      createError.value = 'Googleカレンダー連携にはアクセストークンが必要です。Google認証を行ってください。';
+      ElMessage.error(createError.value);
+      // ここでGoogle認証フローへのリダイレクトを促すUIなどを表示することも検討
+      // 例: window.location.href = googleLoginUrl;
+      return; // APIコールを中止
+    }
+    headers['X-Google-Access-Token'] = googleAccessToken.value; // ヘッダーに追加
+    
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: headers,
@@ -182,7 +199,7 @@ const createReminder = async () => {
       })
     });
 
-    // --- 修正箇所 (307リダイレクトを最初にチェック) ---
+    // 307リダイレクトを最初にチェック
     if (response.status === 307) {
       const responseData = await response.json(); // リダイレクトURLを含むJSONをパース
       if (responseData && responseData.redirectUrl) {
@@ -195,7 +212,6 @@ const createReminder = async () => {
       }
       return; // 307を処理したらここで関数を終了
     }
-    // --- 修正箇所ここまで ---
 
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
@@ -208,7 +224,6 @@ const createReminder = async () => {
     }
 
     // 正常な2xxレスポンスの場合
-    // レスポンスボディをパースしますが、結果を変数に代入しないことで no-unused-vars エラーを回避
     await response.json(); 
     
     ElMessage.success('リマインダーを作成しました！');
@@ -217,16 +232,14 @@ const createReminder = async () => {
 
   } catch (err) {
     console.error('リマインダー作成エラー:', err);
-    // エラーオブジェクトの構造を確認し、適切なメッセージを表示
-    const errorMessage = err.response && err.response.data && err.response.data.message
-                           ? err.response.data.message
-                           : (err.message || 'リマインダーの作成中にエラーが発生しました。');
+    // fetch APIのエラーは通常err.messageにメッセージが含まれる
+    const errorMessage = err.message || 'リマインダーの作成中にエラーが発生しました。';
     createError.value = errorMessage;
     ElMessage.error(errorMessage);
   }
 };
 
-// --- リマインダー削除 ---
+// リマインダー削除
 const deleteReminder = async (id) => {
   if (!props.jwtToken) {
     ElMessage.warning('リマインダーを削除するにはログインが必要です。');
@@ -268,12 +281,12 @@ const deleteReminder = async (id) => {
   }
 };
 
-// --- リマインダーの表示（ログイン状態に応じてフィルタリング） ---
+// リマインダーの表示（ログイン状態に応じてフィルタリング）
 const filteredReminders = computed(() => {
   return props.jwtToken ? reminders.value : [];
 });
 
-// --- 日付と時刻のフォーマット ---
+// 日付と時刻のフォーマット
 const formatDateTime = (dateString, timeString) => {
   if (!dateString || !timeString) return '';
 
@@ -289,7 +302,7 @@ const formatDateTime = (dateString, timeString) => {
       minute: '2-digit'
     });
   } catch (e) {
-    console.error("Date/Time formatting error:", e); // エラーオブジェクトeを直接ログに出力
+    console.error("Date/Time formatting error:", e);
     return 'Formatting Error';
   }
 };
@@ -462,5 +475,25 @@ label {
   font-size: 0.85em;
   color: #4CAF50;
   font-weight: bold;
+}
+
+/* 新しいチェックボックスコンテナのスタイル */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.checkbox-container input[type="checkbox"] {
+  margin-right: 8px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkbox-container label {
+  margin-bottom: 0; /* 親のlabelスタイルを上書き */
+  font-weight: normal; /* 親のlabelスタイルを上書き */
+  cursor: pointer;
 }
 </style>
