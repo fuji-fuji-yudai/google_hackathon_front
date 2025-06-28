@@ -97,42 +97,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update'])
 
-const localTasks = ref([
-  // ダミータスク
-  {
-    id: 1,
-    title: 'サンプルタスク',
-    assignee: 'テスト太郎',
-    plan_start: '2025-07-01',
-    plan_end: '2025-07-15',
-    actual_start: '2025-07-02',
-    actual_end: '2025-07-10',
-    status: 'TODO',
-    parentId: null
-  },
-  {
-    id: 2,
-    title: '子タスク1',
-    assignee: 'テスト花子',
-    plan_start: '2025-07-03',
-    plan_end: '2025-07-08',
-    actual_start: '',
-    actual_end: '',
-    status: 'Doing',
-    parentId: 1
-  },
-  {
-    id: 3,
-    title: '子タスク2',
-    assignee: 'テスト次郎',
-    plan_start: '2025-07-09',
-    plan_end: '2025-07-14',
-    actual_start: '',
-    actual_end: '',
-    status: 'TODO',
-    parentId: 1
-  }
-])
+const localTasks = ref([...props.tasks])
 const newTitle = ref('')
 const newAssignee = ref('')
 const newDates = ref([])
@@ -411,43 +376,7 @@ const getTaskAndChildren = (taskId) => {
 
 // props.tasks の変更を監視してlocalTasksを同期
 watch(() => props.tasks, (newTasks) => {
-  localTasks.value = [
-    // ダミータスク
-    {
-      id: 1,
-      title: 'サンプルタスク',
-      assignee: 'テスト太郎',
-      plan_start: '2025-07-01',
-      plan_end: '2025-07-15',
-      actual_start: '2025-07-02',
-      actual_end: '2025-07-10',
-      status: 'TODO',
-      parentId: null
-    },
-    {
-      id: 2,
-      title: '子タスク1',
-      assignee: 'テスト花子',
-      plan_start: '2025-07-03',
-      plan_end: '2025-07-08',
-      actual_start: '',
-      actual_end: '',
-      status: 'Doing',
-      parentId: 1
-    },
-    {
-      id: 3,
-      title: '子タスク2',
-      assignee: 'テスト次郎',
-      plan_start: '2025-07-09',
-      plan_end: '2025-07-14',
-      actual_start: '',
-      actual_end: '',
-      status: 'TODO',
-      parentId: 1
-    },
-    ...newTasks
-  ]
+  localTasks.value = [...newTasks]
   
   nextTick(() => {
     newTasks.forEach(task => {
@@ -484,48 +413,51 @@ watch(localTasks, (newTasks) => {
   const newActualMap = {}
 
   newTasks.forEach(task => {
-    // 予定日付の初期化
-    if (task.plan_start && task.plan_end &&
-      task.plan_start !== '' && task.plan_end !== '') {
-      try {
-        const planStartDate = parseISO(task.plan_start)
-        const planEndDate = parseISO(task.plan_end)
+    // taskのIDが存在することを確認
+    if (task.id !== null && task.id !== undefined) {
+      // 予定日付の初期化
+      if (task.plan_start && task.plan_end &&
+        task.plan_start !== '' && task.plan_end !== '') {
+        try {
+          const planStartDate = parseISO(task.plan_start)
+          const planEndDate = parseISO(task.plan_end)
 
-        if (!isNaN(planStartDate) && !isNaN(planEndDate)) {
-          newPlanMap[task.id] = [planStartDate, planEndDate]
-        } else {
+          if (!isNaN(planStartDate) && !isNaN(planEndDate)) {
+            newPlanMap[task.id] = [planStartDate, planEndDate]
+          } else {
+            newPlanMap[task.id] = []
+          }
+        } catch (error) {
           newPlanMap[task.id] = []
         }
-      } catch (error) {
+      } else {
         newPlanMap[task.id] = []
       }
-    } else {
-      newPlanMap[task.id] = []
-    }
 
-    // 実績日付の初期化
-    if (task.actual_start && task.actual_end &&
-      task.actual_start !== '' && task.actual_end !== '') {
-      try {
-        const actualStartDate = parseISO(task.actual_start)
-        const actualEndDate = parseISO(task.actual_end)
+      // 実績日付の初期化
+      if (task.actual_start && task.actual_end &&
+        task.actual_start !== '' && task.actual_end !== '') {
+        try {
+          const actualStartDate = parseISO(task.actual_start)
+          const actualEndDate = parseISO(task.actual_end)
 
-        if (!isNaN(actualStartDate) && !isNaN(actualEndDate)) {
-          newActualMap[task.id] = [actualStartDate, actualEndDate]
-        } else {
+          if (!isNaN(actualStartDate) && !isNaN(actualEndDate)) {
+            newActualMap[task.id] = [actualStartDate, actualEndDate]
+          } else {
+            newActualMap[task.id] = []
+          }
+        } catch (error) {
           newActualMap[task.id] = []
         }
-      } catch (error) {
+      } else {
         newActualMap[task.id] = []
       }
-    } else {
-      newActualMap[task.id] = []
     }
   })
 
   taskPlanDateMap.value = newPlanMap
   taskActualDateMap.value = newActualMap
-}, { deep: true })
+}, { immediate: true, deep: true })
 
 // 予定日付変更
 const onPlanDateChange = (task, value) => {
