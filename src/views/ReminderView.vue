@@ -82,8 +82,8 @@ const createError = ref(null);
 onMounted(() => {
   if (props.jwtToken) {
     fetchReminders();
-  } else {
   }
+  // 以前ここにコメントアウトされていた ElMessage.warning は、watchで適切に処理されるため削除済み
 });
 
 // --- JWTトークンの変更を監視 ---
@@ -182,8 +182,7 @@ const createReminder = async () => {
       })
     });
 
-    // --- ここから修正点 ---
-    // まず307リダイレクトをチェックする
+    // --- 修正箇所 (307リダイレクトを最初にチェック) ---
     if (response.status === 307) {
       const responseData = await response.json(); // リダイレクトURLを含むJSONをパース
       if (responseData && responseData.redirectUrl) {
@@ -196,6 +195,7 @@ const createReminder = async () => {
       }
       return; // 307を処理したらここで関数を終了
     }
+    // --- 修正箇所ここまで ---
 
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
@@ -208,7 +208,9 @@ const createReminder = async () => {
     }
 
     // 正常な2xxレスポンスの場合
-    const responseData = await response.json(); // 作成されたリマインダーのデータをパース
+    // レスポンスボディをパースしますが、結果を変数に代入しないことで no-unused-vars エラーを回避
+    await response.json(); 
+    
     ElMessage.success('リマインダーを作成しました！');
     newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
     fetchReminders(); // リマインダーリストを更新
@@ -216,13 +218,11 @@ const createReminder = async () => {
   } catch (err) {
     console.error('リマインダー作成エラー:', err);
     // エラーオブジェクトの構造を確認し、適切なメッセージを表示
-    if (err.response && err.response.data && err.response.data.message) {
-      createError.value = err.response.data.message;
-      ElMessage.error(err.response.data.message);
-    } else {
-      createError.value = err.message || 'リマインダーの作成中にエラーが発生しました。';
-      ElMessage.error(createError.value);
-    }
+    const errorMessage = err.response && err.response.data && err.response.data.message
+                           ? err.response.data.message
+                           : (err.message || 'リマインダーの作成中にエラーが発生しました。');
+    createError.value = errorMessage;
+    ElMessage.error(errorMessage);
   }
 };
 
@@ -289,7 +289,7 @@ const formatDateTime = (dateString, timeString) => {
       minute: '2-digit'
     });
   } catch (e) {
-    console.error("Date/Time formatting error:", e);
+    console.error("Date/Time formatting error:", e); // エラーオブジェクトeを直接ログに出力
     return 'Formatting Error';
   }
 };
