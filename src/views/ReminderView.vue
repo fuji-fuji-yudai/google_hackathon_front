@@ -13,10 +13,6 @@
       <label for="remindTime">通知時間:</label>
       <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
 
-      <div class="google-calendar-checkbox">
-        <input type="checkbox" id="linkToGoogleCalendar" v-model="linkToGoogleCalendar" />
-        <label for="linkToGoogleCalendar">Google カレンダーと連携する</label>
-      </div>
       <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
       <p v-if="createError" class="error-message">{{ createError }}</p>
     </div>
@@ -58,7 +54,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 // --- APIエンドポイントの設定 ---
 const REMINDER_API_URL = 'https://my-image-14467698004.asia-northeast1.run.app/api/reminders';
-// ★追加: GoogleログインのURLを直接指定
+// GoogleログインのURLを直接指定
 const googleLoginUrl = 'https://my-frontimage-14467698004.asia-northeast1.run.app/oauth2/authorization/google';
 
 
@@ -79,7 +75,7 @@ const newReminder = ref({
   remindTime: '',
   status: 'PENDING'
 });
-const linkToGoogleCalendar = ref(false); // ★追加: Googleカレンダー連携チェックボックスの状態
+
 const loadingReminders = ref(false);
 const fetchError = ref(null);
 const createError = ref(null);
@@ -174,13 +170,11 @@ const createReminder = async () => {
     return;
   }
 
-  createError.value = null;
+ createError.value = null;
   try {
     const headers = getAuthHeaders();
     const url = new URL(REMINDER_API_URL);
-    if (linkToGoogleCalendar.value) {
-      url.searchParams.append('linkToGoogleCalendar', 'true');
-    }
+    url.searchParams.append('linkToGoogleCalendar', 'true'); 
 
     const response = await fetch(url.toString(), {
       method: 'POST',
@@ -206,12 +200,6 @@ const createReminder = async () => {
 
     const responseData = await response.json();
 
-    // ★重要: ここで backend からの redirectUrl をチェックするロジックは、
-    // 初期の Google ログインが完了している前提の場合、通常は不要です。
-    // もし、リマインダー作成時に追加の Google 権限が必要で、
-    // それを backend がトリガーしてリダイレクトさせる場合は残しますが、
-    // 一般的な JWT フローでは、必要な権限は初期ログイン時に取得済みとします。
-    // 今回は「できるだけ変えない」という指示に基づき、このブロックをそのまま残します。
     if (responseData && responseData.redirectUrl) {
       ElMessage.info('Google カレンダー連携のため、Google 認証にリダイレクトします。');
       window.location.href = responseData.redirectUrl; // Google 認証フローへリダイレクト
@@ -349,24 +337,6 @@ label {
   min-height: 80px;
 }
 
-/* Googleカレンダー連携チェックボックスのスタイル */
-.google-calendar-checkbox {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.google-calendar-checkbox input[type="checkbox"] {
-  margin-right: 8px;
-  transform: scale(1.2); /* チェックボックスを少し大きく表示 */
-}
-
-.google-calendar-checkbox label {
-  margin-bottom: 0; /* ラベルのデフォルトマージンをリセット */
-  font-weight: normal; /* 太字を解除 */
-  color: #333;
-}
-
 .action-button {
   padding: 10px 20px;
   border: none;
@@ -419,7 +389,7 @@ label {
   margin-top: 15px;
 }
 
-/* ★追加: Googleログインボタンのスタイル */
+/*Googleログインボタンのスタイル */
 .google-login-button {
   display: inline-block; /* aタグをボタンのように見せる */
   margin-top: 15px;
