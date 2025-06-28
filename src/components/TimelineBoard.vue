@@ -30,19 +30,33 @@
       :class="{ 'parent-task': hasChildren(task), 'child-task': task.parentId }">
       <div class="label">
         <div class="task-info">
-          <div class="task-title" :style="{ paddingLeft: `${getIndentLevel(task) * 20}px` }">
-            <!-- 展開/折りたたみボタン（親タスクのみ） -->
-            <span v-if="hasChildren(task)" class="expand-toggle" @click="toggleExpand(task.id)">
-              <el-icon>
-                <ArrowRight v-if="!expandedTasks[task.id]" />
-                <ArrowDown v-else />
-              </el-icon>
-            </span>
-            <!-- インデントスペース（子タスク） -->
-            <span v-else-if="task.parentId" class="indent-space"></span>
+          <div class="task-title-row">
+            <div class="task-title" :style="{ paddingLeft: `${getIndentLevel(task) * 20}px` }">
+              <!-- 展開/折りたたみボタン（親タスクのみ） -->
+              <span v-if="hasChildren(task)" class="expand-toggle" @click="toggleExpand(task.id)">
+                <el-icon>
+                  <ArrowRight v-if="!expandedTasks[task.id]" />
+                  <ArrowDown v-else />
+                </el-icon>
+              </span>
+              <!-- インデントスペース（子タスク） -->
+              <span v-else-if="task.parentId" class="indent-space"></span>
 
-            <!-- タスクタイトル -->
-            <span class="title-text" :class="{ 'parent-title': hasChildren(task) }">{{ task.title }}</span>
+              <!-- タスクタイトル -->
+              <span class="title-text" :class="{ 'parent-title': hasChildren(task) }">{{ task.title }}</span>
+            </div>
+            
+            <!-- 削除ボタン -->
+            <el-button 
+              type="danger" 
+              size="small" 
+              plain 
+              @click="confirmDeleteTask(task)"
+              class="delete-btn"
+              :disabled="task.id === null"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
           </div>
 
           <div class="task-assignee">担当: {{ task.assignee }}</div>
@@ -72,12 +86,14 @@
 <script>
 import { ref, watch, computed, nextTick } from 'vue'
 import { format, parseISO, eachDayOfInterval } from 'date-fns'
-import { ArrowRight, ArrowDown } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, Delete } from '@element-plus/icons-vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 
 export default {
   components: {
     ArrowRight,
-    ArrowDown
+    ArrowDown,
+    Delete
   },
   props: {
     tasks: {
@@ -257,6 +273,7 @@ export default {
                task.id !== null && task.id !== undefined // id が存在するタスクのみ
       })
     })
+
     const hasChildren = (task) => {
       // ★ 修正: id が null の場合は子タスクを持たないとする
       if (task.id === null || task.id === undefined) {
@@ -299,6 +316,145 @@ export default {
       }
 
       return level
+    }
+
+    // タスク削除確認ダイアログ
+    const confirmDeleteTask = async (task) => {
+      // 新規タスク（IDがnull）は削除できない
+      if (task.id === null || task.id === undefined) {
+        ElMessage.warning('保存されていないタスクです')
+        return
+      }
+
+      const childTasks = localTasks.value.filter(t => t.parentId === task.id)
+      const hasChildTasks = childTasks.length > 0
+
+      try {
+        let deleteChildren = false
+
+        if (hasChildTasks) {
+          // 親タスクで子タスクがある場合
+          const result = await ElMessageBox.confirm(
+            `「${task.title}」を削除します。\n子タスク（${childTasks.length}件）も一緒に削除しますか？`,
+            '削除確認',
+            {
+              confirmButtonText: '子タスクも削除',
+              cancelButtonText: '子タスクは残す',
+              distinguishCancelAndClose: true,
+              type: 'warning'
+            }
+          )
+          deleteChildren = true
+        } else {
+          // 子タスクがない場合の通常確認
+          await ElMessageBox.confirm(
+            `「${task.title}」を削除してもよろしいですか？`,
+            '削除確認',
+            {
+              confirmButtonText: '削除',
+              cancelButtonText: 'キャンセル',
+              type: 'warning'
+            }
+          )
+        }
+
+        // 削除実行
+        await deleteTask(task.id, deleteChildren)
+
+      } catch (action) {
+        if (action === 'cancel' && hasChildTasks) {
+          // 「子タスクは残す」が選択された場合
+          try {
+            await ElMessageBox.confirm(
+              `「${task.title}」のみを削除し、子タスクは残します。よろしいですか？`,
+              '削除確認',
+              {
+                confirmButtonText: '削除',
+                cancelButtonText: 'キャンセル',
+                type: 'warning'
+              }
+            )
+            await deleteTask(task.id, false)
+          } catch (e) {
+            // キャンセルされた場合は何もしない
+          }
+        }
+        // その他のキャンセルの場合は何もしない
+      }
+    }
+
+    // タスク削除処理
+    const deleteTask = async (taskId, deleteChildren) => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          ElMessage.error('認証トークンが見つかりません')
+          return
+        }
+
+        console.log('=== タスク削除開始 ===')
+        console.log('削除対象ID:', taskId)
+        console.log('子タスクも削除:', deleteChildren)
+
+        // サーバーに削除リクエストを送信
+        const response = await fetch(
+          `https://my-image-14467698004.asia-northeast1.run.app/api/tasks/${taskId}?deleteChildren=${deleteChildren}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`削除失敗 status: ${response.status}`)
+        }
+
+        console.log('サーバー削除成功')
+
+        // ローカルタスクリストから削除
+        if (deleteChildren) {
+          // 子タスクも含めて削除
+          const tasksToDelete = getTaskAndChildren(taskId)
+          const updatedTasks = localTasks.value.filter(task => !tasksToDelete.includes(task.id))
+          ElMessage.success(`タスクと子タスク（${tasksToDelete.length}件）を削除しました`)
+          
+          // 親コンポーネントに更新を通知
+          emit('update', updatedTasks)
+        } else {
+          // 指定タスクのみ削除、子タスクの親IDをnullに
+          const updatedTasks = localTasks.value.filter(task => task.id !== taskId)
+          updatedTasks.forEach(task => {
+            if (task.parentId === taskId) {
+              task.parentId = null
+            }
+          })
+          ElMessage.success('タスクを削除しました')
+          
+          // 親コンポーネントに更新を通知
+          emit('update', updatedTasks)
+        }
+
+        console.log('ローカル削除完了')
+
+      } catch (error) {
+        console.error('タスクの削除に失敗しました', error)
+        ElMessage.error('タスクの削除に失敗しました: ' + error.message)
+      }
+    }
+
+    // 指定タスクとその子タスクのIDを再帰的に取得
+    const getTaskAndChildren = (taskId) => {
+      const result = [taskId]
+      const children = localTasks.value.filter(task => task.parentId === taskId)
+      
+      children.forEach(child => {
+        result.push(...getTaskAndChildren(child.id))
+      })
+      
+      return result
     }
 
     // props.tasks の変更を監視してlocalTasksを同期
@@ -523,6 +679,9 @@ export default {
       getParentTitle,
       hasChildren,
       toggleExpand,
+      confirmDeleteTask,
+      deleteTask,
+      getTaskAndChildren,
       emit
     }
   }
@@ -574,14 +733,21 @@ export default {
   flex: 1;
 }
 
+.task-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .task-title {
   font-size: 16px;
   font-weight: bold;
   color: #333;
-  margin-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
 }
 
 .expand-toggle {
@@ -611,6 +777,13 @@ export default {
 .title-text.parent-title {
   font-weight: 600;
   color: #1890ff;
+}
+
+.delete-btn {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  flex-shrink: 0;
 }
 
 .task-assignee {
