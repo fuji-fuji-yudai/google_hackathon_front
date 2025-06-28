@@ -308,4 +308,8 @@ export default {
   display: block;   /* ブロック化して改行させる */
   margin-bottom: 0.25em; /* 見出しと本文の間に少し余白 */
 }
+
+li {
+  text-align: left;
+}
 </style>
