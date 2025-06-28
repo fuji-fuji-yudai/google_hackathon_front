@@ -5,7 +5,7 @@
       <template #title>
         <div
           class="menu-title"
-          :class="{ 'is-selected': isItemOrDescendantSelected(item) }"
+          :class="{ 'is-selected': selectedMenu?.index === item.index }"
           @click.stop.prevent="$emit('select', item)"
         >
           <div class="left-group">
@@ -87,11 +87,11 @@ const props = defineProps({
 })
 
 // 子や孫が選択されているかを再帰的にチェック
-const isItemOrDescendantSelected = (item) => {
-  if (props.selectedMenu?.index === item.index) return true
-  if (!item.children) return false
-  return item.children.some(child => isItemOrDescendantSelected(child))
-}
+// const isItemOrDescendantSelected = (item) => {
+//   if (props.selectedMenu?.index === item.index) return true
+//   if (!item.children) return false
+//   return item.children.some(child => isItemOrDescendantSelected(child))
+// }
 
 </script>
 
