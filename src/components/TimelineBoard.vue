@@ -224,7 +224,7 @@ const newTitle = ref('')
 const newAssignee = ref('')
 const newDates = ref([])
 const newParentId = ref(null)
-const expandedTasks = ref({}) // 展開状態
+const expandedTasks = ref({}) // 展開状態（現在は未使用だが将来用）
 const showDatePicker = ref(false)
 const showGanttDatePicker = ref(false)
 const selectedTask = ref(null)
@@ -275,32 +275,6 @@ const hasChildren = (task) => {
   })
   
   return children.length > 0
-}
-
-// 展開/折りたたみの切り替え
-const toggleExpand = (taskId) => {
-  expandedTasks.value[taskId] = !expandedTasks.value[taskId]
-}
-
-// インデントレベルの取得
-const getIndentLevel = (task) => {
-  let level = 0
-  let currentTask = task
-  const visitedIds = new Set()
-
-  while (currentTask.parentId && level < 10) {
-    if (visitedIds.has(currentTask.id)) {
-      break
-    }
-
-    visitedIds.add(currentTask.id)
-    level++
-    currentTask = localTasks.value.find(t => t.id === currentTask.parentId)
-
-    if (!currentTask) break
-  }
-
-  return level
 }
 
 // 日付フォーマット関数
@@ -713,13 +687,17 @@ generateDateRange()
 
 .gantt-chart {
   flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .gantt-content {
-  min-width: 1350px; /* 日付列幅を半分にしたため幅も半分に */
+  min-width: 1350px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .info-header {
@@ -750,18 +728,17 @@ generateDateRange()
   justify-content: center;
 }
 
-.chart-header {
+.chart-header-fixed {
   background: #f8f9fa;
   border-bottom: 2px solid #e0e0e0;
   font-weight: bold;
   font-size: 12px;
   color: #333;
-  position: sticky;
-  top: 0;
-  z-index: 5;
   display: flex;
   padding: 0;
   height: 50px;
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .date-column {
@@ -890,6 +867,7 @@ generateDateRange()
   height: 37px;
   border-bottom: 1px solid #e0e0e0;
   position: relative;
+  flex-shrink: 0;
 }
 
 .gantt-row.parent-row {
