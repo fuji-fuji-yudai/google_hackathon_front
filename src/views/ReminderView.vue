@@ -13,8 +13,6 @@
       <label for="remindTime">通知時間:</label>
       <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
 
-      <!-- チェックボックスは削除済み -->
-      
       <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
       <p v-if="createError" class="error-message">{{ createError }}</p>
     </div>
@@ -38,7 +36,8 @@
             <strong>{{ reminder.customTitle }}</strong>
             <p v-if="reminder.description">{{ reminder.description }}</p>
             <p class="reminder-time">{{ formatDateTime(reminder.remindDate, reminder.remindTime) }}</p>
-            <p class="reminder-status">ステータス: {{ reminder.status }}</p>
+            <p v-if="reminder.nextRemindTime" class="reminder-time">次回: {{ formatNextRemindTime(reminder.nextRemindTime) }}</p>
+            <p v-if="reminder.recurrenceType && reminder.recurrenceType !== 'NONE'" class="reminder-status">繰り返し: {{ reminder.recurrenceType }}</p>
           </div>
           <button @click="deleteReminder(reminder.id)" class="action-button delete-button">削除</button>
         </li>
@@ -74,10 +73,15 @@ const newReminder = ref({
   description: '',
   remindDate: '',
   remindTime: '',
-  status: 'PENDING'
+  // ★修正: statusフィールドはバックエンドのReminderRequestにないため削除
+  // recurrenceType, nextRemindTime, attendeeEmails を追加（UIにはないが送信するため）
+  recurrenceType: 'NONE', // デフォルト値
+  nextRemindTime: '',     // デフォルト値
+  attendeeEmails: []      // デフォルト値
 });
 
-const googleAccessToken = ref(null); // Googleアクセストークンを保持するref
+// Googleアクセストークンを保持するrefは不要になったため削除
+// const googleAccessToken = ref(null); 
 
 const loadingReminders = ref(false);
 const fetchError = ref(null);
@@ -88,15 +92,14 @@ onMounted(() => {
   if (props.jwtToken) {
     fetchReminders();
   } else {
-    // コンポーネントがマウントされた後に警告を表示
     ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
   }
-  // GoogleアクセストークンをlocalStorageから読み込む
-  const storedGoogleToken = localStorage.getItem('google_access_token');
-  if (storedGoogleToken) {
-    googleAccessToken.value = storedGoogleToken;
-    console.log('Google Access Token loaded from localStorage.');
-  }
+  // GoogleアクセストークンをlocalStorageから読み込むロジックは不要になったため削除
+  // const storedGoogleToken = localStorage.getItem('google_access_token');
+  // if (storedGoogleToken) {
+  //   googleAccessToken.value = storedGoogleToken;
+  //   console.log('Google Access Token loaded from localStorage.');
+  // }
 });
 
 // JWTトークンの変更を監視
@@ -152,7 +155,7 @@ const fetchReminders = async () => {
     const data = await response.json();
     reminders.value = data;
   } catch (err) {
-    console.error('リमाインダー取得エラー:', err);
+    console.error('リマインダー取得エラー:', err);
     fetchError.value = err.message || 'リマインダーの読み込み中にエラーが発生しました。';
     ElMessage.error(fetchError.value);
   } finally {
@@ -178,16 +181,9 @@ const createReminder = async () => {
     // Googleカレンダー連携が強制されるため、常にtrueを渡す
     url.searchParams.append('linkToGoogleCalendar', 'true'); 
 
-    // Googleカレンダー連携が強制されるため、アクセストークンを常にチェック
-    // ★ここが、アクセストークンがない場合に認証にリダイレクトする部分です★
-    if (!googleAccessToken.value) {
-      createError.value = 'Googleカレンダー連携にはアクセストークンが必要です。Google認証にリダイレクトします。';
-      ElMessage.error(createError.value); // エラーメッセージを表示
-      window.location.href = googleLoginUrl; // Google認証フローへリダイレクト
-      return; // APIコールを中止
-    }
-    headers['X-Google-Access-Token'] = googleAccessToken.value; // ヘッダーに追加
-    
+    // ★修正: Googleアクセストークンの事前チェックとヘッダー追加ロジックは削除
+    // バックエンドからの307リダイレクトのみを処理する
+
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: headers,
@@ -196,7 +192,10 @@ const createReminder = async () => {
         description: newReminder.value.description,
         remindDate: newReminder.value.remindDate,
         remindTime: newReminder.value.remindTime,
-        status: newReminder.value.status
+        // ★修正: バックエンドのReminderRequestに合わせる
+        recurrenceType: newReminder.value.recurrenceType, 
+        nextRemindTime: newReminder.value.nextRemindTime,
+        attendeeEmails: newReminder.value.attendeeEmails
       })
     });
 
@@ -228,12 +227,20 @@ const createReminder = async () => {
     await response.json(); 
     
     ElMessage.success('リマインダーを作成しました！');
-    newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
+    // ★修正: newReminderの初期化時にstatusを削除し、追加したフィールドも初期化
+    newReminder.value = { 
+      customTitle: '', 
+      description: '', 
+      remindDate: '', 
+      remindTime: '', 
+      recurrenceType: 'NONE', 
+      nextRemindTime: '', 
+      attendeeEmails: [] 
+    };
     fetchReminders(); // リマインダーリストを更新
 
   } catch (err) {
     console.error('リマインダー作成エラー:', err);
-    // fetch APIのエラーは通常err.messageにメッセージが含まれる
     const errorMessage = err.message || 'リマインダーの作成中にエラーが発生しました。';
     createError.value = errorMessage;
     ElMessage.error(errorMessage);
@@ -304,6 +311,26 @@ const formatDateTime = (dateString, timeString) => {
     });
   } catch (e) {
     console.error("Date/Time formatting error:", e);
+    return 'Formatting Error';
+  }
+};
+
+// nextRemindTimeのフォーマット (ISO_LOCAL_DATE_TIME形式を想定)
+const formatNextRemindTime = (dateTimeString) => {
+  if (!dateTimeString) return '';
+  try {
+    const date = new Date(dateTimeString); // ISO 8601形式はDateオブジェクトで直接パース可能
+    if (isNaN(date)) return 'Invalid Date/Time';
+
+    return date.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    console.error("Next Remind Time formatting error:", e);
     return 'Formatting Error';
   }
 };
