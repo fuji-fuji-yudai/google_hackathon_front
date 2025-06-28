@@ -55,8 +55,7 @@ export default {
       const today = new Date();
       return this.allTasks.filter(task => {
         const start = new Date(task.actualStart);
-        const end = new Date(task.actualEnd);
-        return start <= today && today <= end;
+        return start <= today;
       });
     }
   },
