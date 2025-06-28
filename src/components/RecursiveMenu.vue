@@ -1,12 +1,13 @@
 <template>
-  <template
-    v-for="item in items"
-    :key="item.index"
-  >
+  <template v-for="item in items" :key="item.index">
     <!-- 親メニュー（子あり） -->
     <el-sub-menu v-if="item.children && item.children.length > 0" :index="item.index">
       <template #title>
-        <div class="menu-title" :class="{ 'is-active': selectedMenu?.index === item.index }" @click.stop.prevent="$emit('select', item)">
+        <div
+          class="menu-title"
+          :class="{ 'is-selected': selectedMenu?.index === item.index }"
+          @click.stop.prevent="$emit('select', item)"
+        >
           <div class="left-group">
             <span>{{ item.title || item.label }}</span>
             <el-button
@@ -16,7 +17,7 @@
             >
               AI
             </el-button>
-            <ChatBotDialog v-model="showChatMap[item.index]" :roomId="item.index"/>
+            <ChatBotDialog v-model="showChatMap[item.index]" :roomId="item.index" />
           </div>
           <div class="right-group">
             <el-button
@@ -32,6 +33,7 @@
       <RecursiveMenu
         :items="item.children"
         :add-sub-menu="addSubMenu"
+        :selectedMenu="selectedMenu"
         @select="$emit('select', $event)"
       />
     </el-sub-menu>
@@ -42,11 +44,14 @@
       :index="item.index"
       @click="$emit('select', item)"
     >
-      <div class="menu-title">
+      <div
+        class="menu-title"
+        :class="{ 'is-selected': selectedMenu?.index === item.index }"
+      >
         <div class="left-group">
           <span>{{ item.title || item.label }}</span>
           <el-button class="ai-button" size="small" @click.stop="openChatBot(item.index)">AI</el-button>
-          <ChatBotDialog v-model="showChatMap[item.index]" :roomId="item.index"/>
+          <ChatBotDialog v-model="showChatMap[item.index]" :roomId="item.index" />
         </div>
         <div class="right-group">
           <el-button
@@ -62,27 +67,35 @@
   </template>
 </template>
 
+
 <script setup>
 import { Plus } from '@element-plus/icons-vue'
-//import {ref} from 'vue'
-import {reactive} from 'vue'
+import { reactive } from 'vue'
 import ChatBotDialog from './ChatBotDialog.vue'
 
 const showChatMap = reactive({})
 
-const openChatBot = (index)=> {
+const openChatBot = (index) => {
   console.log('openChatBot called with index:', index)
   showChatMap[index] = true
 }
 
 defineProps({
   items: Array,
-  addSubMenu: Function
+  addSubMenu: Function,
+  selectedMenu: Object
 })
+
+// 子や孫が選択されているかを再帰的にチェック
+// const isItemOrDescendantSelected = (item) => {
+//   if (props.selectedMenu?.index === item.index) return true
+//   if (!item.children) return false
+//   return item.children.some(child => isItemOrDescendantSelected(child))
+// }
+
 </script>
 
 <style scoped>
-
 .menu-title {
   display: flex;
   align-items: center;
@@ -100,16 +113,20 @@ defineProps({
 
 .left-group,
 .right-group {
- display: flex;
- align-items: center;
- gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-
-.menu-title.is-active {
-  color: var(--el-menu-active-color);
-  /* font-weight: 500; */
+.menu-title.is-selected {
+  color: var(--el-color-primary);
+  font-weight: 500;
 }
 
+/* Element Plus の選択色を打ち消す（必要なら） */
+.el-menu-item.is-active {
+  color: inherit !important;
+  background-color: inherit !important;
+}
 
 </style>

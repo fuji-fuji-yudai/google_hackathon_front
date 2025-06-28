@@ -10,6 +10,7 @@
     -->
     <SidebarLayout 
       :menuData="menuData"
+      :selectedMenu="selectedMenu"
       @menu-click="handleMenuClick" 
       @add-root="handleAddRoot" 
       @add-sub="handleAddSub"
