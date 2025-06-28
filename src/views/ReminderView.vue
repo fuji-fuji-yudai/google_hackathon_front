@@ -24,11 +24,9 @@
       <p v-if="loadingReminders" class="loading-message">リマインダーを読み込み中...</p>
       <p v-if="fetchError" class="error-message">{{ fetchError }}</p>
       
-      <!-- ★追加: ログインしていない場合に表示されるメッセージとボタン -->
       <p v-if="!props.jwtToken" class="warning-message">
         ログインするとリマインダーを作成・表示できます。
         <br>
-        <!-- Googleでログインボタン -->
         <a :href="googleLoginUrl" class="google-login-button action-button">Googleでログイン</a>
       </p>
 
@@ -85,10 +83,6 @@ onMounted(() => {
   if (props.jwtToken) {
     fetchReminders();
   } else {
-    // ElMessage.warning は watch で制御されるため、ここでは不要（重複を避ける）
-    // nextTick(() => {
-    //   ElMessage.warning('ログインするとリマインダーを作成・表示できます。');
-    // });
   }
 });
 
@@ -170,7 +164,7 @@ const createReminder = async () => {
     return;
   }
 
- createError.value = null;
+  createError.value = null;
   try {
     const headers = getAuthHeaders();
     const url = new URL(REMINDER_API_URL);
@@ -188,29 +182,40 @@ const createReminder = async () => {
       })
     });
 
+    // --- ここから修正点 ---
+    // まず307リダイレクトをチェックする
+    if (response.status === 307) {
+      const responseData = await response.json(); // リダイレクトURLを含むJSONをパース
+      if (responseData && responseData.redirectUrl) {
+        ElMessage.info('Google カレンダー連携のため、Google 認証にリダイレクトします。');
+        window.location.href = responseData.redirectUrl; // Google 認証フローへリダイレクト
+      } else {
+        // 万が一、307なのにredirectUrlがない場合のフォールバック
+        createError.value = 'Google認証リダイレクトURLが見つかりません。';
+        ElMessage.error(createError.value);
+      }
+      return; // 307を処理したらここで関数を終了
+    }
+
     if (response.status === 401 || response.status === 403) {
       ElMessage.error('認証情報が無効です。再度ログインしてください。');
       localStorage.removeItem('token');
       return;
     }
-    if (!response.ok) {
+    if (!response.ok) { // 307以外のエラー（400, 500など）をここで処理
       const errorData = await response.json();
       throw new Error(errorData.message || 'リマインダーの作成に失敗しました。');
     }
 
-    const responseData = await response.json();
-
-    if (responseData && responseData.redirectUrl) {
-      ElMessage.info('Google カレンダー連携のため、Google 認証にリダイレクトします。');
-      window.location.href = responseData.redirectUrl; // Google 認証フローへリダイレクト
-    } else {
-      ElMessage.success('リマインダーを作成しました！');
-      newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
-      fetchReminders(); // リマインダーリストを更新
-    }
+    // 正常な2xxレスポンスの場合
+    const responseData = await response.json(); // 作成されたリマインダーのデータをパース
+    ElMessage.success('リマインダーを作成しました！');
+    newReminder.value = { customTitle: '', description: '', remindDate: '', remindTime: '', status: 'PENDING' };
+    fetchReminders(); // リマインダーリストを更新
 
   } catch (err) {
     console.error('リマインダー作成エラー:', err);
+    // エラーオブジェクトの構造を確認し、適切なメッセージを表示
     if (err.response && err.response.data && err.response.data.message) {
       createError.value = err.response.data.message;
       ElMessage.error(err.response.data.message);
