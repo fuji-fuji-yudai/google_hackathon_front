@@ -1,7 +1,6 @@
 <template>
   <div class="container">
-    <div class="header">
-    </div>
+    <div class="header"></div>
 
     <!-- タスク追加フォーム -->
     <div class="task-input-section">
@@ -19,7 +18,7 @@
 
     <div class="wbs-container">
       <!-- タスク情報部分 -->
-      <div class="task-info">
+      <div class="task-info" ref="taskInfoRef">
         <div class="info-header">
           <div></div>
           <div>タスク名</div>
@@ -31,89 +30,72 @@
           <div>操作</div>
         </div>
 
-        <div class="task-rows-container" ref="taskRowsContainer" @scroll="onTaskRowsScroll">
-          <div v-for="task in visibleTasks" :key="`task-${task.id}`" class="task-row" :class="{
-            'parent-task': hasChildren(task),
-            'child-task': task.parentId
-          }">
-            <div class="toggle-column">
-              <span v-if="hasChildren(task)" class="toggle-btn" @click="toggleExpand(task.id)">
-                {{ expandedTasks[task.id] ? '▼' : '▶' }}
-              </span>
-            </div>
+        <div v-for="task in visibleTasks" :key="`task-${task.id}`" class="task-row"
+          :class="{ 'parent-task': hasChildren(task), 'child-task': task.parentId }">
+          <div class="toggle-column">
+            <span v-if="hasChildren(task)" class="toggle-btn" @click="toggleExpand(task.id)">
+              {{ expandedTasks[task.id] ? '▼' : '▶' }}
+            </span>
+          </div>
 
-            <div class="task-name" :style="{ paddingLeft: `${getIndentLevel(task) * 20}px` }">
-              <span class="status-indicator" :class="`status-${getStatusClass(task.status)}`"></span>
-              {{ hasChildren(task) ? '📋' : '📄' }} {{ task.title }}
-            </div>
+          <div class="task-name" :style="{ paddingLeft: `${getIndentLevel(task) * 20}px` }">
+            <span class="status-indicator" :class="`status-${getStatusClass(task.status)}`"></span>
+            {{ hasChildren(task) ? '📋' : '📄' }} {{ task.title }}
+          </div>
 
-            <div class="date-cell" @click="openDatePicker(task, 'plan_start')">
-              {{ formatDate(task.plan_start) || 'クリックして設定' }}
-            </div>
-            <div class="date-cell" @click="openDatePicker(task, 'plan_end')">
-              {{ formatDate(task.plan_end) || 'クリックして設定' }}
-            </div>
-            <div class="date-cell" @click="openDatePicker(task, 'actual_start')">
-              {{ formatDate(task.actual_start) || 'クリックして設定' }}
-            </div>
-            <div class="date-cell" @click="openDatePicker(task, 'actual_end')">
-              {{ formatDate(task.actual_end) || 'クリックして設定' }}
-            </div>
-            <div class="assignee-cell">{{ task.assignee }}</div>
+          <div class="date-cell" @click="openDatePicker(task, 'plan_start')">{{ formatDate(task.plan_start) ||
+            'クリックして設定' }}</div>
+          <div class="date-cell" @click="openDatePicker(task, 'plan_end')">{{ formatDate(task.plan_end) || 'クリックして設定' }}
+          </div>
+          <div class="date-cell" @click="openDatePicker(task, 'actual_start')">{{ formatDate(task.actual_start) ||
+            'クリックして設定' }}</div>
+          <div class="date-cell" @click="openDatePicker(task, 'actual_end')">{{ formatDate(task.actual_end) ||
+            'クリックして設定' }}</div>
+          <div class="assignee-cell">{{ task.assignee }}</div>
 
-            <div class="action-cell">
-              <el-button type="danger" size="small" plain @click="confirmDeleteTask(task)" :disabled="task.id === null">
-                🗑️
-              </el-button>
-            </div>
+          <div class="action-cell">
+            <el-button type="danger" size="small" plain @click="confirmDeleteTask(task)"
+              :disabled="task.id === null">🗑️</el-button>
           </div>
         </div>
       </div>
 
       <!-- ガントチャート部分 -->
-      <div class="gantt-chart">
-        <div class="chart-header">
-          <div v-for="date in dateRange" :key="date" class="date-column" :class="{
-            'weekend': isWeekend(date),
-            'today': isToday(date)
-          }">
-            {{ formatDateHeader(date) }}
+      <div class="gantt-chart" ref="ganttChartRef">
+        <div class="gantt-content">
+          <div class="chart-header">
+            <div v-for="date in dateRange" :key="date" class="date-column"
+              :class="{ 'weekend': isWeekend(date), 'today': isToday(date) }">
+              {{ formatDateHeader(date) }}
+            </div>
           </div>
-        </div>
 
-        <div class="gantt-rows-container" ref="ganttRowsContainer" @scroll="onGanttRowsScroll">
-          <div class="gantt-content">
-            <div v-for="task in visibleTasks" :key="`gantt-${task.id}`" class="gantt-row" :class="{
-              'parent-row': hasChildren(task),
-              'child-row': task.parentId
-            }">
-              <div class="gantt-row-container">
-                <div v-for="date in dateRange" :key="date" class="gantt-cell" :class="{
-                  'weekend': isWeekend(date),
-                  'today': isToday(date)
-                }">
-                </div>
+          <div v-for="task in visibleTasks" :key="`gantt-${task.id}`" class="gantt-row"
+            :class="{ 'parent-row': hasChildren(task), 'child-row': task.parentId }">
+            <div class="gantt-row-container">
+              <div v-for="date in dateRange" :key="date" class="gantt-cell"
+                :class="{ 'weekend': isWeekend(date), 'today': isToday(date) }"></div>
 
-                <!-- 予定タスクバー -->
-                <div v-if="task.plan_start && task.plan_end" class="task-bar planned-bar"
-                  :class="hasChildren(task) ? 'parent-bar' : 'child-bar'" :style="getTaskBarStyle(task, 'planned')"
-                  @click="openGanttDatePicker(task, 'planned', $event)"
-                  :title="`予定: ${formatDate(task.plan_start)} - ${formatDate(task.plan_end)} (クリックで編集)`">
-                  <span class="bar-label">{{ task.title }}</span>
-                </div>
+              <!-- 予定タスクバー -->
+              <div v-if="task.plan_start && task.plan_end" class="task-bar planned-bar"
+                :class="hasChildren(task) ? 'parent-bar' : 'child-bar'" :style="getTaskBarStyle(task, 'planned')"
+                @click="openGanttDatePicker(task, 'planned', $event)"
+                :title="`予定: ${formatDate(task.plan_start)} - ${formatDate(task.plan_end)} (クリックで編集)`">
+                <span class="bar-label">{{ task.title }}</span>
+              </div>
 
-                <!-- 実績タスクバー -->
-                <div v-if="task.actual_start && task.actual_end" class="task-bar actual-bar"
-                  :style="getTaskBarStyle(task, 'actual')" @click="openGanttDatePicker(task, 'actual', $event)"
-                  :title="`実績: ${formatDate(task.actual_start)} - ${formatDate(task.actual_end)} (クリックで編集)`">
-                  <span class="bar-label">実績</span>
-                </div>
+              <!-- 実績タスクバー -->
+              <div v-if="task.actual_start && task.actual_end" class="task-bar actual-bar"
+                :style="getTaskBarStyle(task, 'actual')" @click="openGanttDatePicker(task, 'actual', $event)"
+                :title="`実績: ${formatDate(task.actual_start)} - ${formatDate(task.actual_end)} (クリックで編集)`">
+                <span class="bar-label">実績</span>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
 
     <!-- 日付ピッカーモーダル -->
     <el-dialog v-model="showDatePicker" title="日付設定" width="400px">
@@ -153,9 +135,10 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, nextTick } from 'vue'
+import { ref, watch, computed, nextTick, onMounted } from 'vue'
 import { format, parseISO, eachDayOfInterval, isWeekend as isWeekendFn, isToday as isTodayFn } from 'date-fns'
 import { ElMessageBox, ElMessage } from 'element-plus'
+
 
 const props = defineProps({
   tasks: {
@@ -181,44 +164,12 @@ const tempDate = ref('')
 const tempDateRange = ref([])
 const dateRange = ref([])
 
-// スクロール同期用のref
-const taskRowsContainer = ref(null)
-const ganttRowsContainer = ref(null)
-const isScrolling = ref(false)
-
 // 日付範囲生成（日単位）
 const generateDateRange = () => {
   const startDate = parseISO('2025-06-01')
   const endDate = parseISO('2025-08-31')
   dateRange.value = eachDayOfInterval({ start: startDate, end: endDate })
     .map(d => format(d, 'yyyy-MM-dd'))
-}
-
-// スクロール同期処理
-const onTaskRowsScroll = () => {
-  if (isScrolling.value) return
-  isScrolling.value = true
-
-  if (ganttRowsContainer.value && taskRowsContainer.value) {
-    ganttRowsContainer.value.scrollTop = taskRowsContainer.value.scrollTop
-  }
-
-  nextTick(() => {
-    isScrolling.value = false
-  })
-}
-
-const onGanttRowsScroll = () => {
-  if (isScrolling.value) return
-  isScrolling.value = true
-
-  if (taskRowsContainer.value && ganttRowsContainer.value) {
-    taskRowsContainer.value.scrollTop = ganttRowsContainer.value.scrollTop
-  }
-
-  nextTick(() => {
-    isScrolling.value = false
-  })
 }
 
 // 階層構造を考慮した表示用タスクリスト（ID順ソート対応）
@@ -685,6 +636,20 @@ watch(() => props.tasks, (newTasks) => {
 
 // 初期化
 generateDateRange()
+const taskInfoRef = ref(null)
+const ganttChartRef = ref(null)
+
+const syncScroll = (source, target) => {
+  target.scrollTop = source.scrollTop
+}
+
+onMounted(() => {
+  const taskEl = taskInfoRef.value
+  const ganttEl = ganttChartRef.value
+
+  taskEl.addEventListener('scroll', () => syncScroll(taskEl, ganttEl))
+  ganttEl.addEventListener('scroll', () => syncScroll(ganttEl, taskEl))
+})
 </script>
 
 <style scoped>
@@ -731,27 +696,16 @@ generateDateRange()
   flex-shrink: 0;
   background: white;
   z-index: 10;
-  display: flex;
-  flex-direction: column;
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
 }
 
 .gantt-chart {
   flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.task-rows-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.gantt-rows-container {
-  flex: 1;
-  overflow-y: auto;
   overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
 }
 
 .gantt-content {
@@ -764,12 +718,275 @@ generateDateRange()
   font-weight: bold;
   font-size: 12px;
   color: #333;
+  position: sticky;
+  top: 0;
   z-index: 15;
   display: grid;
   grid-template-columns: 40px 220px 90px 90px 90px 90px 100px 80px;
   gap: 0;
   padding: 0;
   height: 37px;
+}
+
+.info-header>div {
+  padding: 0 8px;
+  background: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 2px solid #e0e0e0;
+  text-align: center;
+  height: 37px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-header {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e0e0e0;
+  font-weight: bold;
+  font-size: 12px;
+  color: #333;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  padding: 0;
+  height: 37px;
+}
+
+.date-column {
+  min-width: 30px;
+  width: 30px;
+  padding: 0 1px;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 2px solid #e0e0e0;
+  text-align: center;
+  font-size: 11px;
+  background: #f8f9fa;
+  font-weight: bold;
+  color: #333;
+  height: 37px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.date-column.weekend {
+  background-color: #d3d3d3 !important;
+}
+
+.date-column.today {
+  background-color: #74b9ff !important;
+  color: white;
+}
+
+.task-row {
+  display: grid;
+  grid-template-columns: 40px 220px 90px 90px 90px 90px 100px 80px;
+  gap: 0;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+  height: 37px;
+}
+
+.task-row:hover {
+  background-color: #f0f8ff;
+}
+
+.task-row>div {
+  padding: 0 8px;
+  border-right: 1px solid #e0e0e0;
+  font-size: 12px;
+  background: white;
+  display: flex;
+  align-items: center;
+  height: 37px;
+  overflow: hidden;
+}
+
+.parent-task {
+  background: #e8f4f8 !important;
+  font-weight: bold;
+}
+
+.parent-task>div {
+  background: #e8f4f8 !important;
+}
+
+.child-task {
+  background: #fafafa;
+}
+
+.toggle-column {
+  justify-content: center;
+}
+
+.toggle-btn {
+  cursor: pointer;
+  color: #666;
+  font-size: 14px;
+  user-select: none;
+  width: 20px;
+  text-align: center;
+  transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+  color: #1890ff;
+}
+
+.task-name {
+  text-align: left;
+  justify-content: flex-start;
+  font-weight: 500;
+}
+
+.date-cell,
+.assignee-cell {
+  text-align: center;
+  font-size: 11px;
+  justify-content: center;
+}
+
+.date-cell {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.date-cell:hover {
+  background-color: #e6f7ff !important;
+}
+
+.action-cell {
+  justify-content: center;
+}
+
+.gantt-row {
+  height: 37px;
+  border-bottom: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.gantt-row.parent-row {
+  background: #f8f9fa;
+}
+
+.gantt-row.child-row {
+  background: #fdfdfd;
+}
+
+.gantt-row-container {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.gantt-cell {
+  min-width: 30px;
+  width: 30px;
+  height: 100%;
+  border-right: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.gantt-cell.weekend {
+  background-color: #d3d3d3;
+}
+
+.gantt-cell.today {
+  background-color: #ddeeff;
+}
+
+.task-bar {
+  height: 16px;
+  border-radius: 8px;
+  margin: 2px 0;
+  font-size: 10px;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-bar:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.planned-bar {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  top: 4px;
+}
+
+.parent-bar {
+  height: 20px;
+}
+
+.child-bar {
+  height: 16px;
+}
+
+.actual-bar {
+  background: linear-gradient(45deg, #FF9800, #F57C00) !important;
+  height: 12px;
+  top: 22px;
+}
+
+.bar-label {
+  font-size: 9px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.status-planned {
+  background-color: #95a5a6;
+}
+
+.status-progress {
+  background-color: #f39c12;
+}
+
+.status-completed {
+  background-color: #27ae60;
+}
+
+.task-info {
+  width: 720px;
+  border-right: 2px solid #e0e0e0;
+  flex-shrink: 0;
+  background: white;
+  z-index: 10;
+  overflow-x: auto;
+  overflow-y: auto;
+  /* ← 両方に縦スクロールを許可 */
+  position: relative;
+}
+
+.gantt-chart {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  /* ← ここ変更！ */
+  min-width: 0;
 }
 </style>
