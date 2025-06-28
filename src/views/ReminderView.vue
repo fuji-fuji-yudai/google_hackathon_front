@@ -13,8 +13,6 @@
       <label for="remindTime">通知時間:</label>
       <input type="time" id="remindTime" v-model="newReminder.remindTime" class="reminder-input" />
 
-      <!-- チェックボックスを削除しました -->
-      
       <button @click="createReminder" class="action-button create-button">リマインダー作成</button>
       <p v-if="createError" class="error-message">{{ createError }}</p>
     </div>
@@ -174,15 +172,15 @@ const createReminder = async () => {
   try {
     const headers = getAuthHeaders();
     const url = new URL(REMINDER_API_URL);
-    // チェックボックスがないため、常にtrueを渡す
+    // Googleカレンダー連携が強制されるため、常にtrueを渡す
     url.searchParams.append('linkToGoogleCalendar', 'true'); 
 
     // Googleカレンダー連携が強制されるため、アクセストークンを常にチェック
+    // ★ここが、アクセストークンがない場合に認証にリダイレクトする部分です★
     if (!googleAccessToken.value) {
-      createError.value = 'Googleカレンダー連携にはアクセストークンが必要です。Google認証を行ってください。';
-      ElMessage.error(createError.value);
-      // ここでGoogle認証フローへのリダイレクトを促すUIなどを表示することも検討
-      // 例: window.location.href = googleLoginUrl;
+      createError.value = 'Googleカレンダー連携にはアクセストークンが必要です。Google認証にリダイレクトします。';
+      ElMessage.error(createError.value); // エラーメッセージを表示
+      window.location.href = googleLoginUrl; // Google認証フローへリダイレクト
       return; // APIコールを中止
     }
     headers['X-Google-Access-Token'] = googleAccessToken.value; // ヘッダーに追加
@@ -199,7 +197,7 @@ const createReminder = async () => {
       })
     });
 
-    // 307リダイレクトを最初にチェック
+    // 307リダイレクトを最初にチェック（バックエンドから再認証を求められた場合）
     if (response.status === 307) {
       const responseData = await response.json(); // リダイレクトURLを含むJSONをパース
       if (responseData && responseData.redirectUrl) {
