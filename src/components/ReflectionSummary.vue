@@ -1,27 +1,29 @@
 <template>
   <div class="reflection-summaries">
-    <el-tabs v-model="activeTab" type="border-card">
-      <el-tab-pane label="振り返りサマリー" name="summary">
-        <div v-if="summary">
-          <h3>{{ summary.yearMonth }} の振り返り</h3>
-          <p><strong>活動内容:</strong> {{ summary.activitySummary }}</p>
-          <p><strong>達成事項:</strong> {{ summary.achievementSummary }}</p>
-          <p><strong>改善点:</strong> {{ summary.improvementSummary }}</p>
-        </div>
-        <div v-else>
-          <p>{{yearMonth.getFullYear()}}年{{yearMonth.getMonth()+1}}月の振り返りサマリーが見つかりません。</p>
-          <el-button type="primary" @click="createSummary">サマリーを作成</el-button>
-        </div>
-      </el-tab-pane>
+    <el-tabs v-model="activeTab" type="border-card" height="500px">
+      <el-scrollbar height="100%">
+        <el-tab-pane label="振り返りサマリー" name="summary">
+          <div v-if="summary">
+            <h3>{{yearMonth.getFullYear()}}年{{yearMonth.getMonth()+1}}月の振り返り</h3>
+            <p><strong>活動内容:</strong> {{ summary.activitySummary }}</p>
+            <p><strong>達成事項:</strong> {{ summary.achievementSummary }}</p>
+            <p><strong>改善点:</strong> {{ summary.improvementSummary }}</p>
+          </div>
+          <div v-else>
+            <p>{{yearMonth.getFullYear()}}年{{yearMonth.getMonth()+1}}月の振り返りサマリーが見つかりません。</p>
+            <el-button type="primary" @click="createSummary">サマリーを作成</el-button>
+          </div>
+        </el-tab-pane>
 
-      <el-tab-pane label="本日着手中のタスク" name="todayTasks">
-        <ul>
-          <li v-for="task in todayTasks" :key="task.id">
-            {{ task.title }}（{{ formatDate(task.actualStart) }} ～ {{ formatDate(task.actualEnd) }}）
-          </li>
-        </ul>
-        <p v-if="todayTasks.length === 0">本日着手中のタスクはありません。</p>
-      </el-tab-pane>
+        <el-tab-pane label="着手中のタスク" name="todayTasks">
+          <ul>
+            <li v-for="task in allTasks" :key="task.id">
+              {{ task.title }}
+            </li>
+          </ul>
+          <p v-if="allTasks.length === 0">着手中のタスクはありません。</p>
+        </el-tab-pane>
+      </el-scrollbar>
     </el-tabs>
   </div>
 </template>
@@ -39,6 +41,7 @@ export default {
     },
   },
   data() {
+    console.log("yearMonthdouyo: " + this.yearMonth)
     return {
       summary: null,
       activeTab: 'summary',
@@ -121,6 +124,8 @@ export default {
 
         const data = await response.json();
         this.allTasks = Array.isArray(data) ? data : [];
+        console.log(this.allTasks);
+        console.log('todayTasks:', this.todayTasks);
       } catch (error) {
         console.error('タスクの取得に失敗しました', error);
       }
@@ -280,7 +285,7 @@ export default {
 <style>
 .reflection-summaries {
   max-width: 800px;
-  margin: 50px auto;
+  margin: 0 auto;
   padding: 20px;
 }
 
@@ -290,5 +295,15 @@ export default {
   padding: 15px;
   margin-bottom: 15px;
   background-color: #f9f9f9;
+}
+
+.reflection-summaries p {
+  text-align: left;
+  margin-bottom: 1em;
+}
+
+.reflection-summaries p strong {
+  display: block;   /* ブロック化して改行させる */
+  margin-bottom: 0.25em; /* 見出しと本文の間に少し余白 */
 }
 </style>

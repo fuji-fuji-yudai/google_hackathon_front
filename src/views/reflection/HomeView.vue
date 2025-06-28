@@ -8,12 +8,14 @@
       :duration="5000"
     />
   </div>
-  <el-container>
+  <el-container @current-month-change="onMonthChange">
     <el-main>
       <!-- 右上に表示するボタン -->
-      <div class="toggle-btn top-right">
-        <el-button icon="Menu" @click="isSummaryVisible = !isSummaryVisible">
-          {{ isSummaryVisible ? 'サマリー/タスク非表示' : 'サマリー/タスク表示' }}
+      <div class="toggle-btn top-right vertical-text-btn">
+        <el-button @click="isSummaryVisible = !isSummaryVisible">
+          <el-icon>
+            <component :is="isSummaryVisible ? ArrowRightBold : ArrowLeftBold" />
+          </el-icon>
         </el-button>
       </div>
       <el-calendar class="main-calendar">
@@ -38,6 +40,7 @@
 </template>
 
 <script setup>
+import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue'
 import FlashMessage from '@/components/FlashMessage.vue'
 import ReflectionSummary from '@/components/ReflectionSummary.vue';
 import axios from 'axios';
@@ -125,6 +128,11 @@ watch(currentMonth, fetchReflections)
 // 初期データ取得
 onMounted(fetchReflections)
 
+const onMonthChange = (date) => {
+  currentMonth.value = date
+  console.log('カレンダーの月が変更された:', date)
+}
+
 
 </script>
 
@@ -147,15 +155,16 @@ onMounted(fetchReflections)
   /* トグルボタンの右上配置 */
 .toggle-btn.top-right {
   position: fixed;
-  top: 10px;
-  right: 10px;
+  top: 75px;
+  right: 0px;
   z-index: 1000;
 }
+
 
 /* サマリーのスライド表示 */
 .summary-panel {
   position: fixed;
-  top: 0;
+  top: 75px;
   right: 0;
   width: 350px;
   height: 100vh;
