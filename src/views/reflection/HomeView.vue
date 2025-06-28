@@ -101,6 +101,7 @@ const isDateCompleted = (date) => {
   const day = String(date.getDate()).padStart(2, '0');
   const formattedDate = `${year}-${month}-${day}`;
   console.log('formattedDate：' + formattedDate)
+  console.log("completedDates: " + completedDates.value);
   return completedDates.value.includes(formattedDate)
 }
 // カレンダーの月が変更されたときにデータを再取得
