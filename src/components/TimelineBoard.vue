@@ -697,14 +697,21 @@ onMounted(() => {
   background: white;
   z-index: 10;
   overflow-x: auto;
-  overflow-y: scroll; /* ← 同期用にスクロール有効 */
-  -ms-overflow-style: none; /* IE, Edge */
-  scrollbar-width: none; /* Firefox */
+  /* ← 横スクロールは見せる */
+  overflow-y: scroll;
+  /* ← 縦スクロールは同期用に残すが非表示にする */
+  -ms-overflow-style: none;
+  /* IE, Edge */
+  scrollbar-width: none;
+  /* Firefox */
   position: relative;
 }
 
 .task-info::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+  width: 0 !important;
+  /* 縦スクロールバーだけ完全非表示 */
+  height: auto;
+  /* 横スクロールバーは表示させる */
 }
 
 .gantt-chart {
