@@ -135,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, nextTick } from 'vue'
+import { ref, watch, computed, nextTick, onMounted } from 'vue'
 import { format, parseISO, eachDayOfInterval, isWeekend as isWeekendFn, isToday as isTodayFn } from 'date-fns'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
@@ -636,6 +636,20 @@ watch(() => props.tasks, (newTasks) => {
 
 // 初期化
 generateDateRange()
+const taskInfoRef = ref(null)
+const ganttChartRef = ref(null)
+
+const syncScroll = (source, target) => {
+  target.scrollTop = source.scrollTop
+}
+
+onMounted(() => {
+  const taskEl = taskInfoRef.value
+  const ganttEl = ganttChartRef.value
+
+  taskEl.addEventListener('scroll', () => syncScroll(taskEl, ganttEl))
+  ganttEl.addEventListener('scroll', () => syncScroll(ganttEl, taskEl))
+})
 </script>
 
 <style scoped>
@@ -683,7 +697,7 @@ generateDateRange()
   background: white;
   z-index: 10;
   overflow-x: auto;
-  /* overflow-y: auto; */
+  overflow-y: hidden;
   position: relative;
 }
 
