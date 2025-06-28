@@ -135,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, nextTick, onMounted } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { format, parseISO, eachDayOfInterval, isWeekend as isWeekendFn, isToday as isTodayFn } from 'date-fns'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
