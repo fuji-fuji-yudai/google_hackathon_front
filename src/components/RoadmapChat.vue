@@ -60,19 +60,12 @@ const form = ref({
 
 const roadmapText = ref('')
 const dialogVisible = ref(false)
-
-const categoryOptions = [
-  { label: '技術', value: 'technology' },
-  { label: '昇進', value: 'promotion' },
-  { label: 'プロジェクトマネジメント', value: 'management' },
-  { label: '人事', value: 'hr' },
-  { label: '企画', value: 'planning' }
-]
+const categoryOptions = ref([])
 
 const generateRoadmap = async () => {
   try {
     const token = localStorage.getItem('token')
-    const selectedCategory = categoryOptions.find(
+    const selectedCategory = categoryOptions.value.find(
       option => option.value === form.value.category
     )
     const categoryLabel = selectedCategory ? selectedCategory.label : ''
@@ -101,12 +94,37 @@ const generateRoadmap = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // モーダルの高さ調整
   const modal = document.querySelector('.ai-chat-modal-content')
   if (modal) {
     modal.style.height = 'auto'
   }
+
+  // カテゴリの取得処理（userIdは送らない）
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/categories', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('カテゴリ取得に失敗しました')
+    }
+
+    const data = await response.json()
+    categoryOptions.value.splice(0, categoryOptions.value.length, ...data.map(name => ({
+      label: name,
+      value: name.toLowerCase().replace(/\s+/g, '_')
+    })))
+  } catch (error) {
+    console.error('カテゴリ取得エラー:', error)
+  }
 })
+
+
 
 </script>
 
