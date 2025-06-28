@@ -952,3 +952,4 @@ generateDateRange()
 .status-planned { background-color: #95a5a6; }
 .status-progress { background-color: #f39c12; }
 .status-completed { background-color: #27ae60; }
+</style>
