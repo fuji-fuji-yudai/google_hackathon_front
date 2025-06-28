@@ -60,10 +60,18 @@
             {{ hasChildren(task) ? '📋' : '📄' }} {{ task.title }}
           </div>
           
-          <div class="date-cell">{{ formatDate(task.plan_start) }}</div>
-          <div class="date-cell">{{ formatDate(task.plan_end) }}</div>
-          <div class="date-cell">{{ formatDate(task.actual_start) }}</div>
-          <div class="date-cell">{{ formatDate(task.actual_end) }}</div>
+          <div class="date-cell" @click="openDatePicker(task, 'plan_start')">
+            {{ formatDate(task.plan_start) || 'クリックして設定' }}
+          </div>
+          <div class="date-cell" @click="openDatePicker(task, 'plan_end')">
+            {{ formatDate(task.plan_end) || 'クリックして設定' }}
+          </div>
+          <div class="date-cell" @click="openDatePicker(task, 'actual_start')">
+            {{ formatDate(task.actual_start) || 'クリックして設定' }}
+          </div>
+          <div class="date-cell" @click="openDatePicker(task, 'actual_end')">
+            {{ formatDate(task.actual_end) || 'クリックして設定' }}
+          </div>
           <div class="assignee-cell">{{ task.assignee }}</div>
           
           <div class="action-cell">
@@ -136,29 +144,24 @@
     </div>
 
     <!-- 日付ピッカーモーダル -->
-    <el-dialog v-model="showDatePicker" title="日付設定" width="500px">
+    <el-dialog v-model="showDatePicker" title="日付設定" width="400px">
       <div v-if="selectedTask">
         <h4>{{ selectedTask.title }}</h4>
         <div style="margin: 20px 0;">
-          <label>予定期間:</label>
+          <label>{{ getDateLabel(selectedDateField) }}:</label>
           <el-date-picker 
-            v-model="tempPlanDates" 
-            type="daterange"
+            v-model="tempDate" 
+            type="date"
+            placeholder="日付を選択"
             style="width: 100%; margin-top: 8px;"
-          />
-        </div>
-        <div style="margin: 20px 0;">
-          <label>実績期間:</label>
-          <el-date-picker 
-            v-model="tempActualDates" 
-            type="daterange"
-            style="width: 100%; margin-top: 8px;"
+            format="YYYY/MM/DD"
+            value-format="YYYY-MM-DD"
           />
         </div>
       </div>
       <template #footer>
         <el-button @click="showDatePicker = false">キャンセル</el-button>
-        <el-button type="primary" @click="updateTaskDates">更新</el-button>
+        <el-button type="primary" @click="updateTaskDate">更新</el-button>
       </template>
     </el-dialog>
   </div>
@@ -185,8 +188,8 @@ const newParentId = ref(null)
 const expandedTasks = ref({}) // 展開状態
 const showDatePicker = ref(false)
 const selectedTask = ref(null)
-const tempPlanDates = ref([])
-const tempActualDates = ref([])
+const selectedDateField = ref('')
+const tempDate = ref('')
 
 const dateRange = ref([])
 const generateDateRange = () => {
@@ -708,6 +711,15 @@ generateDateRange()
   text-align: center;
   font-size: 11px;
   justify-content: center;
+}
+
+.date-cell {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.date-cell:hover {
+  background-color: #e6f7ff !important;
 }
 
 .action-cell {
