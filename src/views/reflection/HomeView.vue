@@ -10,7 +10,15 @@
   </div>
   <el-container>
     <el-main>
-      <el-calendar class="main-calendar">
+      <!-- 右上に表示するボタン -->
+      <div class="toggle-btn top-right vertical-text-btn">
+        <el-button @click="isSummaryVisible = !isSummaryVisible">
+          <el-icon>
+            <component :is="isSummaryVisible ? ArrowRightBold : ArrowLeftBold" />
+          </el-icon>
+        </el-button>
+      </div>
+      <el-calendar class="main-calendar" @current-month-change="onMonthChange">
         <template #date-cell="{ data }">
           <div
             style="width: 100%; height: 100%; cursor: pointer; display: flex; flex-direction: column;"
@@ -22,11 +30,17 @@
         </template>
       </el-calendar>
     </el-main>
-    <ReflectionSummary></ReflectionSummary>
+    <!-- サマリーをスライドで表示 -->
+    <transition name="slide">
+      <div class="summary-panel" v-if="isSummaryVisible">
+        <ReflectionSummary :yearMonth="currentMonth" />
+      </div>
+    </transition>
   </el-container>
 </template>
 
 <script setup>
+import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue'
 import FlashMessage from '@/components/FlashMessage.vue'
 import ReflectionSummary from '@/components/ReflectionSummary.vue';
 import axios from 'axios';
@@ -43,6 +57,7 @@ const flashType = ref("success"); // メッセージの種類 (success, error, i
 const selectedDate = ref(new Date())
 const currentMonth = ref(new Date()) // 現在表示しているカレンダーの月
 const completedDates = ref([]) // 完了データの日付リスト
+const isSummaryVisible = ref(false);
 
 // ここでフラッシュメッセージを設定
 const route = useRoute()
@@ -107,10 +122,16 @@ const isDateCompleted = (date) => {
   console.log("completedDates: " + completedDates.value);
   return completedDates.value.includes(target)
 }
+
 // カレンダーの月が変更されたときにデータを再取得
 watch(currentMonth, fetchReflections)
 // 初期データ取得
 onMounted(fetchReflections)
+
+const onMonthChange = (date) => {
+  currentMonth.value = date
+  console.log('カレンダーの月が変更された:', date)
+}
 
 
 </script>
@@ -131,4 +152,45 @@ onMounted(fetchReflections)
     color: green;
     margin-top: 5px; /* 日付の下に余白をつける */
   }
+  /* トグルボタンの右上配置 */
+.toggle-btn.top-right {
+  position: fixed;
+  top: 75px;
+  right: 0px;
+  z-index: 1000;
+}
+
+
+/* サマリーのスライド表示 */
+.summary-panel {
+  position: fixed;
+  top: 75px;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  z-index: 999;
+  padding: 20px;
+}
+
+/* スライド用のトランジション */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(100%);
+}
+.slide-enter-to,
+.slide-leave-from {
+  transform: translateX(0%);
+}
+.calendar-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
 </style>
