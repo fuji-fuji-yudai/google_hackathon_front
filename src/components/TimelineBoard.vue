@@ -636,20 +636,6 @@ watch(() => props.tasks, (newTasks) => {
 
 // 初期化
 generateDateRange()
-const taskInfoRef = ref(null)
-const ganttChartRef = ref(null)
-
-const syncScroll = (source, target) => {
-  target.scrollTop = source.scrollTop
-}
-
-onMounted(() => {
-  const taskEl = taskInfoRef.value
-  const ganttEl = ganttChartRef.value
-
-  taskEl.addEventListener('scroll', () => syncScroll(taskEl, ganttEl))
-  ganttEl.addEventListener('scroll', () => syncScroll(ganttEl, taskEl))
-})
 </script>
 
 <style scoped>
@@ -697,7 +683,7 @@ onMounted(() => {
   background: white;
   z-index: 10;
   overflow-x: auto;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   position: relative;
 }
 
