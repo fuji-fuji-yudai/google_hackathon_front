@@ -89,7 +89,7 @@ const sendQuestion = async () => {
       body: JSON.stringify({
         question,
         roomId: props.roomId,
-        similarMessages: [],
+        // similarMessages: [],
       }),
     })
 
