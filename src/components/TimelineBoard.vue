@@ -334,7 +334,7 @@ export default {
 
         if (hasChildTasks) {
           // 親タスクで子タスクがある場合
-          const result = await ElMessageBox.confirm(
+          await ElMessageBox.confirm(
             `「${task.title}」を削除します。\n子タスク（${childTasks.length}件）も一緒に削除しますか？`,
             '削除確認',
             {
