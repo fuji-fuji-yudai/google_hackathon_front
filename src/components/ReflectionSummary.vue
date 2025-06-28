@@ -64,7 +64,7 @@ export default {
     yearMonth: {
       immediate: true,
       handler(newVal) {
-        console.log(newVal)
+        console.log("yearMonth watch 反応:", newVal);
         this.fetchReflectionSummaries(newVal);
       }
     }
