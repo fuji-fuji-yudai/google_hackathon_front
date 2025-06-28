@@ -292,4 +292,14 @@ export default {
   margin-bottom: 15px;
   background-color: #f9f9f9;
 }
+
+.reflection-summaries p {
+  text-align: left;
+  margin-bottom: 1em;
+}
+
+.reflection-summaries p strong {
+  display: block;   /* ブロック化して改行させる */
+  margin-bottom: 0.25em; /* 見出しと本文の間に少し余白 */
+}
 </style>
