@@ -1,3 +1,4 @@
+<style scoped>
 .date-cell-container {
   display: flex;
   flex-direction: column;
@@ -21,7 +22,9 @@
   font-style: italic;
   color: #666;
   font-size: 10px;
-}<template>
+}
+</style>
+<template>
   <div class="container">
     <div class="header">
     </div>
@@ -557,7 +560,7 @@ generateDateRange()
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 20px;
+  padding: 5px;
   text-align: center;
 }
 
