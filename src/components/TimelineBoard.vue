@@ -126,16 +126,22 @@
               <!-- 予定タスクバー -->
               <div 
                 v-if="isDateInRange(date, task.plan_start, task.plan_end)"
-                class="task-bar"
+                class="task-bar planned-bar"
                 :class="hasChildren(task) ? 'parent-bar' : 'child-bar'"
+                @click="openGanttDatePicker(task, 'planned', $event)"
+                :title="`予定: ${formatDate(task.plan_start)} - ${formatDate(task.plan_end)} (クリックで編集)`"
               >
+                <span v-if="isDateStart(date, task.plan_start)" class="bar-label">予定</span>
               </div>
               
               <!-- 実績タスクバー -->
               <div 
                 v-if="isDateInRange(date, task.actual_start, task.actual_end)"
                 class="task-bar actual-bar"
+                @click="openGanttDatePicker(task, 'actual', $event)"
+                :title="`実績: ${formatDate(task.actual_start)} - ${formatDate(task.actual_end)} (クリックで編集)`"
               >
+                <span v-if="isDateStart(date, task.actual_start)" class="bar-label">実績</span>
               </div>
             </div>
           </div>
@@ -164,6 +170,33 @@
         <el-button type="primary" @click="updateTaskDate">更新</el-button>
       </template>
     </el-dialog>
+
+    <!-- ガントチャート用日付範囲ピッカーモーダル -->
+    <el-dialog v-model="showGanttDatePicker" title="期間設定" width="500px">
+      <div v-if="selectedTask">
+        <h4>{{ selectedTask.title }}</h4>
+        <div style="margin: 20px 0;">
+          <label>{{ selectedDateType === 'planned' ? '予定期間' : '実績期間' }}:</label>
+          <el-date-picker 
+            v-model="tempDateRange" 
+            type="daterange"
+            range-separator="〜"
+            start-placeholder="開始日"
+            end-placeholder="終了日"
+            style="width: 100%; margin-top: 8px;"
+            format="YYYY/MM/DD"
+            value-format="YYYY-MM-DD"
+          />
+        </div>
+        <div style="margin: 20px 0;">
+          <el-button @click="clearDateRange" type="info" plain>期間をクリア</el-button>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showGanttDatePicker = false">キャンセル</el-button>
+        <el-button type="primary" @click="updateTaskDateRange">更新</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -180,6 +213,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update'])
 
+// リアクティブ変数
 const localTasks = ref([...props.tasks])
 const newTitle = ref('')
 const newAssignee = ref('')
@@ -187,11 +221,15 @@ const newDates = ref([])
 const newParentId = ref(null)
 const expandedTasks = ref({}) // 展開状態
 const showDatePicker = ref(false)
+const showGanttDatePicker = ref(false)
 const selectedTask = ref(null)
 const selectedDateField = ref('')
+const selectedDateType = ref('') // 'planned' または 'actual'
 const tempDate = ref('')
-
+const tempDateRange = ref([])
 const dateRange = ref([])
+
+// 日付範囲生成
 const generateDateRange = () => {
   const startDate = parseISO('2025-06-01')
   const endDate = parseISO('2025-08-31')
@@ -249,6 +287,7 @@ const availableParentTasks = computed(() => {
   })
 })
 
+// 子タスクを持つかどうかの判定
 const hasChildren = (task) => {
   if (task.id === null || task.id === undefined) {
     return false
@@ -330,6 +369,16 @@ const isDateInRange = (date, startDate, endDate) => {
   }
 }
 
+// 日付が開始日かどうかをチェック
+const isDateStart = (date, startDate) => {
+  if (!startDate || startDate === '') return false
+  try {
+    return date === startDate
+  } catch {
+    return false
+  }
+}
+
 // 週末判定
 const isWeekend = (dateStr) => {
   try {
@@ -346,6 +395,91 @@ const isToday = (dateStr) => {
   } catch {
     return false
   }
+}
+
+// 日付ラベル取得
+const getDateLabel = (field) => {
+  const labels = {
+    'plan_start': '開始予定日',
+    'plan_end': '完了予定日',
+    'actual_start': '開始実績日',
+    'actual_end': '完了実績日'
+  }
+  return labels[field] || field
+}
+
+// 日付ピッカーを開く（単一日付用）
+const openDatePicker = (task, field) => {
+  selectedTask.value = task
+  selectedDateField.value = field
+  tempDate.value = task[field] || ''
+  showDatePicker.value = true
+}
+
+// ガントチャート用日付ピッカーを開く（期間用）
+const openGanttDatePicker = (task, type, event) => {
+  event.stopPropagation()
+  selectedTask.value = task
+  selectedDateType.value = type
+  
+  if (type === 'planned') {
+    tempDateRange.value = [task.plan_start || '', task.plan_end || ''].filter(d => d !== '')
+  } else {
+    tempDateRange.value = [task.actual_start || '', task.actual_end || ''].filter(d => d !== '')
+  }
+  
+  showGanttDatePicker.value = true
+}
+
+// 単一日付更新
+const updateTaskDate = () => {
+  if (selectedTask.value && selectedDateField.value) {
+    const taskIndex = localTasks.value.findIndex(t => t.id === selectedTask.value.id)
+    if (taskIndex !== -1) {
+      localTasks.value[taskIndex][selectedDateField.value] = tempDate.value
+      emit('update', [...localTasks.value])
+      ElMessage.success('日付を更新しました')
+    }
+  }
+  showDatePicker.value = false
+}
+
+// 期間更新
+const updateTaskDateRange = () => {
+  if (selectedTask.value && selectedDateType.value) {
+    const taskIndex = localTasks.value.findIndex(t => t.id === selectedTask.value.id)
+    if (taskIndex !== -1) {
+      if (selectedDateType.value === 'planned') {
+        localTasks.value[taskIndex].plan_start = tempDateRange.value[0] || ''
+        localTasks.value[taskIndex].plan_end = tempDateRange.value[1] || ''
+      } else {
+        localTasks.value[taskIndex].actual_start = tempDateRange.value[0] || ''
+        localTasks.value[taskIndex].actual_end = tempDateRange.value[1] || ''
+      }
+      emit('update', [...localTasks.value])
+      ElMessage.success('期間を更新しました')
+    }
+  }
+  showGanttDatePicker.value = false
+}
+
+// 期間クリア
+const clearDateRange = () => {
+  if (selectedTask.value && selectedDateType.value) {
+    const taskIndex = localTasks.value.findIndex(t => t.id === selectedTask.value.id)
+    if (taskIndex !== -1) {
+      if (selectedDateType.value === 'planned') {
+        localTasks.value[taskIndex].plan_start = ''
+        localTasks.value[taskIndex].plan_end = ''
+      } else {
+        localTasks.value[taskIndex].actual_start = ''
+        localTasks.value[taskIndex].actual_end = ''
+      }
+      emit('update', [...localTasks.value])
+      ElMessage.success('期間をクリアしました')
+    }
+  }
+  showGanttDatePicker.value = false
 }
 
 // タスク削除確認
@@ -463,23 +597,7 @@ const getTaskAndChildren = (taskId) => {
   return result
 }
 
-// props.tasks の変更を監視
-watch(() => props.tasks, (newTasks) => {
-  localTasks.value = [...newTasks]
-  
-  nextTick(() => {
-    newTasks.forEach(task => {
-      if (task.parentId) {
-        const parentTask = newTasks.find(t => t.id === task.parentId)
-        if (parentTask && hasChildren(parentTask)) {
-          expandedTasks.value[task.parentId] = true
-        }
-      }
-    })
-  })
-}, { immediate: true, deep: true })
-
-// addTask 関数
+// タスク追加
 const addTask = () => {
   if (!newTitle.value || !newAssignee.value || newDates.value.length !== 2) {
     ElMessage.warning('全ての項目を入力してください')
@@ -515,6 +633,23 @@ const addTask = () => {
   ElMessage.success('タスクを追加しました')
 }
 
+// props.tasks の変更を監視
+watch(() => props.tasks, (newTasks) => {
+  localTasks.value = [...newTasks]
+  
+  nextTick(() => {
+    newTasks.forEach(task => {
+      if (task.parentId) {
+        const parentTask = newTasks.find(t => t.id === task.parentId)
+        if (parentTask && hasChildren(parentTask)) {
+          expandedTasks.value[task.parentId] = true
+        }
+      }
+    })
+  })
+}, { immediate: true, deep: true })
+
+// 初期化
 generateDateRange()
 </script>
 
@@ -772,22 +907,37 @@ generateDateRange()
   align-items: center;
   justify-content: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.task-bar:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.planned-bar {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
 }
 
 .parent-bar {
-  background: linear-gradient(45deg, #4CAF50, #45a049);
   height: 20px;
 }
 
 .child-bar {
-  background: linear-gradient(45deg, #2196F3, #1976D2);
   height: 16px;
 }
 
 .actual-bar {
-  background: linear-gradient(45deg, #FF9800, #F57C00);
+  background: linear-gradient(45deg, #FF9800, #F57C00) !important;
   height: 12px;
   margin-top: 2px;
+}
+
+.bar-label {
+  font-size: 8px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
 }
 
 .status-indicator {
@@ -802,4 +952,3 @@ generateDateRange()
 .status-planned { background-color: #95a5a6; }
 .status-progress { background-color: #f39c12; }
 .status-completed { background-color: #27ae60; }
-</style>
