@@ -17,7 +17,7 @@
       <el-tab-pane label="本日着手中のタスク" name="todayTasks">
         <ul>
           <li v-for="task in todayTasks" :key="task.id">
-            {{ task.title }}（{{ formatDate(task.actualStart) }} ～ {{ formatDate(task.actualEnd) }}）
+            {{ task.title }}
           </li>
         </ul>
         <p v-if="todayTasks.length === 0">本日着手中のタスクはありません。</p>
@@ -122,6 +122,7 @@ export default {
         const data = await response.json();
         this.allTasks = Array.isArray(data) ? data : [];
         console.log(this.allTasks);
+        console.log('todayTasks:', this.todayTasks);
       } catch (error) {
         console.error('タスクの取得に失敗しました', error);
       }
