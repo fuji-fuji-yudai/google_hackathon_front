@@ -10,7 +10,7 @@
     >
       <el-icon class="upload-icon"><Upload /></el-icon>
       <div class="upload-text">
-        クリックまたはドラッグして機能一覧Excelをアップロード
+        機能一覧Excelをアップロード
       </div>
     </el-upload>
     
@@ -198,8 +198,8 @@ export default {
 
 .upload-area {
   border: 2px dashed #dcdfe6;
-  border-radius: 6px;
-  padding: 40px 0;
+  border-radius: px;
+  padding: 10px 0;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.3s;

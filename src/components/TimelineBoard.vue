@@ -1,5 +1,7 @@
-<style scoped>
-.date-cell-container {
+.task-content {
+  overflow-y: auto;
+  max-height: calc(600px - 37px);
+}.date-cell-container {
   display: flex;
   flex-direction: column;
   padding: 5px 8px;
@@ -22,9 +24,7 @@
   font-style: italic;
   color: #666;
   font-size: 10px;
-}
-</style>
-<template>
+}<template>
   <div class="container">
     <div class="header">
     </div>
@@ -54,8 +54,10 @@
         <div class="info-header">
           <div></div>
           <div>タスク名</div>
-          <div>開始日付</div>
-          <div>完了日付</div>
+          <div>予定開始</div>
+          <div>予定完了</div>
+          <div>実績開始</div>
+          <div>実績完了</div>
           <div>担当者</div>
           <div>操作</div>
         </div>
@@ -84,15 +86,10 @@
             {{ hasChildren(task) ? '📋' : '📄' }} {{ task.title }}
           </div>
           
-          <div class="date-cell-container">
-            <div class="date-top">{{ formatDate(task.plan_start) }}</div>
-            <div class="date-bottom">{{ formatDate(task.actual_start) }}</div>
-          </div>
-          
-          <div class="date-cell-container">
-            <div class="date-top">{{ formatDate(task.plan_end) }}</div>
-            <div class="date-bottom">{{ formatDate(task.actual_end) }}</div>
-          </div>
+          <div class="date-cell">{{ formatDate(task.plan_start) }}</div>
+          <div class="date-cell">{{ formatDate(task.plan_end) }}</div>
+          <div class="date-cell">{{ formatDate(task.actual_start) }}</div>
+          <div class="date-cell">{{ formatDate(task.actual_end) }}</div>
           <div class="assignee-cell">{{ task.assignee }}</div>
           
           <div class="action-cell">
@@ -560,7 +557,7 @@ generateDateRange()
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 5px;
+  padding: 20px;
   text-align: center;
 }
 
@@ -580,10 +577,11 @@ generateDateRange()
 .wbs-container {
   display: flex;
   height: 600px;
+  overflow: hidden;
 }
 
 .task-info {
-  width: 660px;
+  width: 720px;
   border-right: 2px solid #e0e0e0;
   flex-shrink: 0;
   background: white;
@@ -594,7 +592,8 @@ generateDateRange()
 .gantt-chart {
   flex: 1;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: hidden;
+  min-width: 0;
 }
 
 .gantt-content {
@@ -609,18 +608,24 @@ generateDateRange()
   color: #333;
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 15;
   display: grid;
-  grid-template-columns: 40px 200px 120px 120px 100px 80px;
+  grid-template-columns: 40px 200px 100px 100px 100px 100px 100px 80px;
   gap: 0;
   padding: 0;
+  height: 37px;
 }
 
 .info-header > div {
-  padding: 15px 8px;
+  padding: 0 8px;
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
+  border-bottom: 2px solid #e0e0e0;
   text-align: center;
+  height: 37px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chart-header {
@@ -634,18 +639,24 @@ generateDateRange()
   z-index: 5;
   display: flex;
   padding: 0;
+  height: 37px;
 }
 
 .date-column {
   min-width: 80px;
-  padding: 12px 4px;
+  padding: 0 4px;
   border-right: 1px solid #e0e0e0;
+  border-bottom: 2px solid #e0e0e0;
   text-align: center;
   font-size: 10px;
   background: #f8f9fa;
   font-weight: bold;
   color: #333;
   white-space: pre-line;
+  height: 37px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .date-column.weekend {
@@ -659,10 +670,11 @@ generateDateRange()
 
 .task-row {
   display: grid;
-  grid-template-columns: 40px 200px 120px 120px 100px 80px;
+  grid-template-columns: 40px 200px 100px 100px 100px 100px 100px 80px;
   gap: 1px;
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s;
+  min-height: 41px;
 }
 
 .task-row:hover {
@@ -676,6 +688,7 @@ generateDateRange()
   background: white;
   display: flex;
   align-items: center;
+  min-height: 41px;
 }
 
 .parent-task {
@@ -727,7 +740,7 @@ generateDateRange()
 
 .gantt-row {
   display: flex;
-  height: 41px;
+  height: 37px;
   border-bottom: 1px solid #e0e0e0;
   align-items: center;
 }
