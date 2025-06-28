@@ -34,7 +34,7 @@
 
       <div v-for="(categoryRow, rowIndex) in positionedRoadmapData" :key="categoryRow.category" class="category-row">
         <div class="category-label" 
-              :style="{ backgroundColor: getCategoryColor(categoryRow.category), gridRow: rowIndex + 3 }"> 
+             :style="{ backgroundColor: getCategoryColor(categoryRow.category), gridRow: rowIndex + 3 }"> 
           <template v-if="editingCategory !== categoryRow.category">
             <span @click="startCategoryEdit(categoryRow.category)">
               {{ categoryRow.category }}
@@ -246,7 +246,7 @@ const getTaskStyle = (task, verticalOffset) => {
     gridColumn: `${startColumn} / span ${spanLength}`, 
     backgroundColor: taskBgColor,
     borderColor: taskBorderColor,
-    top: `${verticalOffset}px`, 
+    '--task-vertical-offset': `${verticalOffset}px`, // CSS変数として渡す
   };
 };
 
@@ -277,33 +277,33 @@ onMounted(() => {
 }
 
 .roadmap-grid {
-  --quarter-header-height: 64.5px; 
-  --month-header-height: 64.5px; 
-  --header-row1-height: var(--quarter-header-height); 
-  --header-row2-height: var(--month-header-height);   
+  --quarter-header-height: 64.5px;
+  --month-header-height: 64.5px;
+  --header-row1-height: var(--quarter-header-height);
+  --header-row2-height: var(--month-header-height);
 
   display: grid;
-  /*CSS変数の参照を、HTMLのstyle属性で直接設定する名前に合わせる */
-  grid-template-rows: var(--header-row1-height) var(--header-row2-height) repeat(var(--roadmap-data-length), minmax(130px, auto)); 
-  
+
   /* CSS変数の参照を、HTMLのstyle属性で直接設定する名前に合わせる */
+  grid-template-rows: var(--header-row1-height) var(--header-row2-height) repeat(var(--roadmap-data-length), minmax(130px, auto));
   grid-template-columns: 220px repeat(var(--all-months-length), minmax(90px, 1fr));
-  
-  border: none; 
-  background-color: transparent; 
-  
-  gap: 1px; 
+
+  border: none;
+  background-color: transparent;
+
+  gap: 1px;
   font-family: 'Arial', sans-serif;
   color: #333;
   margin-top: 20px;
-  /*CSS変数の参照を、HTMLのstyle属性で直接設定する名前に合わせる */
-  min-width: calc(220px + var(--all-months-length) * 90px); 
-}
 
+  /* CSS変数の参照を、HTMLのstyle属性で直接設定する名前に合わせる */
+  min-width: calc(220px + var(--all-months-length) * 90px);
+}
 
 .grid-header-section {
-  display: contents; 
+  display: contents;
 }
+
 
 .empty-cell {
   grid-column: 1; 
@@ -405,20 +405,23 @@ onMounted(() => {
 .task-cells {
   grid-column: 2 / span var(--all-months-length); 
   display: grid; 
+  /* 各月に対応する列をここで定義 */
   grid-template-columns: repeat(var(--all-months-length), minmax(90px, 1fr)); 
   
-  gap: 1px; 
+  gap: 1px; /* 各月のセル間のギャップ */
   background-color: transparent;
-  position: relative; 
+  position: relative; /* 子要素の相対配置（topプロパティ）の基準となる */
   min-height: 130px;
   box-sizing: border-box;
 }
 
 .month-cell {
+  /* ここは、タスクが配置される背景のグリッドセルです */
   background-color: #fff;
   border-right: 1px solid #f0f0f0; 
   border-bottom: 1px solid #f0f0f0; 
   box-sizing: border-box;
+  /* grid-row: 1; は template で設定されているので不要 */
 }
 
 .month-cell.quarter-start {
@@ -426,8 +429,12 @@ onMounted(() => {
 }
 
 .task-item {
-  position: absolute; 
-  height: 28px;
+  /* position: absolute; を削除し、グリッドアイテムとして配置 */
+  /* height と verticalOffset はそのまま維持 */
+  height: 28px; 
+  
+  /* gridColumn で自動的に幅と横方向の位置が決定される */
+  
   border: 1px solid;
   border-radius: 4px;
   display: flex;
@@ -437,7 +444,7 @@ onMounted(() => {
   color: #333;
   text-shadow: none;
   
-  padding: 0;
+  padding: 0 5px; /* テキストが見切れないように左右に少しパディングを追加 */
   box-sizing: border-box;
 
   overflow: hidden;
@@ -447,6 +454,11 @@ onMounted(() => {
   box-shadow: none; 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 10;
+
+  /* 垂直方向のオフセットをCSS変数で設定 */
+  margin-top: var(--task-vertical-offset, 0); 
+  /* grid-row: 1; を明示的に追加して、task-cells 内の1行目に配置 */
+  grid-row: 1; 
 }
 
 .task-item:hover {
