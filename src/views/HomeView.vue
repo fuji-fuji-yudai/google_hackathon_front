@@ -33,7 +33,7 @@ export default {
         {
           name: "task",
           title: "タスク管理へ",
-          image: require("@/assets/logo.png"),
+          image: require("@/assets/taskManage.png"),
           route: "/taskManage",
         },
 
