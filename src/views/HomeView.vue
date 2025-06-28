@@ -40,7 +40,7 @@ export default {
         {
           name: "roadmap",
           title: "ロードマップへ",
-          image: require("@/assets/logo.png"),
+          image: require("@/assets/roadmapimg.png"),
           route: "/roadmap",
         },
 
