@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import { format, parseISO, eachDayOfInterval } from 'date-fns'
 import { ArrowRight, ArrowDown } from '@element-plus/icons-vue'
 
@@ -103,7 +103,7 @@ export default {
     // データ整合性チェック関数
     const validateTaskHierarchy = (tasks) => {
       const issues = []
-      
+
       tasks.forEach(task => {
         if (task.parentId) {
           // 親タスクが存在するかチェック
@@ -111,20 +111,20 @@ export default {
           if (!parent) {
             issues.push(`タスク "${task.title}" の親タスク ID ${task.parentId} が見つかりません`)
           }
-          
+
           // 自分自身を親に指定していないかチェック
           if (task.parentId === task.id) {
             issues.push(`タスク "${task.title}" が自分自身を親に指定しています`)
           }
         }
       })
-      
+
       // 循環参照チェック
       tasks.forEach(task => {
         const visited = new Set()
         let current = task
         let depth = 0
-        
+
         while (current.parentId && depth < 20) {
           if (visited.has(current.id)) {
             issues.push(`循環参照を検出: タスク "${task.title}" の親子関係`)
@@ -135,17 +135,17 @@ export default {
           if (!current) break
           depth++
         }
-        
+
         if (depth >= 20) {
           issues.push(`階層が深すぎます: タスク "${task.title}" (深度: ${depth})`)
         }
       })
-      
+
       if (issues.length > 0) {
         console.error('=== タスク階層の問題 ===')
         issues.forEach(issue => console.error(issue))
       }
-      
+
       return issues
     }
 
@@ -154,7 +154,7 @@ export default {
       const result = []
       const processedIds = new Set() // 処理済みIDを追跡
       const rootTasks = localTasks.value.filter(task => !task.parentId)
-      
+
       console.log('=== visibleTasks デバッグ ===')
       console.log('全タスク数:', localTasks.value.length)
       console.log('ルートタスク数:', rootTasks.length)
@@ -186,11 +186,11 @@ export default {
         if (expandedTasks.value[task.id]) {
           const children = localTasks.value.filter(child => child.parentId === task.id)
           console.log(`${task.title} の子タスク:`, children.map(c => c.title))
-          
+
           // 新しい祖先セットを作成
           const newAncestorIds = new Set(ancestorIds)
           newAncestorIds.add(task.id)
-          
+
           children.forEach(child => addTaskAndChildren(child, level + 1, newAncestorIds))
         }
       }
@@ -201,19 +201,20 @@ export default {
 
     // 子タスクを持つかどうかの判定
     const hasChildren = (task) => {
-      return localTasks.value.some(t => t.parentId === task.id)
+      const children = localTasks.value.filter(t => t.parentId === task.id)
+      const result = children.length > 0
+      
+      // デバッグログ（必要に応じて）
+      if (result) {
+        console.log(`hasChildren: "${task.title}" (ID: ${task.id}) には子タスクがあります:`, children.map(c => c.title))
+      }
+      
+      return result
     }
 
     // 展開/折りたたみの切り替え
     const toggleExpand = (taskId) => {
       expandedTasks.value[taskId] = !expandedTasks.value[taskId]
-    }
-
-    // サブタスク追加
-    const showAddSubTask = (parentId) => {
-      newParentId.value = parentId
-      // 自動的に展開
-      expandedTasks.value[parentId] = true
     }
 
     // インデントレベルの取得（無限ループ防止）
@@ -228,30 +229,55 @@ export default {
           console.warn(`getIndentLevel で循環参照を検出: ${currentTask.title}`)
           break
         }
-        
+
         visitedIds.add(currentTask.id)
         level++
         currentTask = localTasks.value.find(t => t.id === currentTask.parentId)
-        
+
         if (!currentTask) break // 親が見つからない場合
       }
-      
+
       return level
     }
 
-    // 初期状態で親タスクを展開
-    watch(localTasks, (newTasks) => {
-      console.log('=== TimelineBoard watch デバッグ ===')
-      console.log('全タスク数:', newTasks.length)
+    // ★ 修正: props.tasks の変更を監視してlocalTasksを同期
+    watch(() => props.tasks, (newTasks, oldTasks) => {
+      console.log('=== props.tasks 変更検出 ===')
+      console.log('新しいprops.tasks数:', newTasks.length)
+      console.log('前のprops.tasks数:', oldTasks ? oldTasks.length : 0)
       
+      // localTasksを完全に置き換え
+      localTasks.value = [...newTasks]
+      
+      // データ更新後に展開状態を調整
+      nextTick(() => {
+        console.log('localTasks更新完了:', localTasks.value.length)
+        
+        // 新しく追加されたタスクの親があれば自動展開
+        newTasks.forEach(task => {
+          if (task.parentId) {
+            const parentTask = newTasks.find(t => t.id === task.parentId)
+            if (parentTask && hasChildren(parentTask)) {
+              expandedTasks.value[task.parentId] = true
+            }
+          }
+        })
+      })
+      
+    }, { immediate: true, deep: true })
+
+    // ★ 修正: localTasks の変更監視（日付マップ更新専用）
+    watch(localTasks, (newTasks) => {
+      console.log('=== localTasks 変更検出 ===')
+      console.log('全タスク数:', newTasks.length)
+
       // データ整合性チェック
       const issues = validateTaskHierarchy(newTasks)
       if (issues.length > 0) {
         console.error('階層データに問題があります:', issues)
-        // 問題がある場合は処理を中断
         return
       }
-      
+
       // 親子関係の確認
       newTasks.forEach(task => {
         if (task.parentId) {
@@ -260,7 +286,7 @@ export default {
           console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
         }
       })
-      
+
       const rootTasks = newTasks.filter(task => !task.parentId)
       console.log('ルートタスク:', rootTasks.map(t => t.title))
 
@@ -275,7 +301,7 @@ export default {
 
       expandedTasks.value = newExpandedState
 
-      // 日付マップの更新（既存のロジック）
+      // 日付マップの更新
       const newPlanMap = {}
       const newActualMap = {}
 
@@ -321,7 +347,7 @@ export default {
 
       taskPlanDateMap.value = newPlanMap
       taskActualDateMap.value = newActualMap
-    }, { immediate: true, deep: true })
+    }, { deep: true }) // immediate: true を削除（props watch で処理するため）
 
     // 予定日付変更
     const onPlanDateChange = (task, value) => {
@@ -353,6 +379,7 @@ export default {
       emit('update', localTasks.value)
     }
 
+    // ★ 修正: addTask 関数
     const addTask = () => {
       if (!newTitle.value || !newAssignee.value || newDates.value.length !== 2) return
 
@@ -371,16 +398,19 @@ export default {
       console.log('=== addTask デバッグ ===')
       console.log('選択された親ID:', newParentId.value)
       console.log('新しいタスク:', newTask)
-      console.log('parentId の型:', typeof newTask.parentId)
 
-      localTasks.value.push(newTask)
-      emit('update', localTasks.value)
+      // ★ 修正: ローカル状態を更新せず、親コンポーネントに委譲
+      const updatedTasks = [...localTasks.value, newTask]
+      emit('update', updatedTasks)
 
-      // 親タスクがある場合は展開
+      // 親タスクがある場合は展開状態を予約
       if (newParentId.value) {
-        expandedTasks.value[newParentId.value] = true
+        nextTick(() => {
+          expandedTasks.value[newParentId.value] = true
+        })
       }
 
+      // フォームをクリア
       newTitle.value = ''
       newAssignee.value = ''
       newDates.value = []
@@ -429,7 +459,6 @@ export default {
       getParentTitle,
       hasChildren,
       toggleExpand,
-      showAddSubTask,
       emit
     }
   }
@@ -520,22 +549,9 @@ export default {
   color: #1890ff;
 }
 
-.add-subtask-btn {
-  margin-left: auto;
-  min-width: 24px;
-  height: 24px;
-  padding: 0;
-}
-
 .task-assignee {
   font-size: 14px;
   color: #666;
-  margin-bottom: 4px;
-}
-
-.task-parent {
-  font-size: 12px;
-  color: #999;
   margin-bottom: 4px;
 }
 
@@ -545,17 +561,6 @@ export default {
   gap: 8px;
   font-size: 14px;
   margin-bottom: 8px;
-}
-
-.date-picker-container.compact {
-  margin-bottom: 0;
-  min-width: 220px;
-}
-
-.date-picker-container span {
-  min-width: 40px;
-  font-weight: bold;
-  flex-shrink: 0;
 }
 
 .days {

@@ -40,13 +40,8 @@ export default {
         actual_start: obj.actual_start,
         actual_end: obj.actual_end,
         status: obj.status,
-        // ★ 修正: parent_id を parentId に変換、数値として扱う
+        // parent_id を parentId に変換、数値として扱う
         parentId: obj.parent_id ? parseInt(obj.parent_id) : null
-      }
-      
-      // デバッグ: 親タスクがある場合のみログ出力
-      if (obj.parent_id) {
-        // console.log(`toCamel変換: ${obj.title} - parent_id: ${obj.parent_id} → parentId: ${converted.parentId}`)
       }
       
       return converted
@@ -68,10 +63,10 @@ export default {
     // タスク一覧取得
     const fetchTasks = async () => {
       const token = localStorage.getItem('token')
-      console.log('トークン:', token)
+      console.log('データ取得開始...')
       if (!token) {
         console.error('トークンが取得できませんでした')
-        return
+        return false
       }
 
       try {
@@ -87,28 +82,20 @@ export default {
         }
 
         const data = await response.json()
-        // // console.log('=== サーバーから取得したデータ ===')
-        // data.forEach(task => {
-        //   // console.log(`ID: ${task.id}, Title: ${task.title}, parent_id: ${task.parent_id} (型: ${typeof task.parent_id})`)
-        // })
+        console.log('=== データ取得成功 ===')
+        console.log('取得タスク数:', data.length)
 
         tasks.value = Array.isArray(data) ? data.map(toCamel) : []
         
-        // console.log('=== toCamel変換後のデータ ===')
-        // tasks.value.forEach(task => {
-        //   console.log(`ID: ${task.id}, Title: ${task.title}, parentId: ${task.parentId} (型: ${typeof task.parentId})`)
-        // })
+        console.log('=== 変換後データ ===')
+        console.log('親タスク:', tasks.value.filter(t => !t.parentId).map(t => t.title))
+        console.log('子タスク:', tasks.value.filter(t => t.parentId).map(t => `${t.title} -> 親ID: ${t.parentId}`))
         
-        // 親子関係の確認
-        // const parentTasks = tasks.value.filter(t => !t.parentId)
-        // const childTasks = tasks.value.filter(t => t.parentId)
-        // console.log('=== 親子関係の分析 ===')
-        // console.log('親タスク:', parentTasks.map(t => `${t.title} (ID: ${t.id})`))
-        // console.log('子タスク:', childTasks.map(t => `${t.title} (ID: ${t.id}, 親ID: ${t.parentId})`))
+        return true
         
       } catch (error) {
-        // console.error('タスクの取得に失敗しました', error)
-        // console.log(JSON.stringify(JSON.parse(atob(token.split('.')[1])), null, 2))
+        console.error('タスクの取得に失敗しました', error)
+        return false
       }
     }
 
@@ -116,22 +103,14 @@ export default {
     const saveTasks = async (newTasks) => {
       const token = localStorage.getItem('token')
       if (!token) {
-        // console.error('トークンが取得できませんでした')
+        console.error('トークンが取得できませんでした')
         return
       }
 
       try {
         const payload = newTasks.map(toSnake)
-        // console.log('=== 保存前データ確認 ===')
-        // console.log('変換前 (parentId):', newTasks)
-        // console.log('変換後 (parent_id):', payload)
-
-        // parent_id が設定されているタスクをチェック
-        payload.forEach(task => {
-          if (task.parent_id) {
-            // console.log(`${task.title} の parent_id: ${task.parent_id}`)
-          }
-        })
+        console.log('=== 保存開始 ===')
+        console.log('保存するタスク数:', payload.length)
 
         const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           method: 'POST',
@@ -147,9 +126,9 @@ export default {
           throw new Error(`保存失敗 status: ${response.status}`)
         }
 
-        console.log('保存成功')
+        console.log('保存成功 - データ再取得開始')
         
-        // ★ 保存後にデータを再取得して最新状態を反映
+        // ★ 修正: 保存完了後すぐにデータ再取得
         await fetchTasks()
         
       } catch (error) {
@@ -158,17 +137,30 @@ export default {
     }
 
     // 子コンポーネントから更新通知を受けた時
-    const handleUpdate = (newTasks) => {
+    const handleUpdate = async (newTasks) => {
+      console.log('=== handleUpdate 呼び出し ===')
+      console.log('更新されたタスク数:', newTasks.length)
+      
+      // ★ 修正: 一時的にローカル状態を更新（UX向上のため）
       tasks.value = newTasks
-      saveTasks(newTasks)
+      
+      // 保存処理（完了後に正確なデータで上書き）
+      await saveTasks(newTasks)
     }
 
     // Excelからタスクが生成された時
-    const handleTasksGenerated = (generatedTasks) => {
+    const handleTasksGenerated = async (generatedTasks) => {
+      console.log('=== Excel からタスク生成 ===')
+      console.log('生成されたタスク数:', generatedTasks.length)
+      
       // 既存のタスクに新しいタスクを追加
       const newTasks = [...tasks.value, ...generatedTasks]
+      
+      // 一時的にローカル状態を更新
       tasks.value = newTasks
-      saveTasks(newTasks)
+      
+      // 保存処理
+      await saveTasks(newTasks)
     }
 
     onMounted(fetchTasks)
