@@ -155,13 +155,13 @@ export default {
       newTasks.forEach(task => {
         if (task.parentId) {
           // console.log(`子タスク: ${task.title} (ID: ${task.id}) -> 親ID: ${task.parentId}`)
-          const parent = newTasks.find(p => p.id === task.parentId)
+          // const parent = newTasks.find(p => p.id === task.parentId)
           // console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
         }
       })
       
       // ルートタスクの確認（★ 修正: parent_id → parentId に変更）
-      const rootTasks = newTasks.filter(task => !task.parentId)
+      // const rootTasks = newTasks.filter(task => !task.parentId)
       // console.log('ルートタスク:', rootTasks.map(t => t.title))
 
       const newExpandedState = { ...expandedTasks.value }

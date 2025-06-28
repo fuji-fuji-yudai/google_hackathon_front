@@ -100,8 +100,8 @@ export default {
         // })
         
         // 親子関係の確認
-        const parentTasks = tasks.value.filter(t => !t.parentId)
-        const childTasks = tasks.value.filter(t => t.parentId)
+        // const parentTasks = tasks.value.filter(t => !t.parentId)
+        // const childTasks = tasks.value.filter(t => t.parentId)
         // console.log('=== 親子関係の分析 ===')
         // console.log('親タスク:', parentTasks.map(t => `${t.title} (ID: ${t.id})`))
         // console.log('子タスク:', childTasks.map(t => `${t.title} (ID: ${t.id}, 親ID: ${t.parentId})`))
