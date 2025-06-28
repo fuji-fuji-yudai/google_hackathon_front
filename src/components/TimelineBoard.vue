@@ -697,8 +697,14 @@ onMounted(() => {
   background: white;
   z-index: 10;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: scroll; /* ← 同期用にスクロール有効 */
+  -ms-overflow-style: none; /* IE, Edge */
+  scrollbar-width: none; /* Firefox */
   position: relative;
+}
+
+.task-info::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
 }
 
 .gantt-chart {
@@ -968,18 +974,6 @@ onMounted(() => {
 
 .status-completed {
   background-color: #27ae60;
-}
-
-.task-info {
-  width: 720px;
-  border-right: 2px solid #e0e0e0;
-  flex-shrink: 0;
-  background: white;
-  z-index: 10;
-  overflow-x: auto;
-  overflow-y: auto;
-  /* ← 両方に縦スクロールを許可 */
-  position: relative;
 }
 
 .gantt-chart {
