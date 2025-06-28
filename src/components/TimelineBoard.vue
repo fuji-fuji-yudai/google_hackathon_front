@@ -1,4 +1,138 @@
-<template>
+.delete-btn {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}    // タスク削除確認ダイアログ
+    const confirmDeleteTask = async (task) => {
+      // 新規タスク（IDがnull）は削除できない
+      if (task.id === null || task.id === undefined) {
+        ElMessage.warning('保存されていないタスクです')
+        return
+      }
+
+      const childTasks = localTasks.value.filter(t => t.parentId === task.id)
+      const hasChildTasks = childTasks.length > 0
+
+      try {
+        let deleteChildren = false
+
+        if (hasChildTasks) {
+          // 親タスクで子タスクがある場合
+          await ElMessageBox.confirm(
+            `「${task.title}」を削除します。\n子タスク（${childTasks.length}件）も一緒に削除しますか？`,
+            '削除確認',
+            {
+              confirmButtonText: '子タスクも削除',
+              cancelButtonText: '子タスクは残す',
+              distinguishCancelAndClose: true,
+              type: 'warning'
+            }
+          )
+          deleteChildren = true
+        } else {
+          // 子タスクがない場合の通常確認
+          await ElMessageBox.confirm(
+            `「${task.title}」を削除してもよろしいですか？`,
+            '削除確認',
+            {
+              confirmButtonText: '削除',
+              cancelButtonText: 'キャンセル',
+              type: 'warning'
+            }
+          )
+        }
+
+        // 削除実行
+        await deleteTask(task.id, deleteChildren)
+
+      } catch (action) {
+        if (action === 'cancel' && hasChildTasks) {
+          // 「子タスクは残す」が選択された場合
+          try {
+            await ElMessageBox.confirm(
+              `「${task.title}」のみを削除し、子タスクは残します。よろしいですか？`,
+              '削除確認',
+              {
+                confirmButtonText: '削除',
+                cancelButtonText: 'キャンセル',
+                type: 'warning'
+              }
+            )
+            await deleteTask(task.id, false)
+          } catch (e) {
+            // キャンセルされた場合は何もしない
+          }
+        }
+        // その他のキャンセルの場合は何もしない
+      }
+    }
+
+    // タスク削除処理
+    const deleteTask = async (taskId, deleteChildren) => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          ElMessage.error('認証トークンが見つかりません')
+          return
+        }
+
+        // サーバーに削除リクエストを送信
+        const response = await fetch(
+          `https://my-image-14467698004.asia-northeast1.run.app/api/tasks/${taskId}?deleteChildren=${deleteChildren}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`削除失敗 status: ${response.status}`)
+        }
+
+        // ローカルタスクリストから削除
+        if (deleteChildren) {
+          // 子タスクも含めて削除
+          const tasksToDelete = getTaskAndChildren(taskId)
+          const updatedTasks = localTasks.value.filter(task => !tasksToDelete.includes(task.id))
+          ElMessage.success(`タスクと子タスク（${tasksToDelete.length}件）を削除しました`)
+          
+          // 親コンポーネントに更新を通知
+          emit('update', updatedTasks)
+        } else {
+          // 指定タスクのみ削除、子タスクの親IDをnullに
+          const updatedTasks = localTasks.value.filter(task => task.id !== taskId)
+          updatedTasks.forEach(task => {
+            if (task.parentId === taskId) {
+              task.parentId = null
+            }
+          })
+          ElMessage.success('タスクを削除しました')
+          
+          // 親コンポーネントに更新を通知
+          emit('update', updatedTasks)
+        }
+
+      } catch (error) {
+        console.error('タスクの削除に失敗しました', error)
+        ElMessage.error('タスクの削除に失敗しました: ' + error.message)
+      }
+    }
+
+    // 指定タスクとその子タスクのIDを再帰的に取得
+    const getTaskAndChildren = (taskId) => {
+      const result = [taskId]
+      const children = localTasks.value.filter(task => task.parentId === taskId)
+      
+      children.forEach(child => {
+        result.push(...getTaskAndChildren(child.id))
+      })
+      
+      return result
+    }<template>
   <div class="timeline-container" :style="{ '--day-count': dateRange.length }">
     <div class="task-input-row">
       <el-input v-model="newTitle" placeholder="タスク名" style="width: 200px; margin-right: 8px;" />
