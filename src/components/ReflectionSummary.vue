@@ -1,8 +1,8 @@
 <template>
   <div class="reflection-summaries">
-    <el-tabs v-model="activeTab" type="border-card" height="500px">
-      <el-scrollbar height="100%">
-        <el-tab-pane label="振り返りサマリー" name="summary">
+    <el-tabs v-model="activeTab" type="border-card">
+      <el-tab-pane label="振り返りサマリー" name="summary">
+        <el-scrollbar height="400px">
           <div v-if="summary">
             <h3>{{yearMonth.getFullYear()}}年{{yearMonth.getMonth()+1}}月の振り返り</h3>
             <p><strong>活動内容:</strong> {{ summary.activitySummary }}</p>
@@ -13,17 +13,19 @@
             <p>{{yearMonth.getFullYear()}}年{{yearMonth.getMonth()+1}}月の振り返りサマリーが見つかりません。</p>
             <el-button type="primary" @click="createSummary">サマリーを作成</el-button>
           </div>
-        </el-tab-pane>
+        </el-scrollbar>
+      </el-tab-pane>
 
-        <el-tab-pane label="着手中のタスク" name="todayTasks">
+      <el-tab-pane label="着手中のタスク" name="todayTasks">
+        <el-scrollbar height="400px">
           <ul>
             <li v-for="task in allTasks" :key="task.id">
               {{ task.title }}
             </li>
           </ul>
           <p v-if="allTasks.length === 0">着手中のタスクはありません。</p>
-        </el-tab-pane>
-      </el-scrollbar>
+        </el-scrollbar>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
