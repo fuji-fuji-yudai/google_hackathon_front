@@ -105,21 +105,31 @@ export default {
       const result = []
 
       // ★ 修正: parent_id → parentId に変更
-      const rootTasks = localTasks.value.filter(task => !task.parentId)
-      
-      // console.log('=== visibleTasks デバッグ ===')
-      // console.log('全タスク数:', localTasks.value.length)
-      // console.log('ルートタスク数:', rootTasks.length)
-      // console.log('ルートタスク:', rootTasks.map(t => `${t.title} (ID: ${t.id})`))
+      const addTaskAndChildren = (task, level = 0, ancestorIds = new Set()) => {
+        // 循環参照チェック
+        if (ancestorIds.has(task.id)) {
+          console.warn(`循環参照を検出: タスクID ${task.id} (${task.title})`)
+          return
+        }
 
-      const addTaskAndChildren = (task, level = 0) => {
+        // 処理済みチェック
+        if (processedIds.has(task.id)) {
+          console.warn(`既に処理済み: タスクID ${task.id} (${task.title})`)
+          return
+        }
+
+        // レベル制限（安全装置）
+        if (level > 3) {
+          console.warn(`階層が深すぎます: レベル ${level}, タスクID ${task.id}`)
+          return
+        }
+
+        processedIds.add(task.id)
         result.push({ ...task, level })
-
         // この親タスクが展開されている場合のみ子タスクを追加
         if (expandedTasks.value[task.id]) {
           // ★ 修正: parent_id → parentId に変更
           const children = localTasks.value.filter(child => child.parentId === task.id)
-          // console.log(`${task.title} の子タスク:`, children.map(c => c.title))
           children.forEach(child => addTaskAndChildren(child, level + 1))
         }
       }
@@ -148,21 +158,7 @@ export default {
 
     // 初期状態で親タスクを展開
     watch(localTasks, (newTasks) => {
-      // console.log('=== TimelineBoard watch デバッグ ===')
-      // console.log('全タスク数:', newTasks.length)
-      
-      // 親子関係の確認（★ 修正: parent_id → parentId に変更）
-      newTasks.forEach(task => {
-        if (task.parentId) {
-          // console.log(`子タスク: ${task.title} (ID: ${task.id}) -> 親ID: ${task.parentId}`)
-          // const parent = newTasks.find(p => p.id === task.parentId)
-          // console.log(`親タスク見つかった:`, parent ? parent.title : '見つからない')
-        }
-      })
-      
-      // ルートタスクの確認（★ 修正: parent_id → parentId に変更）
-      // const rootTasks = newTasks.filter(task => !task.parentId)
-      // console.log('ルートタスク:', rootTasks.map(t => t.title))
+
 
       const newExpandedState = { ...expandedTasks.value }
 
@@ -268,10 +264,6 @@ export default {
         parentId: newParentId.value
       }
 
-      // console.log('=== addTask デバッグ ===')
-      // console.log('選択された親ID:', newParentId.value)
-      // console.log('新しいタスク:', newTask)
-      // console.log('parentId の型:', typeof newTask.parentId)
 
       localTasks.value.push(newTask)
       emit('update', localTasks.value)
