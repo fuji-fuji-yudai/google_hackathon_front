@@ -55,8 +55,7 @@ export default {
       const today = new Date();
       return this.allTasks.filter(task => {
         const start = new Date(task.actualStart);
-        const end = new Date(task.actualEnd);
-        return start <= today && today <= end;
+        return start <= today;
       });
     }
   },
@@ -114,6 +113,7 @@ export default {
       }
     },
     async fetchTasks() {
+      console.log("タスク取得処理開始")
       try {
         const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           headers: {

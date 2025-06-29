@@ -18,7 +18,7 @@
           </el-icon>
         </el-button>
       </div>
-      <el-calendar class="main-calendar" @current-month-change="onMonthChange">
+      <el-calendar class="main-calendar" v-model="calendarDate">
         <template #date-cell="{ data }">
           <div
             style="width: 100%; height: 100%; cursor: pointer; display: flex; flex-direction: column;"
@@ -54,10 +54,12 @@ const token = localStorage.getItem('token')
 const flashMessage = ref(""); // メッセージ内容
 const flashTitle = ref(""); // メッセージのタイトル
 const flashType = ref("success"); // メッセージの種類 (success, error, info, warning)
+
 const selectedDate = ref(new Date())
 const currentMonth = ref(new Date()) // 現在表示しているカレンダーの月
 const completedDates = ref([]) // 完了データの日付リスト
 const isSummaryVisible = ref(false);
+const calendarDate = ref(new Date());
 
 // ここでフラッシュメッセージを設定
 const route = useRoute()
@@ -118,20 +120,29 @@ const isDateCompleted = (date) => {
   // const formattedDate = `${year}-${month}-${day}`;
   const target = new Date(date).toDateString();
   // console.log('formattedDate：' + formattedDate)
-  console.log("completedDates: " + target);
-  console.log("completedDates: " + completedDates.value);
   return completedDates.value.includes(target)
 }
+
+let previousMonth = calendarDate.value.getMonth();
+
+watch(calendarDate, (newDate) => {
+  const newMonth = newDate.getMonth();
+  if (newMonth !== previousMonth) {
+    previousMonth = newMonth;
+    currentMonth.value = new Date(newDate); // 月が変わったので反映
+    console.log('カレンダーの月が変更された:', newDate);
+  }
+});
 
 // カレンダーの月が変更されたときにデータを再取得
 watch(currentMonth, fetchReflections)
 // 初期データ取得
 onMounted(fetchReflections)
 
-const onMonthChange = (date) => {
-  currentMonth.value = date
-  console.log('カレンダーの月が変更された:', date)
-}
+// const onMonthChange = (date) => {
+//   currentMonth.value = date
+//   console.log('カレンダーの月が変更された:', date)
+// }
 
 
 </script>
