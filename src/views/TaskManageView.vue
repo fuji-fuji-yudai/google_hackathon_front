@@ -29,7 +29,7 @@ export default {
     const viewMode = ref('card')
     const tasks = ref([])
 
-    // snake_case → camelCase に変換
+    // 他にも、toCamelの修正が必要
     const toCamel = (obj) => {
       const converted = {
         id: obj.id,
@@ -40,10 +40,14 @@ export default {
         actual_start: obj.actual_start,
         actual_end: obj.actual_end,
         status: obj.status,
-        // parent_id を parentId に変換、数値として扱う
-        parentId: obj.parent_id ? parseInt(obj.parent_id) : null
+        // ✅ 修正: parent_idの変換ロジック改善
+        parentId: obj.parent_id !== null && obj.parent_id !== undefined
+          ? parseInt(obj.parent_id)
+          : null,
+        // ✅ 追加: tmp_idフィールドも保持
+        tmpId: obj.tmp_id || null
       }
-      
+
       return converted
     }
 
@@ -86,13 +90,13 @@ export default {
         console.log('取得タスク数:', data.length)
 
         tasks.value = Array.isArray(data) ? data.map(toCamel) : []
-        
+
         console.log('=== 変換後データ ===')
         console.log('親タスク:', tasks.value.filter(t => !t.parentId).map(t => t.title))
         console.log('子タスク:', tasks.value.filter(t => t.parentId).map(t => `${t.title} -> 親ID: ${t.parentId}`))
-        
+
         return true
-        
+
       } catch (error) {
         console.error('タスクの取得に失敗しました', error)
         return false
@@ -127,10 +131,10 @@ export default {
         }
 
         console.log('保存成功 - データ再取得開始')
-        
+
         // ★ 修正: 保存完了後すぐにデータ再取得
         await fetchTasks()
-        
+
       } catch (error) {
         console.error('タスクの保存に失敗しました', error)
       }
@@ -140,27 +144,27 @@ export default {
     const handleUpdate = async (newTasks) => {
       console.log('=== handleUpdate 呼び出し ===')
       console.log('更新されたタスク数:', newTasks.length)
-      
+
       // ★ 修正: 一時的にローカル状態を更新（UX向上のため）
       tasks.value = newTasks
-      
+
       // 保存処理（完了後に正確なデータで上書き）
       await saveTasks(newTasks)
     }
-
-    // Excelからタスクが生成された時
+    // 修正されたhandleTasksGenerated
     const handleTasksGenerated = async (generatedTasks) => {
-      console.log('=== Excel からタスク生成 ===')
+      console.log('=== Excel からタスク生成完了 ===')
       console.log('生成されたタスク数:', generatedTasks.length)
-      
-      // 既存のタスクに新しいタスクを追加
-      const newTasks = [...tasks.value, ...generatedTasks]
-      
-      // 一時的にローカル状態を更新
-      tasks.value = newTasks
-      
-      // 保存処理
-      await saveTasks(newTasks)
+
+      // ❌ 削除: 既存タスクとの結合処理
+      // const newTasks = [...tasks.value, ...generatedTasks]
+
+      // ❌ 削除: 再保存処理
+      // await saveTasks(newTasks)
+
+      // ✅ 追加: データ再取得のみ
+      console.log('Excel生成完了 - データ再取得開始')
+      await fetchTasks()  // DBから最新データを取得
     }
 
     onMounted(fetchTasks)
