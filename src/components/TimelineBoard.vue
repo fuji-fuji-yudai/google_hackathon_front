@@ -27,7 +27,7 @@
           <div>開始実績</div>
           <div>完了実績</div>
           <div>担当者</div>
-          <div>操作</div>
+          <div>削除</div>
         </div>
 
         <div v-for="task in visibleTasks" :key="`task-${task.id}`" class="task-row"
@@ -708,10 +708,7 @@ onMounted(() => {
 }
 
 .task-info::-webkit-scrollbar {
-  width: 0 !important;
-  /* 縦スクロールバーだけ完全非表示 */
-  height: auto;
-  /* 横スクロールバーは表示させる */
+  display: none; /* ← 完全に非表示にする */
 }
 
 .gantt-chart {
