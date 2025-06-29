@@ -33,25 +33,39 @@
           <div class="task-preview">
             <h3>作成されるタスク（{{ generatedTasks.length }}件）</h3>
             
+            <!-- デバッグ用情報表示 -->
+            <div class="debug-info" v-if="showDebug">
+              <h4>デバッグ情報</h4>
+              <div class="debug-summary">
+                親タスク: {{ parentTasks.length }}個 | 子タスク: {{ childTasks.length }}個
+              </div>
+            </div>
+            
             <el-tree
               :data="taskTree"
-              node-key="id"
+              node-key="tmp_id"
               default-expand-all
               :props="{ 
                 label: 'title',
                 children: 'children'
               }"
             >
-              <template #default="{data }">
+              <template #default="{ data }">
                 <div class="task-node">
-                  <span>{{ data.title }}</span>
+                  <span class="task-title">{{ data.title }}</span>
                   <span v-if="data.assignee" class="task-assignee">担当: {{ data.assignee }}</span>
+                  <span v-if="showDebug" class="task-debug">
+                    (tmp_id: {{ data.tmp_id }}, tmp_parent_id: {{ data.tmp_parent_id }})
+                  </span>
                 </div>
               </template>
             </el-tree>
           </div>
           
           <div class="action-buttons">
+            <el-button @click="toggleDebug" size="small">
+              {{ showDebug ? 'デバッグ非表示' : 'デバッグ表示' }}
+            </el-button>
             <el-button @click="previewVisible = false">キャンセル</el-button>
             <el-button 
               type="primary" 
@@ -98,6 +112,7 @@ export default {
     const isLoading = ref(false);
     const isImporting = ref(false);
     const generatedTasks = ref([]);
+    const showDebug = ref(false);
     
     // Excelファイルの検証
     const beforeUpload = (file) => {
@@ -141,21 +156,38 @@ export default {
         console.log('生成されたタスク数:', data.length);
         console.log('タスク一覧:', data);
         
-        // データの正規化: snake_case形式に統一
-        generatedTasks.value = data.map((task) => ({
-          id: task.id,
-          title: task.title,
-          assignee: task.assignee,
-          plan_start: task.plan_start,
-          plan_end: task.plan_end,
-          actual_start: task.actual_start || "",
-          actual_end: task.actual_end || "",
-          status: task.status || "ToDo",
-          parent_id: task.parent_id != null ? task.parent_id : (task.parentId || null)
-        }));
+        // データの詳細確認（デバッグ用）
+        data.forEach((task, index) => {
+          console.log(`タスク${index}: title="${task.title}", tmp_id=${task.tmp_id}, tmp_parent_id=${task.tmp_parent_id}`);
+        });
+        
+        // データの正規化: tmp_idとtmp_parent_idを含めて処理
+        generatedTasks.value = data.map((task, index) => {
+          const normalizedTask = {
+            id: task.id || null,
+            title: task.title || `タスク${index + 1}`,
+            assignee: task.assignee || "",
+            plan_start: task.plan_start || "",
+            plan_end: task.plan_end || "",
+            actual_start: task.actual_start || "",
+            actual_end: task.actual_end || "",
+            status: task.status || "ToDo",
+            parent_id: task.parent_id || null,
+            tmp_id: task.tmp_id || (index + 1), // tmp_idがない場合は連番を設定
+            tmp_parent_id: task.tmp_parent_id || null
+          };
+          
+          console.log(`正規化後タスク${index}:`, normalizedTask);
+          return normalizedTask;
+        });
         
         console.log('=== 調整後のタスク ===');
         console.log(generatedTasks.value);
+        
+        // ツリー構造の検証
+        console.log('=== ツリー構造検証 ===');
+        console.log('親タスク数:', parentTasks.value.length);
+        console.log('子タスク数:', childTasks.value.length);
         
       } catch (error) {
         console.error('Excelの解析に失敗しました:', error);
@@ -167,28 +199,70 @@ export default {
       }
     };
     
-    // 階層構造のタスクツリーを生成
+    // 親タスクと子タスクを分離して計算
+    const parentTasks = computed(() => {
+      return generatedTasks.value.filter(task => 
+        task.tmp_parent_id === null || task.tmp_parent_id === undefined
+      );
+    });
+    
+    const childTasks = computed(() => {
+      return generatedTasks.value.filter(task => 
+        task.tmp_parent_id !== null && task.tmp_parent_id !== undefined
+      );
+    });
+    
+    // 階層構造のタスクツリーを生成（tmp_id基準）
     const taskTree = computed(() => {
+      console.log('=== taskTree計算開始 ===');
+      console.log('generatedTasks.value:', generatedTasks.value);
+      
       const result = [];
       const map = {};
       
-      // まず全タスクをマップに登録
-      generatedTasks.value.forEach(task => {
-        map[task.id] = { ...task, children: [] };
+      // Step 1: 全タスクをマップに登録（tmp_id基準）
+      generatedTasks.value.forEach((task, index) => {
+        const key = task.tmp_id || (index + 1);
+        map[key] = { 
+          ...task, 
+          children: [],
+          key: key // デバッグ用
+        };
+        console.log(`マップ登録: key=${key}, title="${task.title}", tmp_parent_id=${task.tmp_parent_id}`);
       });
       
-      // 親子関係を構築
-      generatedTasks.value.forEach(task => {
-        const parentId = task.parent_id;
-        if (parentId && map[parentId]) {
-          map[parentId].children.push(map[task.id]);
+      console.log('=== マップ構築完了 ===');
+      console.log('map keys:', Object.keys(map));
+      
+      // Step 2: 親子関係を構築（tmp_parent_id基準）
+      generatedTasks.value.forEach((task, index) => {
+        const taskKey = task.tmp_id || (index + 1);
+        const parentKey = task.tmp_parent_id;
+        
+        console.log(`親子関係チェック: taskKey=${taskKey}, parentKey=${parentKey}, title="${task.title}"`);
+        
+        if (parentKey !== null && parentKey !== undefined && map[parentKey]) {
+          // 親が存在する場合、親の子として追加
+          map[parentKey].children.push(map[taskKey]);
+          console.log(`  -> 親 "${map[parentKey].title}" の子として追加`);
         } else {
-          result.push(map[task.id]);
+          // 親が存在しない場合、ルートレベルに追加
+          result.push(map[taskKey]);
+          console.log(`  -> ルートレベルに追加`);
         }
       });
       
+      console.log('=== taskTree計算完了 ===');
+      console.log('result length:', result.length);
+      console.log('result:', result);
+      
       return result;
     });
+    
+    // デバッグ表示の切り替え
+    const toggleDebug = () => {
+      showDebug.value = !showDebug.value;
+    };
     
     // タスクインポート処理（DBに保存）
     const importTasks = async () => {
@@ -207,20 +281,6 @@ export default {
         console.log('=== API呼び出し開始 ===');
         console.log('URL:', importUrl);
         console.log('送信データ:', JSON.stringify(generatedTasks.value, null, 2));
-        
-        // デバッグ用：JSONデータをファイルとしてダウンロード
-        const dataStr = JSON.stringify(generatedTasks.value, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'import-tasks-debug.json';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        console.log('デバッグ用JSONファイルをダウンロードしました');
         
         // DBに保存するためのAPIを呼び出し
         const response = await fetch(importUrl, {
@@ -275,9 +335,13 @@ export default {
       isImporting,
       generatedTasks,
       taskTree,
+      parentTasks,
+      childTasks,
+      showDebug,
       beforeUpload,
       handleUpload,
-      importTasks
+      importTasks,
+      toggleDebug
     };
   }
 }
@@ -332,20 +396,47 @@ export default {
   margin-bottom: 20px;
 }
 
+.debug-info {
+  background-color: #f5f7fa;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+}
+
+.debug-summary {
+  font-size: 14px;
+  color: #606266;
+}
+
 .task-node {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.task-title {
+  font-weight: 500;
 }
 
 .task-assignee {
-  margin-left: 10px;
   font-size: 12px;
   color: #909399;
+  background-color: #f0f2f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.task-debug {
+  font-size: 10px;
+  color: #c0c4cc;
+  font-family: monospace;
 }
 
 .action-buttons {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
   margin-top: 20px;
 }
 
