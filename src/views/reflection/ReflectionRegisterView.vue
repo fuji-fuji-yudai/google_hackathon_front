@@ -9,6 +9,14 @@
     />
     <el-main>
       <h2>振り返り</h2>
+      <!-- 右上に表示するボタン -->
+      <div class="toggle-btn top-right vertical-text-btn">
+        <el-button @click="isSummaryVisible = !isSummaryVisible">
+          <el-icon>
+            <component :is="isSummaryVisible ? ArrowRightBold : ArrowLeftBold" />
+          </el-icon>
+        </el-button>
+      </div>
       <el-form label-width="80px">
         <el-form-item label="日付">
           <el-date-picker
@@ -62,9 +70,20 @@
         <div v-html="renderMarkdown(feedbackData.feedback)" class="feedback"></div>
       </div>
     </el-main>
+    <!-- サマリーをスライドで表示 -->
+    <transition name="slide">
+      <div class="summary-panel" v-if="isSummaryVisible">
+        <ReflectionSummary :yearMonth="currentMonth" />
+      </div>
+    </transition>
   </div>
 </template>
 
+<script setup>
+import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue';
+import ReflectionSummary from '@/components/ReflectionSummary.vue';
+import FlashMessage from '@/components/FlashMessage.vue'
+</script>
 <script>
 import { useRoute } from 'vue-router'
 import axios from 'axios'
@@ -91,7 +110,9 @@ export default {
       // フラッシュメッセージ用の状態管理
       flashMessage: ref(""), // メッセージ内容
       flashTitle: ref(""), // メッセージのタイトル
-      flashType: ref("success") // メッセージの種類 (success, error, info, warning)
+      flashType: ref("success"), // メッセージの種類 (success, error, info, warning)
+      isSummaryVisible: ref(false),
+      currentMonth: new Date(route.query.date) || '',
     };
   },
 
@@ -263,9 +284,6 @@ export default {
           this.feedbackData = null;
         }
         console.log("フィードバック取得成功");
-        console.log(`feedback: ${this.feedbackData.feedback === ''}`);
-        console.log(`feedback: ${this.feedbackData.feedback === null}`);
-        console.log("feedback: "+ this.feedbackData.feedback);
         this.error = null; // エラーをリセット
       } catch (error) {
         // エラーが発生した場合
@@ -307,4 +325,38 @@ export default {
   .feedback {
     text-align: left;
   }
+    /* トグルボタンの右上配置 */
+  .toggle-btn.top-right {
+    position: fixed;
+    top: 75px;
+    right: 0px;
+    z-index: 1000;
+  }
+  /* サマリーのスライド表示 */
+.summary-panel {
+  position: fixed;
+  top: 75px;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  z-index: 999;
+  padding: 20px;
+}
+
+/* スライド用のトランジション */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(100%);
+}
+.slide-enter-to,
+.slide-leave-from {
+  transform: translateX(0%);
+}
 </style>

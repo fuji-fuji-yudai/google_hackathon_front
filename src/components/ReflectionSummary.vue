@@ -113,6 +113,7 @@ export default {
       }
     },
     async fetchTasks() {
+      console.log("タスク取得処理開始")
       try {
         const response = await fetch('https://my-image-14467698004.asia-northeast1.run.app/api/tasks', {
           headers: {
