@@ -6,9 +6,6 @@
       <button class="action-button chat-button" @click="openAIChatModal">
         AIにチャットで質問
       </button>
-      <button class="action-button reminder-button" @click="goToReminderForm">
-        リマインダー作成
-      </button>
     </div>
 
     <p v-if="props.loading" class="loading-message">ロードマップデータを読み込み中...</p>
@@ -107,10 +104,10 @@ const isAIChatModalOpen = ref(false);
 const openAIChatModal = () => { isAIChatModalOpen.value = true; };
 const closeAIChatModal = () => { isAIChatModalOpen.value = false; };
 
-const isReminderModalOpen = ref(false);
-const goToReminderForm = () => { isReminderModalOpen.value = true; };
-const closeReminderModal = () => { isReminderModalOpen.value = false; };
-</script>
+//const isReminderModalOpen = ref(false);
+//const goToReminderForm = () => { isReminderModalOpen.value = true; };
+//const closeReminderModal = () => { isReminderModalOpen.value = false; };
+//</script>
 
 <style scoped>
 .roadmap-manager-container {
