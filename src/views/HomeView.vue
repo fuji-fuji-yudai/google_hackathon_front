@@ -47,7 +47,7 @@ export default {
         {
           name: "reflection",
           title: "振り返りへ",
-          image: require("@/assets/logo.png"),
+          image: require("@/assets/reflectionLogo.png"),
           route: "/reflection/home",
         }
         
