@@ -707,8 +707,8 @@ onMounted(() => {
   position: relative;
 }
 
-.task-info::-webkit-scrollbar {
-  display: none; /* ← 完全に非表示にする */
+.task-info::-webkit-scrollbar:vertical {
+  display: none; /* ← 縦スクロールバーだけ非表示にする */
 }
 
 .gantt-chart {
